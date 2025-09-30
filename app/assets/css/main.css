@@ -1,0 +1,35 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Professional color palette - Blue primary */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-200: #bfdbfe;
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-blue-800: #1e40af;
+  --color-blue-900: #1e3a8a;
+  --color-blue-950: #172554;
+}
+
+/* Global styles */
+body {
+  @apply antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* Professional background gradient */
+.bg-gradient-professional {
+  @apply bg-gradient-to-br from-slate-50 via-white to-blue-50;
+}
+
+/* Dark mode background gradient */
+.dark .bg-gradient-professional {
+  @apply bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950;
+}
