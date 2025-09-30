@@ -1,0 +1,15 @@
+[variables]
+NODE_VERSION = "20"
+PNPM_VERSION = "9.7.0"
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "pnpm"]
+
+[phases.install]
+cmd = "pnpm install --frozen-lockfile"
+
+[phases.build]
+cmd = "pnpm build"
+
+[start]
+cmd = "node .output/server/index.mjs"
