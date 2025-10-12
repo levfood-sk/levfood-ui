@@ -10,8 +10,8 @@ import {
   type User as FirebaseUser,
   type UserCredential,
 } from 'firebase/auth'
-import type { User, AuthState } from '~/lib/firebase/types'
-import { mapFirebaseUser } from '~/lib/firebase/types'
+import type { User, AuthState } from '../lib/firebase/types'
+import { mapFirebaseUser } from '../lib/firebase/types'
 
 const authState = reactive<AuthState>({
   user: null,
@@ -22,6 +22,22 @@ const authState = reactive<AuthState>({
 let initialized = false
 
 export const useAuth = () => {
+  // Skip initialization on server
+  if (import.meta.server) {
+    return {
+      user: computed(() => null),
+      loading: computed(() => false),
+      error: computed(() => null),
+      isAuthenticated: computed(() => false),
+      signIn: async () => ({} as UserCredential),
+      signUp: async () => ({} as UserCredential),
+      signInWithGoogle: async () => ({} as UserCredential),
+      signInWithApple: async () => ({} as UserCredential),
+      signOut: async () => {},
+      getIdToken: async () => null,
+    }
+  }
+
   const auth = useFirebaseAuth()
 
   // Initialize auth state listener

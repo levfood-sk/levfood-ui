@@ -29,9 +29,6 @@ importers:
       nuxt:
         specifier: ^4.1.2
         version: 4.1.2(@parcel/watcher@2.5.1)(@types/node@24.5.2)(@vue/compiler-sfc@3.5.22)(db0@0.3.2(drizzle-orm@0.44.5(@opentelemetry/api@1.9.0)(kysely@0.28.7)(postgres@3.4.7)))(drizzle-orm@0.44.5(@opentelemetry/api@1.9.0)(kysely@0.28.7)(postgres@3.4.7))(eslint@9.36.0(jiti@2.6.0))(ioredis@5.8.0)(lightningcss@1.30.1)(magicast@0.3.5)(optionator@0.9.4)(rollup@4.52.3)(terser@5.44.0)(typescript@5.9.2)(vite@7.1.7(@types/node@24.5.2)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.44.0)(yaml@2.8.1))(yaml@2.8.1)
-      nuxt-vuefire:
-        specifier: ^1.0.4
-        version: 1.1.0(@firebase/app-types@0.9.3)(firebase-admin@13.5.0)(firebase@11.10.0)(magicast@0.3.5)(vuefire@3.2.2(consola@3.4.2)(firebase@11.10.0)(vue@3.5.22(typescript@5.9.2)))
       tailwindcss:
         specifier: ^4.1.13
         version: 4.1.13
@@ -1342,10 +1339,6 @@ packages:
 
   '@poppinss/exception@1.2.2':
     resolution: {integrity: sha512-m7bpKCD4QMlFCjA/nKTs23fuvoVFoA83brRKmObCUNmi/9tVu8Ve3w4YQAnJu4q3Tjf5fr685HYIC/IA2zHRSg==}
-
-  '@posva/lru-cache@10.0.1':
-    resolution: {integrity: sha512-8rksr4MD7zNltsgerU9sx3OfOo8l9lABXf8/tII6XijgvTqFO+e+P+cSyfSQhAPgi458LMx75kUTLX3Zxwdc+g==}
-    engines: {node: 14 || >=16.14}
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -3689,9 +3682,6 @@ packages:
     resolution: {integrity: sha512-gvVijfZvn7R+2qyPX8mAuKcFGDf6Nc61GdvGafQsHL0sBIxfKzA+usWn4GFC/bk+QdwPUD4kWFJLhElipq+0VA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
-  lodash-es@4.17.21:
-    resolution: {integrity: sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==}
-
   lodash.camelcase@4.3.0:
     resolution: {integrity: sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA==}
 
@@ -3950,22 +3940,6 @@ packages:
 
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
-
-  nuxt-vuefire@1.1.0:
-    resolution: {integrity: sha512-Sotrsw94+MvxyI5RQMAkgEbxlSIMUTJILEBOSgvNq/qFSCwzKPLA/Kx7PRCgbcReUffrRklbNbOtXZeSqrxoIg==}
-    peerDependencies:
-      '@firebase/app-types': '>=0.8.1'
-      firebase: ^9.0.0 || ^10.0.0 || ^11.1.0 || ^12.0.0
-      firebase-admin: ^11.3.0 || ^12.2.0 || ^13.0.1
-      firebase-functions: ^4.1.0 || ^5.0.0 || ^6.1.2
-      vuefire: '>=3.2.2'
-    peerDependenciesMeta:
-      '@firebase/app-types':
-        optional: true
-      firebase-admin:
-        optional: true
-      firebase-functions:
-        optional: true
 
   nuxt@4.1.2:
     resolution: {integrity: sha512-g5mwszCZT4ZeGJm83nxoZvtvZoAEaY65VDdn7p7UgznePbRaEJJ1KS1OIld4FPVkoDZ8TEVuDNqI9gUn12Exvg==}
@@ -4660,10 +4634,6 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
-  strip-json-comments@5.0.3:
-    resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
-    engines: {node: '>=14.16'}
-
   strip-literal@3.1.0:
     resolution: {integrity: sha512-8r3mkIM/2+PpjHoOtiAW8Rg3jJLHaV7xPwG+YRGrv6FP0wwk/toTpATxWYOW0BKdWwl82VT2tFYi5DlROa0Mxg==}
 
@@ -5149,22 +5119,6 @@ packages:
       typescript: '*'
     peerDependenciesMeta:
       typescript:
-        optional: true
-
-  vuefire@3.2.2:
-    resolution: {integrity: sha512-JARgY9HhLs7xrdotQ4QA1SAmFDfSvAwUmOjx9e9lRJnmrsSW7H8ddfCQTVEHhU5NPyPJ/qKBv18Y5N13L60TGg==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      '@vue/composition-api': '*'
-      consola: ^3.2.3
-      firebase: ^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0
-      vue: ^2.7.0 || ^3.2.0
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
-      consola:
-        optional: true
-      firebase:
         optional: true
 
   web-vitals@4.2.4:
@@ -6986,8 +6940,6 @@ snapshots:
       supports-color: 10.2.2
 
   '@poppinss/exception@1.2.2': {}
-
-  '@posva/lru-cache@10.0.1': {}
 
   '@protobufjs/aspromise@1.1.2': {}
 
@@ -9376,8 +9328,6 @@ snapshots:
     dependencies:
       p-locate: 6.0.0
 
-  lodash-es@4.17.21: {}
-
   lodash.camelcase@4.3.0: {}
 
   lodash.clonedeep@4.5.0: {}
@@ -9685,20 +9635,6 @@ snapshots:
   nth-check@2.1.1:
     dependencies:
       boolbase: 1.0.0
-
-  nuxt-vuefire@1.1.0(@firebase/app-types@0.9.3)(firebase-admin@13.5.0)(firebase@11.10.0)(magicast@0.3.5)(vuefire@3.2.2(consola@3.4.2)(firebase@11.10.0)(vue@3.5.22(typescript@5.9.2))):
-    dependencies:
-      '@nuxt/kit': 3.19.2(magicast@0.3.5)
-      '@posva/lru-cache': 10.0.1
-      firebase: 11.10.0
-      lodash-es: 4.17.21
-      strip-json-comments: 5.0.3
-      vuefire: 3.2.2(consola@3.4.2)(firebase@11.10.0)(vue@3.5.22(typescript@5.9.2))
-    optionalDependencies:
-      '@firebase/app-types': 0.9.3
-      firebase-admin: 13.5.0
-    transitivePeerDependencies:
-      - magicast
 
   nuxt@4.1.2(@parcel/watcher@2.5.1)(@types/node@24.5.2)(@vue/compiler-sfc@3.5.22)(db0@0.3.2(drizzle-orm@0.44.5(@opentelemetry/api@1.9.0)(kysely@0.28.7)(postgres@3.4.7)))(drizzle-orm@0.44.5(@opentelemetry/api@1.9.0)(kysely@0.28.7)(postgres@3.4.7))(eslint@9.36.0(jiti@2.6.0))(ioredis@5.8.0)(lightningcss@1.30.1)(magicast@0.3.5)(optionator@0.9.4)(rollup@4.52.3)(terser@5.44.0)(typescript@5.9.2)(vite@7.1.7(@types/node@24.5.2)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.44.0)(yaml@2.8.1))(yaml@2.8.1):
     dependencies:
@@ -10569,8 +10505,6 @@ snapshots:
 
   strip-json-comments@3.1.1: {}
 
-  strip-json-comments@5.0.3: {}
-
   strip-literal@3.1.0:
     dependencies:
       js-tokens: 9.0.1
@@ -11064,14 +10998,6 @@ snapshots:
       '@vue/shared': 3.5.22
     optionalDependencies:
       typescript: 5.9.2
-
-  vuefire@3.2.2(consola@3.4.2)(firebase@11.10.0)(vue@3.5.22(typescript@5.9.2)):
-    dependencies:
-      vue: 3.5.22(typescript@5.9.2)
-      vue-demi: 0.14.10(vue@3.5.22(typescript@5.9.2))
-    optionalDependencies:
-      consola: 3.4.2
-      firebase: 11.10.0
 
   web-vitals@4.2.4: {}
 

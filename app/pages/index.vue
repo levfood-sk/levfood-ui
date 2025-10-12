@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { authClient } from "~~/lib/auth-client"
+const { user } = useAuth()
 
-const { data: session } = await authClient.useSession(useFetch)
-
-// Redirect to dashboard if already logged in
-if (session.value) {
-  await navigateTo('/dashboard')
-}
+// Redirect to dashboard if already logged in (client-side only)
+onMounted(() => {
+  if (user.value) {
+    navigateTo('/dashboard')
+  }
+})
 </script>
 
 <template>
@@ -38,7 +38,7 @@ if (session.value) {
           Welcome to <span class="text-blue-600 dark:text-blue-400">Levita</span>
         </h1>
         <p class="mt-6 max-w-2xl mx-auto text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
-          A modern authentication platform built with Nuxt 4, Better Auth, and Nuxt UI.
+          A modern authentication platform built with Nuxt 4, Firebase, and Nuxt UI.
           Get started in seconds with email or social login.
         </p>
         <div class="mt-10 flex justify-center gap-4">
@@ -60,7 +60,7 @@ if (session.value) {
             </div>
             <div>
               <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">Secure Authentication</h3>
-              <p class="text-slate-600 dark:text-slate-400 text-sm">Industry-standard security with Better Auth integration.</p>
+              <p class="text-slate-600 dark:text-slate-400 text-sm">Industry-standard security with Firebase Authentication.</p>
             </div>
           </div>
         </UCard>
@@ -84,7 +84,7 @@ if (session.value) {
             </div>
             <div>
               <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">Flexible Options</h3>
-              <p class="text-slate-600 dark:text-slate-400 text-sm">Email/password or social login with Google.</p>
+              <p class="text-slate-600 dark:text-slate-400 text-sm">Email/password or social login with Google and Apple.</p>
             </div>
           </div>
         </UCard>

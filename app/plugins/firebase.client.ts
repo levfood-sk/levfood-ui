@@ -1,9 +1,9 @@
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 
 export default defineNuxtPlugin(() => {
   const { app } = useFirebase()
-  const user = useState('firebase-user', () => null)
-  const loading = useState('firebase-auth-loading', () => true)
+  const user = useState<User | null>('firebase-user', () => null)
+  const loading = useState<boolean>('firebase-auth-loading', () => true)
 
   if (app) {
     const auth = getAuth(app)
