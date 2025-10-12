@@ -6,11 +6,6 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxt/icon'],
   css: ['~/assets/css/main.css'],
-  colorMode: {
-    preference: 'light',
-    fallback: 'light',
-    classSuffix: '',
-  },
   vite: {
     plugins: [
       tailwindcss(),
