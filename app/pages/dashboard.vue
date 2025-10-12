@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { authClient } from "~~/lib/auth-client"
-
-const { data: session } = await authClient.useSession(useFetch)
+const { user, signOut: firebaseSignOut } = useAuth()
 const loading = ref(false)
 
 const handleSignOut = async () => {
   loading.value = true
   try {
-    await authClient.signOut()
+    await firebaseSignOut()
     await navigateTo('/login')
   } catch (error) {
     console.error('Sign out error:', error)
@@ -49,7 +47,7 @@ const handleSignOut = async () => {
       </div>
 
       <!-- User Info Card -->
-      <UCard v-if="session" class="max-w-2xl">
+      <UCard v-if="user" class="max-w-2xl">
         <template #header>
           <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Profile Information</h3>
         </template>
@@ -57,44 +55,42 @@ const handleSignOut = async () => {
         <div class="space-y-6">
           <div class="flex items-center gap-4">
             <UAvatar
-              v-if="session.user.image"
-              :src="session.user.image"
+              v-if="user.photoURL"
+              :src="user.photoURL"
               size="xl"
-              :alt="session.user.name"
+              :alt="user.displayName || user.email || 'User'"
             />
             <UAvatar
               v-else
               size="xl"
-              :alt="session.user.name"
+              :alt="user.displayName || user.email || 'User'"
             />
             <div>
               <p class="text-lg font-semibold text-slate-900 dark:text-white">
-                {{ session.user.name }}
+                {{ user.displayName || 'No name' }}
               </p>
               <p class="text-sm text-slate-600 dark:text-slate-400">
-                {{ session.user.email }}
+                {{ user.email }}
               </p>
             </div>
           </div>
 
           <UDivider />
 
-          <div class="grid grid-cols-2 gap-6">
-            <div>
+          <div v-if="user.firstName || user.lastName" class="grid grid-cols-2 gap-6">
+            <div v-if="user.firstName">
               <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">First Name</p>
-              <p class="text-base text-slate-900 dark:text-white">{{ session.user.firstName }}</p>
+              <p class="text-base text-slate-900 dark:text-white">{{ user.firstName }}</p>
             </div>
-            <div>
+            <div v-if="user.lastName">
               <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Last Name</p>
-              <p class="text-base text-slate-900 dark:text-white">{{ session.user.lastName }}</p>
+              <p class="text-base text-slate-900 dark:text-white">{{ user.lastName }}</p>
             </div>
           </div>
 
           <div>
-            <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Email Status</p>
-            <UBadge :color="session.user.emailVerified ? 'success' : 'warning'" variant="subtle" size="md">
-              {{ session.user.emailVerified ? 'Verified' : 'Not Verified' }}
-            </UBadge>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">User ID</p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 font-mono">{{ user.uid }}</p>
           </div>
         </div>
       </UCard>

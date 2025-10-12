@@ -1,17 +1,27 @@
-import { authClient } from "~~/lib/auth-client";
+export default defineNuxtRouteMiddleware((to) => {
+  // Skip middleware on server
+  if (import.meta.server) {
+    return
+  }
 
-export default defineNuxtRouteMiddleware(async (to) => {
+  // Get auth state from useState (set by plugin)
+  const user = useState('firebase-user')
 
-    // Check if the user is navigating to the app route
-    const isUserNavigatingToTheApp = to.path.startsWith('/app');
-    const { data: loggedIn } = await authClient.useSession(useFetch);
-    const isNavigatingToLoginOrRegister = to.path.startsWith('/login') || to.path.startsWith('/register');
+  // Protected routes
+  const protectedRoutes = ['/app', '/dashboard']
+  const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route))
 
-    if (isUserNavigatingToTheApp && !loggedIn.value) {
-        return navigateTo('/login');
-    }
-    if (isNavigatingToLoginOrRegister && loggedIn.value) {
-        return navigateTo('/dashboard');
-    }
+  // Auth routes
+  const authRoutes = ['/login', '/register']
+  const isAuthRoute = authRoutes.some(route => to.path.startsWith(route))
 
-});
+  // Redirect unauthenticated users from protected routes
+  if (isProtectedRoute && !user.value) {
+    return navigateTo('/login')
+  }
+
+  // Redirect authenticated users from auth routes
+  if (isAuthRoute && user.value) {
+    return navigateTo('/dashboard')
+  }
+})

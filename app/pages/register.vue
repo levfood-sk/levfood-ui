@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { authClient } from "~~/lib/auth-client"
-import { ref } from 'vue'
-
 definePageMeta({
   layout: false
 })
+
+const { signUp, signInWithGoogle, signInWithApple } = useAuth()
 
 const firstName = ref('')
 const lastName = ref('')
@@ -31,37 +30,37 @@ const handleRegister = async () => {
   }
 
   try {
-    const result = await authClient.signUp.email({
-      email: email.value,
-      password: password.value,
-      name: `${firstName.value} ${lastName.value}`,
-      firstName: firstName.value,
-      lastName: lastName.value
-    })
-
-    if (result.error) {
-      error.value = result.error.message || 'Registration failed'
-    } else {
-      await navigateTo('/dashboard')
-    }
+    await signUp(email.value, password.value, firstName.value, lastName.value)
+    await navigateTo('/dashboard')
   } catch (e: any) {
-    error.value = e.message || 'An error occurred'
+    error.value = e.message || 'Registration failed'
   } finally {
     loading.value = false
   }
 }
 
-const handleSocialLogin = async (provider: 'google' | 'apple') => {
+const handleGoogleSignup = async () => {
   loading.value = true
   error.value = ''
-  
+
   try {
-    await authClient.signIn.social({
-      provider,
-      callbackURL: '/dashboard'
-    })
+    await signInWithGoogle()
+    await navigateTo('/dashboard')
   } catch (e: any) {
-    error.value = e.message || 'Social login failed'
+    error.value = e.message || 'Google signup failed'
+    loading.value = false
+  }
+}
+
+const handleAppleSignup = async () => {
+  loading.value = true
+  error.value = ''
+
+  try {
+    await signInWithApple()
+    await navigateTo('/dashboard')
+  } catch (e: any) {
+    error.value = e.message || 'Apple signup failed'
     loading.value = false
   }
 }
@@ -94,7 +93,7 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
             color="neutral"
             variant="outline"
             :loading="loading"
-            @click="handleSocialLogin('google')"
+            @click="handleGoogleSignup"
           >
             <template #leading>
               <svg class="w-5 h-5" viewBox="0 0 24 24">
@@ -112,7 +111,7 @@ const handleSocialLogin = async (provider: 'google' | 'apple') => {
             size="lg"
             color="neutral"
             :loading="loading"
-            @click="handleSocialLogin('apple')"
+            @click="handleAppleSignup"
           >
             <template #leading>
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
