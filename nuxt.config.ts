@@ -40,6 +40,7 @@ export default defineNuxtConfig({
       firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
       firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
       firebaseAppId: process.env.FIREBASE_APP_ID,
+      firebaseVapidKey: process.env.FIREBASE_VAPID_KEY,
       appUrl: process.env.APP_URL || 'http://localhost:3000',
     },
     firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT,
