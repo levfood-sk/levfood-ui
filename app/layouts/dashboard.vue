@@ -74,6 +74,11 @@ const navItems = [
     icon: 'i-heroicons-banknotes',
     to: '/dashboard/stripe-test',
   },
+  {
+    label: 'Superfaktura Test',
+    icon: 'i-heroicons-document-text',
+    to: '/dashboard/superfaktura-test',
+  },
 ]
 
 // Check if route is active
