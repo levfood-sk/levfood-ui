@@ -4,8 +4,18 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxt/icon'],
+  modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxt/icon', '@unlok-co/nuxt-stripe'],
   css: ['~/assets/css/main.css'],
+
+  // Stripe configuration
+  stripe: {
+    server: {
+      key: process.env.STRIPE_SECRET_KEY,
+    },
+    client: {
+      key: process.env.STRIPE_PUBLIC_KEY,
+    },
+  },
   vite: {
     plugins: [
       tailwindcss(),
@@ -26,5 +36,6 @@ export default defineNuxtConfig({
     goPayClientSecret: process.env.GOPAY_CLIENT_SECRET,
     goPayMerchantId: process.env.GOPAY_MERCHANT_ID,
     goPayIsProduction: process.env.GOPAY_IS_PRODUCTION || 'false',
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
   }
 })
