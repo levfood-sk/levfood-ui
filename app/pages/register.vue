@@ -117,7 +117,11 @@ const handleAppleSignup = async () => {
           </UButton>
         </div>
 
-        <UDivider label="OR" />
+        <div class="relative flex items-center py-4">
+          <div class="flex-grow border-t border-gray-300"></div>
+          <span class="flex-shrink mx-4 text-sm text-gray-500">OR</span>
+          <div class="flex-grow border-t border-gray-300"></div>
+        </div>
 
         <!-- Error Alert -->
         <UAlert
