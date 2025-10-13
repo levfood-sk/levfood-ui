@@ -17,7 +17,7 @@ onMounted(() => {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <div class="flex items-center">
-            <h1 class="text-2xl font-bold text-slate-900">Levita</h1>
+            <h1 class="text-2xl font-bold text-slate-900">Levfood</h1>
           </div>
           <div class="flex items-center gap-3">
             <NuxtLink to="/login">
@@ -35,7 +35,7 @@ onMounted(() => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
       <div class="text-center">
         <h1 class="text-5xl font-bold text-slate-900 sm:text-6xl lg:text-7xl tracking-tight">
-          Welcome to <span class="text-blue-600">Levita</span>
+          Welcome to <span class="text-blue-600">Levfood</span>
         </h1>
         <p class="mt-6 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed">
           A modern authentication platform built with Nuxt 4, Firebase, and Nuxt UI.

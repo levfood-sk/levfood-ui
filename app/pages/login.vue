@@ -57,7 +57,7 @@ const handleAppleLogin = async () => {
       <template #header>
         <div class="text-center pt-2">
           <NuxtLink to="/" class="inline-block mb-4">
-            <h1 class="text-3xl font-bold text-slate-900">Levita</h1>
+            <h1 class="text-3xl font-bold text-slate-900">Levfood</h1>
           </NuxtLink>
           <h2 class="text-2xl font-bold text-slate-900">Welcome Back</h2>
           <p class="text-sm text-slate-600 mt-2">Sign in to your account</p>

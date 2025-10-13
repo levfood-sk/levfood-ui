@@ -112,7 +112,7 @@ const isActiveRoute = (item: typeof navItems[0]) => {
 
             <!-- Logo -->
             <NuxtLink to="/" class="flex items-center">
-              <h1 class="text-2xl font-bold text-slate-900">Levita</h1>
+              <h1 class="text-2xl font-bold text-slate-900">Levfood</h1>
             </NuxtLink>
           </div>
 

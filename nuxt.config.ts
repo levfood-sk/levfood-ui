@@ -7,6 +7,17 @@ export default defineNuxtConfig({
   modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxt/icon', '@unlok-co/nuxt-stripe'],
   css: ['~/assets/css/main.css'],
 
+  // App metadata
+  app: {
+    head: {
+      title: 'Levfood Web',
+      meta: [
+        { name: 'description', content: 'Levfood web & Admin Panel' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      ],
+    },
+  },
+
   // Stripe configuration
   stripe: {
     server: {
