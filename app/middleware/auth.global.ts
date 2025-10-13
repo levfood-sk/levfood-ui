@@ -1,4 +1,4 @@
-export default defineNuxtRouteMiddleware((to) => {
+export default defineNuxtRouteMiddleware(async (to) => {
   // Skip middleware on server
   if (import.meta.server) {
     return
@@ -6,6 +6,7 @@ export default defineNuxtRouteMiddleware((to) => {
 
   // Get auth state from useState (set by plugin)
   const user = useState('firebase-user')
+  const loading = useState('firebase-auth-loading')
 
   // Protected routes
   const protectedRoutes = ['/app', '/dashboard']
@@ -14,6 +15,23 @@ export default defineNuxtRouteMiddleware((to) => {
   // Auth routes
   const authRoutes = ['/login', '/register']
   const isAuthRoute = authRoutes.some(route => to.path.startsWith(route))
+
+  // Wait for auth to initialize before checking routes
+  if (loading.value) {
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(loading, (newLoading) => {
+        if (!newLoading) {
+          unwatch()
+          resolve()
+        }
+      }, { immediate: true })
+
+      setTimeout(() => {
+        unwatch()
+        resolve()
+      }, 3000)
+    })
+  }
 
   // Redirect unauthenticated users from protected routes
   if (isProtectedRoute && !user.value) {
