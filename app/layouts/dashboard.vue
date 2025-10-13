@@ -65,6 +65,11 @@ const navItems = [
     exact: true,
   },
   {
+    label: 'Push Notifications',
+    icon: 'i-heroicons-bell',
+    to: '/dashboard/notifications',
+  },
+  {
     label: 'GoPay Test',
     icon: 'i-heroicons-credit-card',
     to: '/dashboard/gopay-test',
