@@ -86,11 +86,39 @@ export default defineEventHandler(async (event) => {
     switch (stripeEvent.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = stripeEvent.data.object
-        console.log('✅ Payment succeeded:', {
+        console.log('Payment succeeded:', {
           id: paymentIntent.id,
           amount: paymentIntent.amount,
           currency: paymentIntent.currency,
         })
+
+        // Create Superfaktura invoice automatically
+        try {
+          const superfakturaConfig = {
+            email: config.superfakturaEmail,
+            apiKey: config.superfakturaApiKey,
+            companyId: config.superfakturaCompanyId,
+            isSandbox: config.superfakturaIsSandbox === 'true',
+          }
+
+          // Only create invoice if Superfaktura is configured
+          if (superfakturaConfig.email && superfakturaConfig.apiKey) {
+            const invoiceRequest = createInvoiceFromStripePayment(paymentIntent)
+            const invoiceResult = await createInvoice(invoiceRequest, superfakturaConfig)
+
+            if (invoiceResult.error) {
+              console.error('Failed to create Superfaktura invoice:', invoiceResult.error_message)
+            } else {
+              console.log('Superfaktura invoice created:', {
+                invoiceId: invoiceResult.data?.Invoice?.id,
+                invoiceNumber: invoiceResult.data?.Invoice?.invoice_no_formatted,
+              })
+            }
+          }
+        } catch (invoiceError: any) {
+          console.error('Superfaktura invoice creation error:', invoiceError.message)
+          // Don't fail the webhook if invoice creation fails
+        }
 
         // TODO: Update database with successful payment
         // TODO: Send confirmation email to customer
@@ -100,7 +128,7 @@ export default defineEventHandler(async (event) => {
 
       case 'payment_intent.payment_failed': {
         const paymentIntent = stripeEvent.data.object
-        console.log('❌ Payment failed:', {
+        console.log('Payment failed:', {
           id: paymentIntent.id,
           last_payment_error: paymentIntent.last_payment_error?.message,
         })
@@ -112,7 +140,7 @@ export default defineEventHandler(async (event) => {
 
       case 'payment_intent.created': {
         const paymentIntent = stripeEvent.data.object
-        console.log('🆕 Payment intent created:', {
+        console.log('Payment intent created:', {
           id: paymentIntent.id,
           amount: paymentIntent.amount,
         })
@@ -121,7 +149,7 @@ export default defineEventHandler(async (event) => {
 
       case 'charge.succeeded': {
         const charge = stripeEvent.data.object
-        console.log('💳 Charge succeeded:', {
+        console.log('Charge succeeded:', {
           id: charge.id,
           amount: charge.amount,
         })

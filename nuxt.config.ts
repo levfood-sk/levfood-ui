@@ -37,5 +37,9 @@ export default defineNuxtConfig({
     goPayMerchantId: process.env.GOPAY_MERCHANT_ID,
     goPayIsProduction: process.env.GOPAY_IS_PRODUCTION || 'false',
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    superfakturaEmail: process.env.SUPERFAKTURA_EMAIL,
+    superfakturaApiKey: process.env.SUPERFAKTURA_API_KEY,
+    superfakturaCompanyId: process.env.SUPERFAKTURA_COMPANY_ID,
+    superfakturaIsSandbox: process.env.SUPERFAKTURA_IS_SANDBOX || 'true',
   }
 })
