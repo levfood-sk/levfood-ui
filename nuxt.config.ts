@@ -19,7 +19,12 @@ export default defineNuxtConfig({
       firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
       firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
       firebaseAppId: process.env.FIREBASE_APP_ID,
+      appUrl: process.env.APP_URL || 'http://localhost:3000',
     },
     firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT,
+    goPayClientId: process.env.GOPAY_CLIENT_ID,
+    goPayClientSecret: process.env.GOPAY_CLIENT_SECRET,
+    goPayMerchantId: process.env.GOPAY_MERCHANT_ID,
+    goPayIsProduction: process.env.GOPAY_IS_PRODUCTION || 'false',
   }
 })
