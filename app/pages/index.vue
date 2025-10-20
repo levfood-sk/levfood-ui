@@ -35,59 +35,52 @@ onMounted(() => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
       <div class="text-center">
         <h1 class="text-5xl font-bold text-slate-900 sm:text-6xl lg:text-7xl tracking-tight">
-          Welcome to <span class="text-blue-600">Levfood</span>
+          Lorem Ipsum
         </h1>
         <p class="mt-6 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed">
-          A modern authentication platform built with Nuxt 4, Firebase, and Nuxt UI.
-          Get started in seconds with email or social login.
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.
         </p>
         <div class="mt-10 flex justify-center gap-4">
-          <NuxtLink to="/register">
-            <UButton size="lg">Create Account</UButton>
+          <NuxtLink>
+            <UButton size="lg">Button</UButton>
           </NuxtLink>
-          <NuxtLink to="/login">
-            <UButton size="lg" variant="outline">Sign In</UButton>
+          <NuxtLink>
+            <UButton size="lg" variant="outline">Button</UButton>
           </NuxtLink>
         </div>
       </div>
+      
+    </div>
 
-      <!-- Features -->
-      <div class="mt-24 grid grid-cols-1 gap-6 sm:grid-cols-3">
-        <UCard>
-          <div class="flex items-start gap-4">
-            <div class="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Icon name="lucide:lock" class="w-6 h-6 text-blue-600" />
-            </div>
+    <!-- Features Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <!-- Image Placeholder -->
+        <div class="bg-gray-200 rounded-2xl aspect-square flex items-center justify-center">
+          <div class="w-32 h-32 bg-gray-300 rounded-lg flex items-center justify-center">
+            <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Features List -->
+        <div class="space-y-8">
+          <div v-for="i in 3" :key="i" class="flex gap-4">
+            <div class="flex-shrink-0">
+              <UIcon name="i-lucide-salad" class="w-10 h-10 text-slate-900" />
+            </div>  
             <div>
-              <h3 class="text-lg font-semibold text-slate-900 mb-2">Secure Authentication</h3>
-              <p class="text-slate-600 text-sm">Industry-standard security with Firebase Authentication.</p>
+              <h3 class="text-xl font-bold text-slate-900 mb-2">Lorem Ipsum</h3>
+              <p class="text-slate-600">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.</p>
             </div>
           </div>
-        </UCard>
 
-        <UCard>
-          <div class="flex items-start gap-4">
-            <div class="flex-shrink-0 w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-              <Icon name="lucide:zap" class="w-6 h-6 text-emerald-600" />
-            </div>
-            <div>
-              <h3 class="text-lg font-semibold text-slate-900 mb-2">Lightning Fast</h3>
-              <p class="text-slate-600 text-sm">Built on Nuxt 4 for optimal performance and speed.</p>
-            </div>
+          <div class="flex justify-center gap-4 pt-4">
+            <UButton size="xl" variant="outline">Button</UButton>
+            <UButton size="xl" variant="outline">Button</UButton>
           </div>
-        </UCard>
-
-        <UCard>
-          <div class="flex items-start gap-4">
-            <div class="flex-shrink-0 w-12 h-12 bg-violet-100 rounded-lg flex items-center justify-center">
-              <Icon name="lucide:sliders-horizontal" class="w-6 h-6 text-violet-600" />
-            </div>
-            <div>
-              <h3 class="text-lg font-semibold text-slate-900 mb-2">Flexible Options</h3>
-              <p class="text-slate-600 text-sm">Email/password or social login with Google and Apple.</p>
-            </div>
-          </div>
-        </UCard>
+        </div>
       </div>
     </div>
   </div>
