@@ -35,7 +35,7 @@ onMounted(() => {
     <div class="container mx-auto px-4 py-20 lg:py-28">
       <div class="grid grid-cols-12 gap-4">
         <div class="col-span-12 text-center">
-          <h1 class="text-5xl font-bold text-slate-900 sm:text-6xl lg:text-7xl tracking-tight">
+          <h1 class="text-4xl font-bold text-slate-900 sm:text-6xl lg:text-7xl tracking-tight">
             Lorem Ipsum
           </h1>
           <p class="mt-6 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed">
@@ -85,7 +85,7 @@ onMounted(() => {
       <div class="grid grid-cols-12 gap-4">
         <!-- Main Title -->
         <div class="col-span-12 text-center mb-16">
-          <h2 class="text-5xl font-bold text-slate-900 sm:text-6xl lg:text-7xl tracking-tight">
+          <h2 class="text-xl font-bold text-slate-900 sm:text-6xl lg:text-7xl tracking-tight">
             Lorem Ipsum
           </h2>
           <p class="mt-6 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed">
@@ -136,6 +136,100 @@ onMounted(() => {
           <div class="w-full h-full flex items-center justify-center">
             <UIcon name="i-lucide-image" class="w-16 h-16 text-gray-400" />
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pricing Section -->
+    <div class="container mx-auto px-4 py-20">
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Section Header -->
+        <div class="col-span-12 text-center mb-16">
+          <h2 class="text-xl font-bold text-slate-900 sm:text-6xl lg:text-7xl tracking-tight">
+            Lorem Ipsum
+          </h2>
+          <p class="mt-6 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          </p>
+        </div>
+
+        <!-- Pricing Cards -->
+        <div class="col-span-12 lg:col-span-4">
+          <UCard class="h-full">
+            <template #header>
+              <div class="text-start">
+                <h3 class="text-2xl font-bold text-slate-900">Basic plan</h3>
+                <p class="text-slate-600 mt-2">Lorem ipsum dolor sit amet</p>
+              </div>
+            </template>
+            
+            <div class="text-start">
+              <div class="text-5xl font-bold text-slate-900">€19<span class="text-lg font-normal">/mo</span></div>
+            </div>
+
+            <template #footer>
+              <UButton block size="lg" class="mb-6">Get started</UButton>
+              
+              <div class="space-y-3">
+                <div v-for="i in 3" :key="i" class="flex items-center gap-3">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-green-500" />
+                  <span class="text-slate-600">Feature text goes here</span>
+                </div>
+              </div>
+            </template>
+          </UCard>
+        </div>
+
+        <div class="col-span-12 lg:col-span-4">
+          <UCard class="h-full">
+            <template #header>
+              <div class="text-start">
+                <h3 class="text-2xl font-bold text-slate-900">Business plan</h3>
+                <p class="text-slate-600 mt-2">Lorem ipsum dolor sit amet</p>
+              </div>
+            </template>
+            
+            <div class="text-start">
+              <div class="text-5xl font-bold text-slate-900">€29<span class="text-lg font-normal">/mo</span></div>
+            </div>
+
+            <template #footer>
+              <UButton block size="lg" class="mb-6">Get started</UButton>
+              
+              <div class="space-y-3">
+                <div v-for="i in 3" :key="i" class="flex items-center gap-3">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-green-500" />
+                  <span class="text-slate-600">Feature text goes here</span>
+                </div>
+              </div>
+            </template>
+          </UCard>
+        </div>
+
+        <div class="col-span-12 lg:col-span-4">
+          <UCard class="h-full">
+            <template #header>
+              <div class="text-start">
+                <h3 class="text-xl font-bold text-slate-900">Enterprise plan</h3>
+                <p class="text-slate-600 mt-2">Lorem ipsum dolor sit amet</p>
+              </div>
+            </template>
+            
+            <div class="text-start">
+              <div class="text-5xl font-bold text-slate-900">€49<span class="text-lg font-normal">/mo</span></div>
+            </div>
+
+            <template #footer>
+              <UButton block size="lg" class="mb-6">Get started</UButton>
+              
+              <div class="space-y-3">
+                <div v-for="i in 3" :key="i" class="flex items-center gap-3">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-green-500" />
+                  <span class="text-slate-600">Feature text goes here</span>
+                </div>
+              </div>
+            </template>
+          </UCard>
         </div>
       </div>
     </div>
