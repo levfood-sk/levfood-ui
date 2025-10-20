@@ -58,9 +58,7 @@ onMounted(() => {
       <div class="grid grid-cols-12 gap-4 items-center">
         <!-- Image Placeholder -->
         <div class="col-span-12 lg:col-span-6 bg-gray-200 rounded-2xl aspect-square flex items-center justify-center">
-          <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-          </svg>
+          <UIcon name="i-lucide-image" class="w-16 h-16 text-gray-400" />
         </div>
 
         <!-- Features List -->
@@ -102,9 +100,7 @@ onMounted(() => {
             <div v-for="i in 4" :key="i" class="flex items-center">
               <!-- Process Step -->
               <div class="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-2xl flex items-center justify-center">
-                <svg class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-                </svg>
+                <UIcon name="i-lucide-image" class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
               </div>
               <!-- Arrow (except for last step) -->
               <div v-if="i < 4" class="ml-4 sm:ml-8">
@@ -124,27 +120,21 @@ onMounted(() => {
 
           <!-- Final Step -->
           <div class="w-24 h-24 sm:w-32 sm:h-32 bg-gray-200 rounded-2xl flex items-center justify-center">
-            <svg class="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-            </svg>
+            <UIcon name="i-lucide-image" class="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />
           </div>
         </div>
 
         <!-- Bottom Left Image -->
         <div class="col-span-3 lg:col-span-2 absolute bottom-20 -left-10 w-48 h-32 bg-gray-200 rounded-2xl transform rotate-12 opacity-60 hidden lg:block">
           <div class="w-full h-full flex items-center justify-center">
-            <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-            </svg>
+            <UIcon name="i-lucide-image" class="w-16 h-16 text-gray-400" />
           </div>
         </div>
 
         <!-- Bottom Right Image -->
         <div class="col-span-3 lg:col-span-2 absolute bottom-40 -right-10 w-48 h-32 bg-gray-200 rounded-2xl transform -rotate-12 opacity-60 hidden lg:block">
           <div class="w-full h-full flex items-center justify-center">
-            <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-            </svg>
+            <UIcon name="i-lucide-image" class="w-16 h-16 text-gray-400" />
           </div>
         </div>
       </div>
