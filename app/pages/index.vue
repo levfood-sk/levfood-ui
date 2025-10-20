@@ -239,6 +239,46 @@ onMounted(() => {
       <Gallery 
         title="Lorem Ipsum Gallery"
         subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+        layout="side"
+      />
+    </div>
+
+    <!-- Team Section -->
+    <div class="overflow-hidden">
+      <Gallery 
+        title="Lorem Ipsum Team"
+        subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+        layout="top"
+        :items="[
+          {
+            id: 1,
+            name: 'Human 1',
+            role: 'Lorem Ipsum',
+            description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.',
+            icon: 'i-lucide-user'
+          },
+          {
+            id: 2,
+            name: 'Human 2',
+            role: 'Lorem Ipsum',
+            description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.',
+            icon: 'i-lucide-user'
+          },
+          {
+            id: 3,
+            name: 'Human 3',
+            role: 'Lorem Ipsum',
+            description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.',
+            icon: 'i-lucide-user'
+          },
+          {
+            id: 4,
+            name: 'Human 4',
+            role: 'Lorem Ipsum',
+            description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.',
+            icon: 'i-lucide-user'
+          }
+        ]"
       />
     </div>
   </div>
