@@ -233,5 +233,13 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Gallery Section -->
+    <div class="overflow-hidden">
+      <Gallery 
+        title="Lorem Ipsum Gallery"
+        subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+      />
+    </div>
   </div>
 </template>
