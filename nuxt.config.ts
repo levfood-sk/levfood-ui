@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxt/icon', '@unlok-co/nuxt-stripe'],
+  modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxt/icon', '@unlok-co/nuxt-stripe', '@nuxt/scripts'],
   css: ['~/assets/css/main.css'],
 
   // App metadata
@@ -42,6 +42,7 @@ export default defineNuxtConfig({
       firebaseAppId: process.env.FIREBASE_APP_ID,
       firebaseVapidKey: process.env.FIREBASE_VAPID_KEY,
       appUrl: process.env.APP_URL || 'http://localhost:3000',
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
     },
     firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT,
     goPayClientId: process.env.GOPAY_CLIENT_ID,

@@ -281,5 +281,52 @@ onMounted(() => {
         ]"
       />
     </div>
+
+    <!-- Contact Section -->
+    <div class="container mx-auto px-4 py-20">
+      <!-- Section Header -->
+      <div class="text-center mb-16">
+        <h2 class="text-xl font-bold text-slate-900 mb-4">Lorem Ipsum</h2>
+        <p class="text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.
+        </p>
+      </div>
+
+      <!-- Contact Grid -->
+      <div class="grid grid-cols-12 gap-8">
+        <!-- Contact Information -->
+        <div class="col-span-12 lg:col-span-4">
+          <div class="space-y-6">
+            <!-- Contact Info Cards -->
+            <div class="flex flex-col gap-4">
+              <UIcon name="i-lucide-map-pin" class="w-6 h-6 text-slate-600" />
+              <div>
+                <h4 class="font-semibold text-slate-900">Address</h4>
+                <p class="text-slate-600">Filipa Hraška 135, 012 01 Žilina</p>
+              </div>
+            </div>
+            <div class="flex flex-col gap-4">
+              <UIcon name="i-lucide-phone" class="w-6 h-6 text-slate-600" />
+              <div>
+                <h4 class="font-semibold text-slate-900">Phone</h4>
+                <p class="text-slate-600">+421 912 345 678</p>
+              </div>
+            </div>
+            <div class="flex flex-col gap-4">
+              <UIcon name="i-lucide-building" class="w-6 h-6 text-slate-600" />
+              <div>
+                <h4 class="font-semibold text-slate-900">Office</h4>
+                <p class="text-slate-600">Filipa Hraška 135, 012 01 Žilina</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div class="col-span-12 lg:col-span-8">
+          <ContactMap />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
