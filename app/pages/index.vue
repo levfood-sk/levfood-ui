@@ -1,6 +1,81 @@
 <script setup lang="ts">
 const { user } = useAuth()
 
+// Import SVG icons
+import chefHatIcon from '~/assets/icons/chef-hat.svg'
+import wheatIcon from '~/assets/icons/wheat.svg'
+import foodBoxIcon from '~/assets/icons/food-box.svg'
+import tomatoIcon from '~/assets/icons/tomato.svg'
+import logoLongIcon from '~/assets/icons/logo-long.svg'
+import lionBulletIcon from '~/assets/icons/lion-bullet.svg'
+import packagesIcon from '~/assets/icons/packages.svg'
+import mobileIcon from '~/assets/icons/mobile.svg'
+import numbersIcon from '~/assets/icons/numbers.svg'
+import smallHatIcon from '~/assets/icons/small-hat.svg'
+import lionFaceIcon from '~/assets/icons/lion-face.svg'
+import vegetableIcon from '~/assets/icons/vegetable.svg'
+import saltShakersIcon from '~/assets/icons/salt-shakers.svg'
+import timerEggIcon from '~/assets/icons/timer-egg.svg'
+import levMapIcon from '~/assets/icons/lev-map.svg'
+import mapPinIcon from '~/assets/icons/map-pin.svg'
+import phoneIcon from '~/assets/icons/phone-icon.svg'
+import emailIcon from '~/assets/icons/email-icon.svg'
+
+// Import app badges
+import appleBadgeIcon from '~/assets/img/apple-badge.svg'
+import playBadgeIcon from '~/assets/img/play-badge.svg'
+
+// Days options for pricing dropdowns
+const daysOptions = [
+  { label: '5 dní', value: '5' },
+  { label: '6 dní', value: '6' }
+]
+
+// Selected days for each package
+const economyDays = ref('')
+const standardDays = ref('')
+const premiumDays = ref('')
+
+// Features list
+const features = [
+  'Sleduj svoj plán stravovania prehľadne v kalendári',
+  'Výber si jedlá podľa chuti alebo preferencií',
+  'Lokálne suroviny, eko balenie, férový prístup',
+  'Uprav si doručenie, pozastav objednávku'
+]
+
+// Team members
+const teamMembers = [
+  {
+    id: 1,
+    name: 'Pavel Kotlár',
+    role: 'Šéfkuchár',
+    description: 'Varím srdcom. Každé jedlo, ktoré pošleme, musí byť také, aké by som pripravil pre rodinu.',
+    icon: 'i-lucide-user'
+  },
+  {
+    id: 2,
+    name: 'Zuzana Stehlíková',
+    role: 'Balenie a logistika',
+    description: 'Načasované, čerstvé, spoľhlivé – to je môj cieľ každý deň.',
+    icon: 'i-lucide-user'
+  },
+  {
+    id: 3,
+    name: 'XY',
+    role: 'Pomocná sila v kuchyni',
+    description: 'Každý deň začínam s vôňou čerstvých surovín. Môjou úlohou je, aby v kuchyni všetko klapalo do posledného detailu.',
+    icon: 'i-lucide-user'
+  },
+  {
+    id: 4,
+    name: 'Mgr. Filip',
+    role: 'Nutričný špecialista',
+    description: 'Zdravé stravovanie nie je o obmedzovaní – je o rovnováhe. Každé jedlo navrhujem tak, aby podporovalo tvoje ciele a chuťové bunky.',
+    icon: 'i-lucide-user'
+  }
+]
+
 // Redirect to dashboard if already logged in (client-side only)
 onMounted(() => {
   if (user.value) {
@@ -12,321 +87,543 @@ onMounted(() => {
 <template>
   <div class="min-h-screen bg-gradient-professional">
     <AuthLoading />
-    <!-- Navigation -->
-    <nav class="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
-      <div class="container mx-auto px-4">
-        <div class="grid grid-cols-12 gap-4 items-center h-16">
-          <div class="col-span-6 flex items-center">
-            <h1 class="text-2xl font-bold text-slate-900">Levfood</h1>
-          </div>
-          <div class="col-span-6 flex items-center justify-end gap-3">
-            <NuxtLink to="/login">
-              <UButton variant="ghost">Sign in</UButton>
-            </NuxtLink>
-            <NuxtLink to="/register">
-              <UButton>Get Started</UButton>
+    
+    <!-- Hero Section -->
+    <div class="relative min-h-[80vh] pb-[30px] lg:pb-[200px] pt-[50px] flex items-center justify-center bg-[var(--color-dark-green)] overflow-hidden">
+      <!-- Navigation - Overlay on top of hero -->
+      <nav class="absolute top-0 left-0 right-0 z-50 bg-[var(--color-dark-green)]">
+        <div class="container mx-auto px-4">
+          <div class="flex items-center justify-center h-16 mt-6">
+            <NuxtLink to="/" class="flex items-center">
+              <img 
+                :src="logoLongIcon" 
+                alt="LevFood logo" 
+                class="h-8 sm:h-10 logo-beige"
+              />
             </NuxtLink>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+      <!-- Corner Illustrations -->
+      <!-- Top Left: Chef Hat -->
+      <!-- <img 
+        :src="chefHatIcon" 
+        alt="Chef hat" 
+        class="absolute top-[40px] left-[150px] w-24 h-32 sm:w-32 sm:h-40 lg:w-40 lg:h-48"
+      /> -->
+      
+      <!-- Top Right: Wheat -->
+      <!-- <img 
+        :src="wheatIcon" 
+        alt="Wheat" 
+        class="absolute top-[180px] right-[60px] w-16 h-20 sm:w-20 sm:h-24 lg:w-24 lg:h-28"
+      /> -->
+      
+      <!-- Bottom Left: Food Box -->
+      <!-- <img 
+        :src="foodBoxIcon" 
+        alt="Food box" 
+        class="absolute bottom-[100px] left-[150px] w-48 h-48 sm:w-40 sm:h-40 lg:w-48 lg:h-48"
+      /> -->
+      
+      <!-- Bottom Right: Tomato -->
+      <!-- <img 
+        :src="tomatoIcon" 
+        alt="Tomato" 
+        class="absolute bottom-[300px] right-[170px] w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28"
+      /> -->
 
-    <!-- Hero Section -->
-    <div class="container mx-auto px-4 py-20 lg:py-28">
-      <div class="grid grid-cols-12 gap-4">
-        <div class="col-span-12 text-center">
-          <h1 class="text-4xl font-bold text-slate-900 sm:text-6xl lg:text-7xl tracking-tight">
-            Lorem Ipsum
+      <!-- Main Content -->
+      <div class="container mx-auto px-4 py-28 lg:py-32 relative z-10">
+        <div class="text-center">
+
+          <!-- Main Heading -->
+          <h1 class="text-5xl sm:text-6xl lg:text-6xl xl:text-8xl font-bold text-[var(--color-orange)] tracking-tight leading-tight mb-6 text-sofia">
+            Chutne, <br/> vyvážene a <br/> bez starostí.
           </h1>
-          <p class="mt-6 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.
+
+          <!-- Description -->
+          <p class="mt-6 max-w-2xl mx-auto text-base sm:text-lg text-white leading-relaxed">
+            LevFood prináša chutné a vyvážené jedlá priamo k tvojim dverám v Leviciach a okolí. Zdravé stravovanie nemusí byť zložité — stačí si vybrať balíček, ktorý ti sedí a o zvyšok sa postaráme my.
           </p>
-          <div class="mt-10 flex justify-center gap-4">
-            <NuxtLink>
-              <UButton size="lg">Button</UButton>
+
+          <!-- CTA Buttons -->
+          <div class="mt-10 flex flex-col sm:flex-row justify-center gap-6">
+            <NuxtLink to="/form">
+              <button class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg">
+                Objednaj si balíček
+              </button>
             </NuxtLink>
-            <NuxtLink>
-              <UButton size="lg" variant="outline">Button</UButton>
+            <NuxtLink to="#features">
+              <button class="hero-button border-2 border-[var(--color-orange)] text-[var(--color-orange)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:bg-[var(--color-orange)] hover:text-[var(--color-dark-green)] hover:scale-105 hover:shadow-lg">
+                Zisti viac
+              </button>
             </NuxtLink>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Features Section -->
-    <div class="container mx-auto px-4 py-20">
-      <div class="grid grid-cols-12 gap-4 items-center">
-        <!-- Image Placeholder -->
-        <div class="col-span-12 lg:col-span-6 bg-gray-200 rounded-2xl aspect-square flex items-center justify-center">
-          <UIcon name="i-lucide-image" class="w-16 h-16 text-gray-400" />
-        </div>
+    <!-- Features Section Wrapper -->
+    <div class="bg-[var(--color-beige)]">
+      <!-- Features Section -->
+      <div class="bg-[var(--color-dark-green)] pb-[200px] rounded-b-[40px]">
+        <div class="container mx-auto px-4">
+          <div class="flex flex-col items-center">
+            <!-- Features List -->
+            <ul class="space-y-[2.875em] mb-8 flex flex-col items-start">
+              <li v-for="feature in features" :key="feature" class="flex items-center gap-4 max-w-2xl">
+                <img 
+                  :src="lionBulletIcon" 
+                  alt="Bullet" 
+                  class="w-[2.25em] h-[2.25em] flex-shrink-0"
+                />
+                <span class="text-beige text-[1.75rem] md:text-[2rem] font-bold text-left tracking-tight font-condensed">
+                  {{ feature }}
+                </span>
+              </li>
+            </ul>
 
-        <!-- Features List -->
-        <div class="col-span-12 lg:col-span-6 space-y-8">
-          <div v-for="i in 3" :key="i" class="flex gap-4">
-            <div class="flex-shrink-0">
-              <UIcon name="i-lucide-salad" class="w-10 h-10 text-slate-900" />
-            </div>  
-            <div>
-              <h3 class="text-xl font-bold text-slate-900 mb-2">Lorem Ipsum</h3>
-              <p class="text-slate-600">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.</p>
+            <!-- App Download Buttons -->
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+              <a 
+                href="#" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="inline-block"
+              >
+                <img 
+                  :src="appleBadgeIcon" 
+                  alt="Download on the App Store" 
+                  class="h-12 md:h-14 w-auto object-contain"
+                />
+              </a>
+              <a 
+                href="#" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="inline-block"
+              >
+                <img 
+                  :src="playBadgeIcon" 
+                  alt="Get it on Google Play" 
+                  class="h-12 md:h-14 w-auto object-contain"
+                />
+              </a>
             </div>
-          </div>
-
-          <div class="flex justify-center gap-4 pt-4">
-            <UButton size="xl" variant="outline">Button</UButton>
-            <UButton size="xl" variant="outline">Button</UButton>
           </div>
         </div>
       </div>
     </div>
     <!-- Process Section -->
-    <div class="container mx-auto px-4 py-20 relative">
-      <div class="grid grid-cols-12 gap-4">
+    <div class="bg-[var(--color-beige)] overflow-hidden relative">
+      <div class="container mx-auto px-4 py-12 relative">
         <!-- Main Title -->
-        <div class="col-span-12 text-center mb-16">
-          <h2 class="text-xl font-bold text-slate-900 sm:text-6xl lg:text-7xl tracking-tight">
-            Lorem Ipsum
+        <div class="text-center mb-16">
+          <h2 class="text-[4rem] lg:text-[6rem] font-condensed font-bold text-[var(--color-dark-green)] tracking-tight">
+            Ako to funguje?
           </h2>
-          <p class="mt-6 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          <p class="mb-24 max-w-2xl mx-auto text-[1.5rem] lg:text-[2.5rem] font-condensed text-[var(--color-dark-green)] leading-relaxed">
+            Päť krokov k pohodlnému stravovaniu v Leviciach
           </p>
         </div>
 
-        <!-- Process Flow -->
-        <div class="col-span-12 flex flex-col items-center space-y-8">
-          <!-- 4-Step Horizontal Flow -->
-          <div class="flex items-center justify-center space-x-4 sm:space-x-8">
-            <div v-for="i in 4" :key="i" class="flex items-center">
-              <!-- Process Step -->
-              <div class="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-2xl flex items-center justify-center">
-                <UIcon name="i-lucide-image" class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
-              </div>
-              <!-- Arrow (except for last step) -->
-              <div v-if="i < 4" class="ml-4 sm:ml-8">
-                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
+        <!-- Process Flow - Mobile (vertical) -->
+        <div class="flex flex-col lg:hidden items-center mb-24 gap-8">
+          <!-- Step 1 -->
+          <div class="flex flex-col items-center">
+            <img :src="packagesIcon" alt="Packages" class="w-20 h-20 sm:w-24 sm:h-24" />
+            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Vyber si svoj plán</span>
+          </div>
+          
+          <UIcon name="i-lucide-move-down" class="w-8 h-8 sm:w-10 sm:h-10 text-[var(--color-dark-green)]" />
+
+          <!-- Step 2 -->
+          <div class="flex flex-col items-center">
+            <img :src="mobileIcon" alt="Mobile" class="w-20 h-20 sm:w-24 sm:h-24" />
+            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Stiahni si App</span>
+          </div>
+          
+          <UIcon name="i-lucide-move-down" class="w-8 h-8 sm:w-10 sm:h-10 text-[var(--color-dark-green)]" />
+
+          <!-- Step 3 -->
+          <div class="flex flex-col items-center">
+            <img :src="numbersIcon" alt="Numbers" class="w-20 h-20 sm:w-24 sm:h-24" />
+            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Zadaj kód</span>
+          </div>
+          
+          <UIcon name="i-lucide-move-down" class="w-8 h-8 sm:w-10 sm:h-10 text-[var(--color-dark-green)]" />
+
+          <!-- Step 4 -->
+          <div class="flex flex-col items-center">
+            <img :src="smallHatIcon" alt="Chef Hat" class="w-20 h-20 sm:w-24 sm:h-24" />
+            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">My varíme a balíme</span>
+          </div>
+          
+          <UIcon name="i-lucide-move-down" class="w-8 h-8 sm:w-10 sm:h-10 text-[var(--color-dark-green)]" />
+
+          <!-- Step 5 -->
+          <div class="flex flex-col items-center">
+            <img :src="lionFaceIcon" alt="Lion Face" class="w-20 h-20 sm:w-24 sm:h-24" />
+            <span class="text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Ty si len vychutnaj</span>
+          </div>
+        </div>
+
+        <!-- Process Flow - Desktop (horizontal with step 5 centered below) -->
+        <div class="hidden lg:block mb-48">
+          <!-- Main row with 4 steps -->
+          <div class="flex items-center justify-center gap-8 mb-8">
+            <!-- Step 1 -->
+            <div class="flex flex-col items-center">
+              <img :src="packagesIcon" alt="Packages" class="w-24 h-24" />
+              <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">Vyber si svoj plán</span>
+            </div>
+            
+            <UIcon name="i-lucide-move-right" class="w-12 h-12 text-[var(--color-dark-green)] flex-shrink-0" />
+
+            <!-- Step 2 -->
+            <div class="flex flex-col items-center">
+              <img :src="mobileIcon" alt="Mobile" class="w-24 h-24" />
+              <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">Stiahni si App</span>
+            </div>
+            
+            <UIcon name="i-lucide-move-right" class="w-12 h-12 text-[var(--color-dark-green)] flex-shrink-0" />
+
+            <!-- Step 3 -->
+            <div class="flex flex-col items-center">
+              <img :src="numbersIcon" alt="Numbers" class="w-24 h-24" />
+              <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">Zadaj kód</span>
+            </div>
+            
+            <UIcon name="i-lucide-move-right" class="w-12 h-12 text-[var(--color-dark-green)] flex-shrink-0" />
+
+            <!-- Step 4 -->
+            <div class="flex flex-col items-center">
+              <img :src="smallHatIcon" alt="Chef Hat" class="w-24 h-24" />
+              <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">My varíme a balíme</span>
             </div>
           </div>
 
-          <!-- Downward Arrow -->
+          <!-- Arrow down (centered) -->
+          <div class="flex justify-center mb-8">
+            <UIcon name="i-lucide-move-down" class="w-12 h-12 text-[var(--color-dark-green)]" />
+          </div>
+
+          <!-- Step 5 (centered in its own row) -->
           <div class="flex justify-center">
-            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-
-          <!-- Final Step -->
-          <div class="w-24 h-24 sm:w-32 sm:h-32 bg-gray-200 rounded-2xl flex items-center justify-center">
-            <UIcon name="i-lucide-image" class="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />
+            <div class="flex flex-col items-center">
+              <img :src="lionFaceIcon" alt="Lion Face" class="w-24 h-24" />
+              <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">Ty si len vychutnaj</span>
+            </div>
           </div>
         </div>
+      </div>
 
-        <!-- Bottom Left Image -->
-        <div class="col-span-3 lg:col-span-2 absolute bottom-20 -left-10 w-48 h-32 bg-gray-200 rounded-2xl transform rotate-12 opacity-60 hidden lg:block">
-          <div class="w-full h-full flex items-center justify-center">
-            <UIcon name="i-lucide-image" class="w-16 h-16 text-gray-400" />
+      <!-- Decorative Vegetable - Off screen at bottom -->
+      <div class="absolute bottom-[-20px] left-3/4 hidden lg:block">
+        <img :src="vegetableIcon" alt="Vegetable" class="w-[300px]" />
+      </div>
+    </div>
+
+    <!-- Info Section -->
+    <div class="bg-[var(--color-beige)]">
+      <div class="bg-[var(--color-dark-green)] relative overflow-hidden pt-[50px] lg:pt-[200px] lg:pb-[200px] pb-[100px] rounded-[40px]">
+      <div class="container mx-auto px-4 py-20 relative">
+        <div class="grid grid-cols-12 gap-4 items-center relative">
+          <!-- Content -->
+          <div class="col-span-12 lg:col-span-8 relative z-10">
+            <h2 class="text-[4rem] lg:text-[6rem] font-extrabold text-[var(--color-orange)]">
+              LevFood
+            </h2>
+            <p class="text-[1.5rem] lg:text-[2.5rem] font-bold text-[var(--color-orange)] font-condensed mb-12">
+              viac chuti, menej starostí
+            </p>
+            
+            <!-- Feature List -->
+            <ul class="lg:space-y-1 space-y-6">
+              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+                Varíme čerstvo každý deň priamo v Leviciach
+              </li>
+              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+                Vyvážené porcie podľa moderných výživových zásad
+              </li>
+              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+                Sezónne chute
+              </li>
+              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+                Šetríme tvoj čas aj energiu
+              </li>
+              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+                Transparentné zloženie a presné makrá
+              </li>
+              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+                Doručenie priamo k tvojim dverám v Leviciach a okolí
+              </li>
+              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+                Vyzdvihnutie kedykoľvek 24/7
+              </li>
+            </ul>
           </div>
-        </div>
 
-        <!-- Bottom Right Image -->
-        <div class="col-span-3 lg:col-span-2 absolute bottom-40 -right-10 w-48 h-32 bg-gray-200 rounded-2xl transform -rotate-12 opacity-60 hidden lg:block">
-          <div class="w-full h-full flex items-center justify-center">
-            <UIcon name="i-lucide-image" class="w-16 h-16 text-gray-400" />
+          <!-- Lion Bullet - Overflowing on right (half off screen) -->
+          <div class="hidden lg:block absolute right-0 top-1/2 transform -translate-y-[50%] translate-x-[50%] z-0">
+            <img :src="lionBulletIcon" alt="Lion Bullet" class="w-[50vw] h-[50vw] object-cover" />
           </div>
         </div>
       </div>
     </div>
+    </div>
 
     <!-- Pricing Section -->
-    <div class="container mx-auto px-4 py-20">
-      <div class="grid grid-cols-12 gap-4">
+    <div class="bg-[var(--color-beige)] py-[50px] lg:py-[100px] relative">
+      <img :src="saltShakersIcon" alt="Salt Shakers" class="hidden lg:block w-32 h-32 xl:w-48 xl:h-48 absolute top-[20px] left-[50%] translate-x-[150px]" />
+      <div class="container mx-auto px-4">
         <!-- Section Header -->
-        <div class="col-span-12 text-center mb-16">
-          <h2 class="text-xl font-bold text-slate-900 sm:text-6xl lg:text-7xl tracking-tight">
-            Lorem Ipsum
+        <div class="flex items-center justify-center gap-4 lg:mb-8 mb-4">
+          <h2 class="text-[4rem] lg:text-[6rem] font-condensed font-bold text-[var(--color-dark-green)] tracking-tight">
+            Cenník
           </h2>
-          <p class="mt-6 max-w-2xl mx-auto text-lg text-slate-600 leading-relaxed">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        </div>
+        <div class="text-center mb-8">
+          <p class="text-[1.5rem] lg:text-[2.5rem] font-condensed text-[var(--color-dark-green)] leading-relaxed">
+            Vyber si plán, ktorý sedí tvojmu životnému štýlu
           </p>
         </div>
 
         <!-- Pricing Cards -->
-        <div class="col-span-12 lg:col-span-4">
-          <UCard class="h-full">
-            <template #header>
-              <div class="text-start">
-                <h3 class="text-2xl font-bold text-slate-900">Basic plan</h3>
-                <p class="text-slate-600 mt-2">Lorem ipsum dolor sit amet</p>
-              </div>
-            </template>
-            
-            <div class="text-start">
-              <div class="text-5xl font-bold text-slate-900">€19<span class="text-lg font-normal">/mo</span></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Economy Card -->
+          <div class="pricing-card bg-[var(--color-beige)] border-2 border-[var(--color-dark-green)] rounded-[32px] p-6 flex flex-col h-fit relative lg:top-[30px] top-0">
+            <h3 class="text-2xl font-bold text-[var(--color-dark-green)] mb-2">
+              Balíček EKONOMY
+            </h3>
+            <p class="text-[var(--color-dark-green)] mb-6">
+              Pre tých, ktorí chcú chutné jedlo jednoducho a bez komplikácií.
+            </p>
+            <div class="border-t border-[var(--color-dark-green)] my-4"></div>
+            <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
+              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">290€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>
-
-            <template #footer>
-              <UButton block size="lg" class="mb-6">Get started</UButton>
-              
-              <div class="space-y-3">
-                <div v-for="i in 3" :key="i" class="flex items-center gap-3">
-                  <UIcon name="i-lucide-check" class="w-5 h-5 text-green-500" />
-                  <span class="text-slate-600">Feature text goes here</span>
-                </div>
-              </div>
-            </template>
-          </UCard>
-        </div>
-
-        <div class="col-span-12 lg:col-span-4">
-          <UCard class="h-full">
-            <template #header>
-              <div class="text-start">
-                <h3 class="text-2xl font-bold text-slate-900">Business plan</h3>
-                <p class="text-slate-600 mt-2">Lorem ipsum dolor sit amet</p>
-              </div>
-            </template>
-            
-            <div class="text-start">
-              <div class="text-5xl font-bold text-slate-900">€29<span class="text-lg font-normal">/mo</span></div>
+            <div class="mb-6">
+              <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>
+              <USelect 
+                v-model="economyDays"
+                :items="daysOptions" 
+                placeholder="Vyber počet dní"
+                class="pricing-select w-full bg-transparent"
+              />
             </div>
-
-            <template #footer>
-              <UButton block size="lg" class="mb-6">Get started</UButton>
-              
-              <div class="space-y-3">
-                <div v-for="i in 3" :key="i" class="flex items-center gap-3">
-                  <UIcon name="i-lucide-check" class="w-5 h-5 text-green-500" />
-                  <span class="text-slate-600">Feature text goes here</span>
+            <UButton 
+              class="pricing-button bg-[var(--color-dark-green)] text-white mb-6 h-14 text-lg font-bold"
+              block
+            >
+              Objednať EKONOMY
+            </UButton>
+            <div class="border-t border-[var(--color-dark-green)] my-4"></div>
+            <ul class="space-y-3">
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
-              </div>
-            </template>
-          </UCard>
-        </div>
+                <span class="text-[var(--color-dark-green)]">Vyvážené denné menu</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">4 jedlá denne (raňajky + obed s polievkou + večera)</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">Výdaj na prevádzke Nám. Šoltésovej 12 v Leviciach</span>
+              </li>
+            </ul>
+          </div>
 
-        <div class="col-span-12 lg:col-span-4">
-          <UCard class="h-full">
-            <template #header>
-              <div class="text-start">
-                <h3 class="text-xl font-bold text-slate-900">Enterprise plan</h3>
-                <p class="text-slate-600 mt-2">Lorem ipsum dolor sit amet</p>
-              </div>
-            </template>
-            
-            <div class="text-start">
-              <div class="text-5xl font-bold text-slate-900">€49<span class="text-lg font-normal">/mo</span></div>
+          <!-- Standard Card - Highlighted with Orange -->
+          <div class="pricing-card bg-[var(--color-orange)] border-[var(--color-dark-green)] rounded-[32px] p-6 flex flex-col h-fit">
+            <h3 class="text-2xl font-bold text-[var(--color-dark-green)] mb-2">
+              Balíček ŠTANDARD
+            </h3>
+            <p class="text-[var(--color-dark-green)] mb-6">
+              Pre tých, ktorí si potrpia na kvalitu a pestrosť.
+            </p>
+            <div class="border-t border-[var(--color-dark-green)] my-4"></div>
+            <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
+              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">350€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>
-
-            <template #footer>
-              <UButton block size="lg" class="mb-6">Get started</UButton>
-              
-              <div class="space-y-3">
-                <div v-for="i in 3" :key="i" class="flex items-center gap-3">
-                  <UIcon name="i-lucide-check" class="w-5 h-5 text-green-500" />
-                  <span class="text-slate-600">Feature text goes here</span>
+            <div class="mb-6">
+              <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>
+              <USelect 
+                v-model="standardDays"
+                :items="daysOptions" 
+                placeholder="Vyber počet dní"
+                class="pricing-select w-full bg-transparent"
+              />
+            </div>
+            <UButton 
+              class="pricing-button bg-[var(--color-dark-green)] text-white mb-6 h-14 text-lg font-bold"
+              block
+            >
+              Objednať ŠTANDARD
+            </UButton>
+            <div class="border-t border-[var(--color-dark-green)] my-4"></div>
+            <ul class="space-y-3">
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-orange)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
-              </div>
-            </template>
-          </UCard>
+                <span class="text-[var(--color-dark-green)]">5 jedál denne (raňajky + obed s polievkou + olovrant + večera)</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-orange)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">Doručenie na adresu alebo výdaj jedla na prevádzke 24/7</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Premium Card -->
+          <div class="pricing-card bg-[var(--color-beige)] border-2 border-[var(--color-dark-green)] rounded-[32px] p-6 flex flex-col relative lg:top-[30px] top-0">
+            <h3 class="text-2xl font-bold text-[var(--color-dark-green)] mb-2">
+              Balíček PREMIUM
+            </h3>
+            <p class="text-[var(--color-dark-green)] mb-6">
+              Pre tých, ktorí chcú maximum bez kompromisov.
+            </p>
+            <div class="border-t border-[var(--color-dark-green)] my-4"></div>
+            <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
+              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">400€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
+            </div>
+            <div class="mb-6">
+              <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>
+              <USelect 
+                v-model="premiumDays"
+                :items="daysOptions" 
+                placeholder="Vyber počet dní"
+                class="pricing-select w-full bg-transparent text-[var(--color-dark-green)]"
+              />
+            </div>
+            <UButton 
+              class="pricing-button bg-[var(--color-dark-green)] text-white mb-6 h-14 text-lg font-bold"
+              block
+            >
+              Objednať Premium
+            </UButton>
+            <div class="border-t border-[var(--color-dark-green)] my-4"></div>
+            <ul class="space-y-3">
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">6 jedál denne (raňajky + desiata + obed s polievkou + olovrant + večera)</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">variácie s dôrazom na nutričnú rovnováhu</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">Prispôsobenie kalórií a makrotnutrientov tvojim potrebám (Mgr. Filip Dvořáček)</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">Doručenie na adresu alebo výdaj jedla na prevádzke 24/7</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">InBody váženie - kompletná analýza tela (MUDr. Peter Birčák)</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Gallery Section -->
-    <div class="overflow-hidden">
+    <div class="bg-[var(--color-beige)]">
       <Gallery 
-        title="Lorem Ipsum Gallery"
-        subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+        title="Galéria"
+        subtitle=""
         layout="side"
       />
     </div>
 
     <!-- Team Section -->
-    <div class="overflow-hidden">
+    <div class="overflow-hidden bg-[var(--color-beige)] py-20">
       <Gallery 
-        title="Lorem Ipsum Team"
-        subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+        title="Tím, ktorý stojí za prevádzkou LevFood"
+        subtitle="Za každým balíčkom LevFood stoja ľudia, ktorí milujú kvalitné a chutné jedlo. Od šéfkuchára až po vodiča – všetci veríme, že zdravé jedlo má meniť život k lepšiemu."
         layout="top"
-        :items="[
-          {
-            id: 1,
-            name: 'Human 1',
-            role: 'Lorem Ipsum',
-            description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.',
-            icon: 'i-lucide-user'
-          },
-          {
-            id: 2,
-            name: 'Human 2',
-            role: 'Lorem Ipsum',
-            description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.',
-            icon: 'i-lucide-user'
-          },
-          {
-            id: 3,
-            name: 'Human 3',
-            role: 'Lorem Ipsum',
-            description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.',
-            icon: 'i-lucide-user'
-          },
-          {
-            id: 4,
-            name: 'Human 4',
-            role: 'Lorem Ipsum',
-            description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.',
-            icon: 'i-lucide-user'
-          }
-        ]"
+        :timer-egg-icon="timerEggIcon"
+        :items="teamMembers"
       />
     </div>
 
     <!-- Contact Section -->
-    <div class="container mx-auto px-4 py-20">
-      <!-- Section Header -->
-      <div class="text-center mb-16">
-        <h2 class="text-xl font-bold text-slate-900 mb-4">Lorem Ipsum</h2>
-        <p class="text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.
-        </p>
-      </div>
+    <div class="bg-[var(--color-beige)]">
+      <div class="bg-[var(--color-dark-green)] rounded-t-[40px] py-20">
+        <div class="container mx-auto px-4">
+          <!-- Section Header -->
+          <div class="text-center mb-16">
+            <h2 class="text-[4rem] lg:text-[6rem] font-condensed font-bold text-[var(--color-beige)] mb-6 leading-tight">
+              Kontakt
+            </h2>
+          </div>
 
-      <!-- Contact Grid -->
-      <div class="grid grid-cols-12 gap-8">
-        <!-- Contact Information -->
-        <div class="col-span-12 lg:col-span-4">
-          <div class="space-y-6">
-            <!-- Contact Info Cards -->
-            <div class="flex flex-col gap-4">
-              <UIcon name="i-lucide-map-pin" class="w-6 h-6 text-slate-600" />
-              <div>
-                <h4 class="font-semibold text-slate-900">Address</h4>
-                <p class="text-slate-600">Filipa Hraška 135, 012 01 Žilina</p>
+          <!-- Contact Grid -->
+          <div class="flex flex-col lg:grid lg:grid-cols-12 gap-8 lg:items-center">
+            <!-- Contact Information -->
+            <div class="lg:col-span-7 space-y-8 order-1">
+              <!-- Address -->
+              <div class="flex items-start gap-4">
+                <img :src="mapPinIcon" alt="Adresa" class="w-8 h-8 flex-shrink-0" />
+                <div>
+                  <h4 class="font-condensed text-2xl font-bold text-[var(--color-beige)] mb-2">Adresa</h4>
+                  <p class="text-lg text-[var(--color-beige)]">Nám. sv. Michala 5<br/>934 01 Levice</p>
+                </div>
+              </div>
+              
+              <!-- Phone -->
+              <div class="flex items-start gap-4">
+                <img :src="phoneIcon" alt="Telefón" class="w-8 h-8 flex-shrink-0" />
+                <div>
+                  <h4 class="font-condensed text-2xl font-bold text-[var(--color-beige)] mb-2">Telefón</h4>
+                  <a href="tel:+421905000000" class="text-lg text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors">+421 905 000 000</a>
+                </div>
+              </div>
+              
+              <!-- Email -->
+              <div class="flex items-start gap-4">
+                <img :src="emailIcon" alt="Email" class="w-8 h-8 flex-shrink-0" />
+                <div>
+                  <h4 class="font-condensed text-2xl font-bold text-[var(--color-beige)] mb-2">Email</h4>
+                  <a href="mailto:info@levfood.sk" class="text-lg text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors">info@levfood.sk</a>
+                </div>
               </div>
             </div>
-            <div class="flex flex-col gap-4">
-              <UIcon name="i-lucide-phone" class="w-6 h-6 text-slate-600" />
-              <div>
-                <h4 class="font-semibold text-slate-900">Phone</h4>
-                <p class="text-slate-600">+421 912 345 678</p>
-              </div>
-            </div>
-            <div class="flex flex-col gap-4">
-              <UIcon name="i-lucide-building" class="w-6 h-6 text-slate-600" />
-              <div>
-                <h4 class="font-semibold text-slate-900">Office</h4>
-                <p class="text-slate-600">Filipa Hraška 135, 012 01 Žilina</p>
-              </div>
+
+            <!-- Map -->
+            <div class="w-full lg:col-span-5 order-2">
+              <img :src="levMapIcon" alt="Mapa Levice" class="w-full h-auto" />
             </div>
           </div>
         </div>
-
-        <!-- Map -->
-        <div class="col-span-12 lg:col-span-8">
-          <ContactMap />
-        </div>
       </div>
     </div>
+
+    <!-- Footer -->
+    <Footer />
   </div>
 </template>

@@ -1,21 +1,18 @@
+/* Google Fonts - Must be first */
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&family=Sofia+Sans+Condensed:ital,wght@0,1..1000;1,1..1000&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
 @import "tailwindcss";
 @import "@nuxt/ui";
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Sofia Sans', 'Sofia Sans Condensed', system-ui, -apple-system, sans-serif;
+  --font-condensed: 'Sofia Sans Condensed', system-ui, -apple-system, sans-serif;
+  --font-roboto: 'Roboto', system-ui, -apple-system, sans-serif;
 
-  /* Professional color palette - Blue primary */
-  --color-blue-50: #eff6ff;
-  --color-blue-100: #dbeafe;
-  --color-blue-200: #bfdbfe;
-  --color-blue-300: #93c5fd;
-  --color-blue-400: #60a5fa;
-  --color-blue-500: #3b82f6;
-  --color-blue-600: #2563eb;
-  --color-blue-700: #1d4ed8;
-  --color-blue-800: #1e40af;
-  --color-blue-900: #1e3a8a;
-  --color-blue-950: #172554;
+  --color-dark-green: #0E2825;
+  --color-beige: #FCEFE6;
+  --color-orange: #F28E7A;
+
 }
 
 /* Global styles */
@@ -32,4 +29,124 @@ body {
 /* Dark mode background gradient */
 .dark .bg-gradient-professional {
   @apply bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950;
+}
+
+/* Logo beige color filter */
+.logo-beige {
+  filter: brightness(0) saturate(100%) invert(96%) sepia(8%) saturate(2000%) hue-rotate(320deg) brightness(103%) contrast(98%);
+}
+
+/* Alternative: Direct beige color using CSS variables */
+.logo-beige-alt {
+  filter: brightness(0) saturate(0%) invert(97%) sepia(9%) saturate(2800%) hue-rotate(328deg) brightness(101%) contrast(96%);
+}
+
+/* Button font - Roboto */
+button,
+.btn,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+.UButton,
+[class*="UButton"] {
+  font-family: var(--font-roboto) !important;
+}
+
+/* Pricing buttons - Sofia Sans Condensed */
+.pricing-button,
+button.bg-\[var\(--color-dark-green\)\] {
+  font-family: var(--font-condensed) !important;
+  transition: all 0.3s ease !important;
+}
+
+/* Pricing button hover effects */
+.pricing-button:hover {
+  background-color: var(--color-orange) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(14, 40, 37, 0.2) !important;
+}
+
+.pricing-button:active {
+  transform: translateY(0);
+}
+
+/* Pricing cards - all text Sofia Sans Condensed */
+.pricing-card,
+.pricing-card * {
+  font-family: var(--font-condensed) !important;
+}
+
+/* Font condensed utility */
+.font-condensed {
+  font-family: var(--font-condensed);
+}
+
+/* Pricing dropdown styling */
+.pricing-select {
+  width: 100% !important;
+  height: 3.5rem !important;
+}
+
+.pricing-select :deep(.UBaseInput__wrapper) {
+  background: transparent !important;
+  border-color: var(--color-dark-green) !important;
+}
+
+.pricing-select :deep(input) {
+  color: var(--color-dark-green) !important;
+  background: transparent !important;
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  height: 3.5rem !important;
+  padding: 0 1rem !important;
+}
+
+.pricing-select :deep(button) {
+  color: var(--color-dark-green) !important;
+  background: transparent !important;
+  height: 3.5rem !important;
+}
+
+.pricing-select :deep(.UBaseInput__base) {
+  background: transparent !important;
+  border-color: var(--color-dark-green) !important;
+  height: 3.5rem !important;
+}
+
+.pricing-select :deep(.UBaseInput__prefix),
+.pricing-select :deep(.UBaseInput__suffix) {
+  background: transparent !important;
+}
+
+/* Dropdown menu */
+.pricing-select :deep(.UPopover__panel) {
+  background: var(--color-beige) !important;
+}
+
+.pricing-select :deep(.UIcon) {
+  color: var(--color-dark-green) !important;
+}
+
+.pricing-select :deep(.UBaseInput__input) {
+  font-family: var(--font-condensed) !important;
+}
+
+/* Pricing select hover effects */
+.pricing-select :deep(.UBaseInput__wrapper:hover) {
+  border-color: var(--color-orange) !important;
+}
+
+.pricing-select :deep(.UBaseInput__wrapper:focus-within) {
+  border-color: var(--color-orange) !important;
+  box-shadow: 0 0 0 3px rgba(242, 142, 122, 0.1) !important;
+}
+
+/* Hide scrollbar for gallery scroll snap */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
