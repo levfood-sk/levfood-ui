@@ -41,6 +41,11 @@ body {
   filter: brightness(0) saturate(0%) invert(97%) sepia(9%) saturate(2800%) hue-rotate(328deg) brightness(101%) contrast(96%);
 }
 
+/* Logo orange color filter */
+.logo-orange {
+  filter: brightness(0) saturate(100%) invert(74%) sepia(22%) saturate(2123%) hue-rotate(327deg) brightness(98%) contrast(93%);
+}
+
 /* Button font - Roboto */
 button,
 .btn,

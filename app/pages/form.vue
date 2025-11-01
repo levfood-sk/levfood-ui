@@ -1,58 +1,218 @@
 <script setup lang="ts">
+import logoLongIcon from '~/assets/icons/logo-long.svg'
+
 const currentStep = ref(1)
 const totalSteps = 4
+const showDeliveryInfoModal = ref(false)
 
 // Form data
 const formData = ref({
   step1: {
-    input1: '',
-    input2: ''
+    package: '' as 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | '',
+    duration: '' as '5' | '6' | ''
   },
   step2: {
-    radioOption: '',
-    selectOption: '',
-    textInput: ''
+    dietaryRequirement: [] as string[],
+    notes: ''
   },
   step3: {
-    question: '',
-    checkboxes: [] as string[],
-    websiteLink: ''
+    fullName: '',
+    phone: '',
+    email: '',
+    address: '',
+    courierNotes: ''
   },
   step4: {
-    selectOption: '',
-    date: ''
+    deliveryStartDate: '',
+    termsAccepted: false
   }
 })
 
 const steps = computed(() => [
-  { number: 1, title: 'Step 1 title', completed: currentStep.value > 1 },
-  { number: 2, title: 'Step 2 title', completed: currentStep.value > 2 },
-  { number: 3, title: 'Step 3 title', completed: currentStep.value > 3 },
-  { number: 4, title: 'Step 4 title', completed: currentStep.value > 4 }
+  { number: 1, title: 'Tvoj balíček', completed: currentStep.value > 1 },
+  { number: 2, title: 'Tvoje preferencie', completed: currentStep.value > 2 },
+  { number: 3, title: 'Doručenie', completed: currentStep.value > 3 },
+  { number: 4, title: 'Platba', completed: currentStep.value > 4 }
 ])
 
-const radioOptions = [
-  { value: 'A', label: 'A', description: 'Answer' },
-  { value: 'B', label: 'B', description: 'Answer' },
-  { value: 'C', label: 'C', description: 'Answer' },
-  { value: 'D', label: 'D', description: 'Answer' }
+// Package options
+const packageOptions = [
+  { value: 'EKONOMY', label: 'EKONOMY', description: '4 jedlá denne / jednoduché, vyvážené menu' },
+  { value: 'ŠTANDARD', label: 'ŠTANDARD', description: '5 jedál denne / pestrá ponuka a viac chutí' },
+  { value: 'PREMIUM', label: 'PREMIUM', description: '6 jedál denne / nutrične prispôsobené' }
 ]
 
-const selectOptions = [
-  { value: '', label: 'Select one...' },
-  { value: 'option1', label: 'Option 1' },
-  { value: 'option2', label: 'Option 2' },
-  { value: 'option3', label: 'Option 3' }
+// Duration options - format for USelect with items
+const durationOptions = [
+  { label: '4 týždne (5 dní v týždni pon-pia)', value: '5' },
+  { label: '4 týždne (6 dní v týždni pon – sob)', value: '6' }
 ]
 
-const checkboxOptions = [
-  { value: 'A', label: 'Option A' },
-  { value: 'B', label: 'Option B' },
-  { value: 'C', label: 'Option C' },
-  { value: 'D', label: 'Option D' },
-  { value: 'E', label: 'Option E' },
-  { value: 'F', label: 'Option F' }
+// Dietary requirement options
+const dietaryOptions = [
+  { value: 'bezlaktózová', label: 'Bezlaktózová' },
+  { value: 'vegetariánska', label: 'Vegetariánska' },
+  { value: 'bezlepková', label: 'Bezlepková' },
+  { value: 'bez-rýb', label: 'Bez rýb' },
+  { value: 'bez-orechov', label: 'Bez orechov' },
+  { value: 'žiadne', label: 'Nemám špeciálne požiadavky' }
 ]
+
+// Pricing
+const packagePrices = {
+  EKONOMY: 290,
+  ŠTANDARD: 350,
+  PREMIUM: 400
+}
+
+const totalPrice = computed(() => {
+  if (!formData.value.step1.package) return 0
+  return packagePrices[formData.value.step1.package] || 0
+})
+
+const daysCount = computed(() => {
+  if (!formData.value.step1.duration) return 0
+  return formData.value.step1.duration === '5' ? 20 : 24
+})
+
+const summaryData = computed(() => {
+  return {
+    package: formData.value.step1.package,
+    days: daysCount.value,
+    price: totalPrice.value,
+    address: formData.value.step3.address
+  }
+})
+
+// Delivery schedule information
+const deliverySchedule = [
+  {
+    orderDay: 'utorok',
+    deliveryDay: 'sobota alebo pondelok',
+    preparedDay: 'piatok alebo sobota obeda'
+  },
+  {
+    orderDay: 'streda',
+    deliveryDay: 'pondelok',
+    preparedDay: 'sobota obeda'
+  },
+  {
+    orderDay: 'štvrtok',
+    deliveryDay: 'utorok',
+    preparedDay: 'pondelok obeda'
+  },
+  {
+    orderDay: 'piatok',
+    deliveryDay: 'streda',
+    preparedDay: 'utorok obeda'
+  },
+  {
+    orderDay: 'sobota',
+    deliveryDay: 'štvrtok',
+    preparedDay: 'streda obeda'
+  },
+  {
+    orderDay: 'nedeľa',
+    deliveryDay: 'štvrtok',
+    preparedDay: 'streda obeda'
+  },
+  {
+    orderDay: 'pondelok',
+    deliveryDay: 'piatok',
+    preparedDay: 'štvrtok obeda'
+  }
+]
+
+// Calculate delivery info based on current day
+function getDeliveryInfo() {
+  const today = new Date()
+  const dayOfWeek = today.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6 // 0 = Sunday, 1 = Monday, etc.
+  
+  const infoMap: Record<0 | 1 | 2 | 3 | 4 | 5 | 6, { delivery: string; prepared: string }> = {
+    2: { // Tuesday
+      delivery: 'sobota alebo pondelok',
+      prepared: 'piatok alebo sobota obeda'
+    },
+    3: { // Wednesday
+      delivery: 'pondelok',
+      prepared: 'sobota obeda'
+    },
+    4: { // Thursday
+      delivery: 'utorok',
+      prepared: 'pondelok obeda'
+    },
+    5: { // Friday
+      delivery: 'streda',
+      prepared: 'utorok obeda'
+    },
+    6: { // Saturday
+      delivery: 'štvrtok',
+      prepared: 'streda obeda'
+    },
+    0: { // Sunday
+      delivery: 'štvrtok',
+      prepared: 'streda obeda'
+    },
+    1: { // Monday
+      delivery: 'piatok',
+      prepared: 'štvrtok obeda'
+    }
+  }
+  
+  return infoMap[dayOfWeek] || { delivery: '', prepared: '' }
+}
+
+const deliveryInfo = computed(() => {
+  return getDeliveryInfo()
+})
+
+// Calculate suggested delivery start date based on current day
+function calculateDeliveryStartDate() {
+  const today = new Date()
+  const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, etc.
+  
+  let daysToAdd = 0
+  
+  switch (dayOfWeek) {
+    case 2: // Tuesday
+      daysToAdd = 3 // Saturday
+      break
+    case 3: // Wednesday
+      daysToAdd = 5 // Monday
+      break
+    case 4: // Thursday
+      daysToAdd = 5 // Tuesday
+      break
+    case 5: // Friday
+      daysToAdd = 5 // Wednesday
+      break
+    case 6: // Saturday
+      daysToAdd = 5 // Thursday
+      break
+    case 0: // Sunday
+      daysToAdd = 4 // Thursday
+      break
+    case 1: // Monday
+      daysToAdd = 4 // Friday
+      break
+  }
+  
+  const deliveryDate = new Date(today)
+  deliveryDate.setDate(today.getDate() + daysToAdd)
+  
+  return deliveryDate.toISOString().split('T')[0]
+}
+
+const suggestedDeliveryDate = computed(() => {
+  return calculateDeliveryStartDate()
+})
+
+// Initialize delivery date with suggested date
+onMounted(() => {
+  if (!formData.value.step4.deliveryStartDate && suggestedDeliveryDate.value) {
+    formData.value.step4.deliveryStartDate = suggestedDeliveryDate.value
+  }
+})
 
 function nextStep() {
   if (currentStep.value < totalSteps) {
@@ -67,25 +227,31 @@ function previousStep() {
 }
 
 function handleCancel() {
-  // Reset form or navigate away
   navigateTo('/')
 }
 
 function handleSubmit() {
-  // Handle form submission
+  if (!formData.value.step4.termsAccepted) {
+    alert('Musíte súhlasiť s obchodnými podmienkami')
+    return
+  }
   console.log('Form submitted:', formData.value)
-  // You can add your submission logic here
+  // Handle form submission logic here
 }
 </script>
 
 <template>
-  <div>
-    <div class="min-h-screen container mx-auto px-4 py-12 max-w-2xl">
-      <!-- Logo placeholder -->
+  <div class="min-h-screen bg-[var(--color-beige)]">
+    <div class="container mx-auto px-4 py-12 max-w-2xl">
+      <!-- Logo -->
       <div class="flex justify-center mb-12">
-        <div class="bg-gray-200 rounded-lg w-32 h-24 flex items-center justify-center">
-          <UIcon name="i-lucide-image" class="w-12 h-12 text-gray-400" />
-        </div>
+        <NuxtLink to="/" class="flex items-center">
+          <img 
+            :src="logoLongIcon" 
+            alt="LevFood logo" 
+            class="h-8 sm:h-10"
+          />
+        </NuxtLink>
       </div>
 
       <!-- Step Indicators -->
@@ -95,8 +261,8 @@ function handleSubmit() {
             <div 
               class="flex items-center justify-center w-8 h-8 rounded-full border-2 transition-colors"
               :class="[
-                step.completed ? 'bg-black border-black text-white' : 
-                currentStep === step.number ? 'border-black text-black' : 
+                step.completed ? 'bg-[var(--color-orange)] border-[var(--color-orange)] text-white' : 
+                currentStep === step.number ? 'border-[var(--color-dark-green)] text-[var(--color-dark-green)]' : 
                 'border-gray-300 text-gray-400'
               ]"
             >
@@ -104,165 +270,307 @@ function handleSubmit() {
               <span v-else class="text-sm font-medium">{{ step.number }}</span>
             </div>
             <span 
-              class="text-xs font-medium hidden sm:inline"
-              :class="currentStep >= step.number ? 'text-black' : 'text-gray-400'"
+              class="text-xs font-medium hidden sm:inline font-condensed"
+              :class="currentStep >= step.number ? 'text-[var(--color-dark-green)]' : 'text-gray-400'"
             >
               {{ step.title }}
             </span>
           </div>
-          <div v-if="index < steps.length - 1" class="w-8 h-0.5 mx-2 bg-gray-300" />
+          <div v-if="index < steps.length - 1" class="w-8 h-0.5 mx-2" :class="currentStep > step.number ? 'bg-[var(--color-orange)]' : 'bg-gray-300'" />
         </div>
       </div>
 
       <!-- Form Content -->
-      <div class="bg-white">
-        <!-- Step 1 -->
+      <div class="space-y-8">
+        <!-- Step 1 - Package Selection -->
         <div v-if="currentStep === 1" class="space-y-8">
           <div class="text-center">
-            <h2 class="text-2xl font-bold text-black mb-3">Lorem Ipsum</h2>
-            <p class="text-sm text-gray-600">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros.</p>
+            <h2 class="text-2xl font-bold text-[var(--color-dark-green)] mb-3 font-condensed">Vyber si svoj plán</h2>
+            <p class="text-sm text-[var(--color-dark-green)]">Každý deň varíme čerstvé, vyvážené jedlá. Vyber si program, ktorý ti najviac sedí.</p>
           </div>
 
           <div class="space-y-6">
-            <UFormField label="Input">
-              <UInput v-model="formData.step1.input1" size="lg" placeholder="" />
-            </UFormField>
-
-            <UFormField label="Input" required>
-              <UInput 
-                v-model="formData.step1.input2" 
-                type="email" 
-                size="lg" 
-                placeholder="email@example.com"
-                icon="i-lucide-mail"
-              >
-                <template #trailing>
-                  <UIcon name="i-lucide-info" class="w-4 h-4 text-gray-400" />
-                </template>
-              </UInput>
-            </UFormField>
-          </div>
-
-          <div class="flex justify-end gap-3">
-            <UButton color="white" size="lg" @click="handleCancel">Cancel</UButton>
-            <UButton color="black" size="lg" @click="nextStep">Next</UButton>
-          </div>
-        </div>
-
-        <!-- Step 2 -->
-        <div v-if="currentStep === 2" class="space-y-8">
-          <div class="text-center">
-            <h2 class="text-2xl font-bold text-black mb-3">Lorem ipsum?</h2>
-            <p class="text-sm text-gray-600">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros.</p>
-          </div>
-
-          <div class="space-y-6">
-            <UFormField label="Radio Button">
+            <UFormField label="Balíček" class="w-full">
               <URadioGroup
-                v-model="formData.step2.radioOption"
-                :items="radioOptions"
+                v-model="formData.step1.package"
+                :items="packageOptions"
                 variant="table"
                 color="neutral"
                 size="lg"
                 orientation="vertical"
+                class="w-full"
               />
             </UFormField>
 
-            <UFormField label="Select an option">
+            <UFormField label="Dĺžka objednávky" class="w-full">
               <USelect 
-                v-model="formData.step2.selectOption" 
-                :options="selectOptions"
-                option-attribute="label"
-                value-attribute="value"
-                size="lg"
+                v-model="formData.step1.duration" 
+                :items="durationOptions"
+                placeholder="Vyber dĺžku objednávky"
+                class="pricing-select w-full bg-transparent"
               />
-            </UFormField>
-
-            <UFormField label="Input">
-              <UInput v-model="formData.step2.textInput" size="lg" placeholder="" />
             </UFormField>
           </div>
 
           <div class="flex justify-end gap-3">
-            <UButton color="white" size="lg" @click="previousStep">Back</UButton>
-            <UButton color="black" size="lg" @click="nextStep">Next</UButton>
+            <button 
+              class="hero-button border-2 border-[var(--color-orange)] text-[var(--color-orange)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:bg-[var(--color-orange)] hover:text-[var(--color-dark-green)] hover:scale-105 hover:shadow-lg"
+              @click="handleCancel"
+            >
+              Zrušiť
+            </button>
+            <button 
+              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed"
+              @click="nextStep"
+            >
+              Ďalej
+            </button>
           </div>
         </div>
 
-        <!-- Step 3 -->
-        <div v-if="currentStep === 3" class="space-y-8">
+        <!-- Step 2 - Preferences -->
+        <div v-if="currentStep === 2" class="space-y-8">
           <div class="text-center">
-            <h2 class="text-2xl font-bold text-black mb-3">Lorem Ipsum</h2>
-            <p class="text-sm text-gray-600">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros.</p>
+            <h2 class="text-2xl font-bold text-[var(--color-dark-green)] mb-3 font-condensed">Uprav si balíček podľa seba</h2>
+            <p class="text-sm text-[var(--color-dark-green)]">Jedlo ti prispôsobíme tak, aby si si ho naozaj vychutnal/a.</p>
           </div>
 
           <div class="space-y-6">
-            <UFormField label="Question?">
-              <UInput v-model="formData.step3.question" size="lg" placeholder="" />
-            </UFormField>
-
-            <UFormField label="Checkbox">
+            <UFormField label="Máš nejaké špecifické požiadavky na stravu?">
               <UCheckboxGroup
-                v-model="formData.step3.checkboxes"
-                :items="checkboxOptions"
-                variant="table"
+                v-model="formData.step2.dietaryRequirement"
+                :items="dietaryOptions"
+                variant="card"
                 color="neutral"
                 size="lg"
                 orientation="horizontal"
-                class="flex flex-wrap"
+                :ui="{ fieldset: 'flex flex-wrap gap-2' }"
               />
             </UFormField>
 
-            <UFormField label="Website link">
-              <UInput v-model="formData.step3.websiteLink" size="lg" placeholder="" />
+            <UFormField label="Iné poznámky alebo alergie" class="w-full">
+              <UTextarea 
+                v-model="formData.step2.notes" 
+                size="lg"
+                placeholder="Napríklad: nemám rád huby, prosím menej pikantné jedlá…"
+                :rows="4"
+                class="w-full"
+              />
             </UFormField>
           </div>
 
           <div class="flex justify-end gap-3">
-            <UButton color="white" size="lg" @click="previousStep">Back</UButton>
-            <UButton color="black" size="lg" @click="nextStep">Next</UButton>
+            <button 
+              class="hero-button border-2 border-[var(--color-orange)] text-[var(--color-orange)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:bg-[var(--color-orange)] hover:text-[var(--color-dark-green)] hover:scale-105 hover:shadow-lg"
+              @click="previousStep"
+            >
+              Späť
+            </button>
+            <button 
+              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed"
+              @click="nextStep"
+            >
+              Ďalej
+            </button>
           </div>
         </div>
 
-        <!-- Step 4 -->
-        <div v-if="currentStep === 4" class="space-y-8">
+        <!-- Step 3 - Delivery -->
+        <div v-if="currentStep === 3" class="space-y-8">
           <div class="text-center">
-            <h2 class="text-2xl font-bold text-black mb-3">Lorem Ipsum</h2>
-            <p class="text-sm text-gray-600">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros.</p>
+            <h2 class="text-2xl font-bold text-[var(--color-dark-green)] mb-3 font-condensed">Kam ti máme jedlo doručiť?</h2>
+            <p class="text-sm text-[var(--color-dark-green)]">Zabezpečíme doručenie priamo k tvojim dverám v čase od 11:00 do 15:00.</p>
           </div>
 
           <div class="space-y-6">
-            <UFormField label="Select an option">
-              <USelect 
-                v-model="formData.step4.selectOption" 
-                :options="selectOptions"
-                option-attribute="label"
-                value-attribute="value"
-                size="lg"
+            <UFormField label="Meno a priezvisko" required class="w-full">
+              <UInput 
+                v-model="formData.step3.fullName" 
+                size="lg" 
+                placeholder="Ján Dvořáček"
+                class="w-full"
               />
             </UFormField>
 
-            <UFormField label="Date">
+            <UFormField label="Telefónne číslo" required class="w-full">
               <UInput 
-                v-model="formData.step4.date" 
-                type="date"
+                v-model="formData.step3.phone" 
+                size="lg" 
+                placeholder="+421 9XX XXX XXX"
+                type="tel"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="Email" required class="w-full">
+              <UInput 
+                v-model="formData.step3.email" 
+                type="email" 
+                size="lg" 
+                placeholder="email@levfood.sk"
+                icon="i-lucide-mail"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="Adresa doručenia" required class="w-full">
+              <UInput 
+                v-model="formData.step3.address" 
+                size="lg" 
+                placeholder="Ulica, číslo, mesto"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="Poznámka pre kuriéra" class="w-full">
+              <UTextarea 
+                v-model="formData.step3.courierNotes" 
                 size="lg"
-                icon="i-lucide-calendar"
-                placeholder="dd/mm/yy"
+                placeholder="Napríklad: žltý dom, 4. naľavo…"
+                :rows="3"
+                class="w-full"
               />
             </UFormField>
           </div>
 
           <div class="flex justify-end gap-3">
-            <UButton color="white" size="lg" @click="previousStep">Back</UButton>
-            <UButton color="black" size="lg" @click="handleSubmit">Pay</UButton>
+            <button 
+              class="hero-button border-2 border-[var(--color-orange)] text-[var(--color-orange)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:bg-[var(--color-orange)] hover:text-[var(--color-dark-green)] hover:scale-105 hover:shadow-lg"
+              @click="previousStep"
+            >
+              Späť
+            </button>
+            <button 
+              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed"
+              @click="nextStep"
+            >
+              Ďalej
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 4 - Payment -->
+        <div v-if="currentStep === 4" class="space-y-8">
+          <div class="text-center">
+            <h2 class="text-2xl font-bold text-[var(--color-dark-green)] mb-3 font-condensed">Zhrnutie objednávky a platba</h2>
+            <p class="text-sm text-[var(--color-dark-green)]">Skontroluj údaje a dokonči objednávku.</p>
+          </div>
+
+          <!-- Summary Section -->
+          <div class="bg-white rounded-lg p-6 mb-6">
+            <h3 class="text-lg font-bold text-[var(--color-dark-green)] mb-4 font-condensed">Zhrnutie</h3>
+            <div class="space-y-2 text-[var(--color-dark-green)]">
+              <div class="flex justify-between">
+                <span>Balíček:</span>
+                <span class="font-semibold">{{ summaryData.package || '-' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Počet dní:</span>
+                <span class="font-semibold">{{ summaryData.days || '-' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Cena spolu:</span>
+                <span class="font-semibold">{{ summaryData.price ? `${summaryData.price}€` : '-' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Doručenie:</span>
+                <span class="font-semibold">{{ summaryData.address || '-' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-6">
+            <UFormField label="Začiatok dodávky" class="w-full">
+              <div class="flex items-center gap-2">
+                <UInput 
+                  v-model="formData.step4.deliveryStartDate" 
+                  type="date"
+                  size="lg"
+                  icon="i-lucide-calendar"
+                  placeholder="dd/mm/rrrr"
+                  class="flex-1"
+                />
+                <UButton
+                  variant="ghost"
+                  color="neutral"
+                  @click="showDeliveryInfoModal = true"
+                  class="text-[var(--color-dark-green)]"
+                >
+                  <UIcon name="i-lucide-info" class="w-5 h-5" />
+                </UButton>
+              </div>
+            </UFormField>
+
+            <UFormField>
+              <div class="flex items-start gap-2">
+                <UCheckbox 
+                  v-model="formData.step4.termsAccepted"
+                />
+                <label class="text-sm text-[var(--color-dark-green)]">
+                  Súhlasím s <a href="#" class="underline hover:text-[var(--color-orange)]">obchodnými podmienkami</a>, <a href="#" class="underline hover:text-[var(--color-orange)]">zásadami ochrany údajov</a> a spracovaním osobných údajov pre účely objednávky.
+                </label>
+              </div>
+            </UFormField>
+          </div>
+
+          <div class="flex justify-end gap-3">
+            <button 
+              class="hero-button border-2 border-[var(--color-orange)] text-[var(--color-orange)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:bg-[var(--color-orange)] hover:text-[var(--color-dark-green)] hover:scale-105 hover:shadow-lg"
+              @click="previousStep"
+            >
+              Späť
+            </button>
+            <button 
+              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed"
+              @click="handleSubmit"
+            >
+              Zaplatiť a dokončiť objednávku
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Footer -->
-    <Footer />
-  </div>
-</template>
+    <!-- Delivery Info Modal -->
+    <UModal v-model:open="showDeliveryInfoModal">
+      <template #header>
+        <h3 class="text-xl font-bold text-[var(--color-dark-green)] font-condensed">Kedy dostanem svoje jedlo?</h3>
+      </template>
+      <template #body>
+        <div class="space-y-4">
+          <p class="text-[var(--color-dark-green)] mb-4">
+            Načasovanie doručenia závisí od dňa, keď vytvoríš objednávku. Tu je prehľadný kalendár:
+          </p>
+          
+          <div class="space-y-3">
+            <div 
+              v-for="(schedule, index) in deliverySchedule" 
+              :key="index"
+              class="bg-[var(--color-beige)] rounded-lg p-4 border border-[var(--color-dark-green)]/20"
+            >
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                <span class="font-semibold text-[var(--color-dark-green)] capitalize">
+                  Ak objednáš v {{ schedule.orderDay }}:
+                </span>
+                <span class="text-[var(--color-dark-green)]">
+                  → Jedlo dostaneš v <strong>{{ schedule.deliveryDay }}</strong> (pripravené bude od <strong>{{ schedule.preparedDay }}</strong>)
+                </span>
+              </div>
+            </div>
+          </div>
 
+          <div v-if="deliveryInfo.delivery" class="mt-6 p-4 bg-[var(--color-orange)]/20 rounded-lg border border-[var(--color-orange)]">
+            <p class="text-[var(--color-dark-green)] font-semibold">
+              <UIcon name="i-lucide-info" class="w-5 h-5 inline mr-2" />
+              Tvoja objednávka dnes: Jedlo bude pripravené od <strong>{{ deliveryInfo.prepared }}</strong> a doručíme ho v <strong>{{ deliveryInfo.delivery }}</strong>.
+            </p>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    
+  </div>
+  <!-- Footer -->
+  <Footer />
+</template>
