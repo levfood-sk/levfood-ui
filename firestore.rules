@@ -1,0 +1,30 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Modal collection - only authenticated users can read/write
+    match /modal/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // You can add more collections here as your app grows
+    // For example:
+    // match /orders/{orderId} {
+    //   allow read: if isAuthenticated();
+    //   allow create: if isAuthenticated();
+    //   allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    // }
+
+    // Default: deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

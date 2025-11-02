@@ -65,6 +65,11 @@ const navItems = [
     exact: true,
   },
   {
+    label: 'CMS - Modal',
+    icon: 'i-heroicons-window',
+    to: '/dashboard/cms-modal',
+  },
+  {
     label: 'Push Notifications',
     icon: 'i-heroicons-bell',
     to: '/dashboard/notifications',

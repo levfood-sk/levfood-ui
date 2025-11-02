@@ -155,6 +155,16 @@ export default defineAppConfig({
           }
         }
       ]
+    },
+    switch: {
+      variants: {
+        color: {
+          orange: {
+            base: 'bg-gray-200 data-[state=checked]:bg-orange-500',
+            thumb: 'bg-white'
+          }
+        }
+      }
     }
   }
 })
