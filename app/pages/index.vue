@@ -1,29 +1,25 @@
 <script setup lang="ts">
 const { user } = useAuth()
 
-// Import SVG icons
-import chefHatIcon from '~/assets/icons/chef-hat.svg'
-import wheatIcon from '~/assets/icons/wheat.svg'
-import foodBoxIcon from '~/assets/icons/food-box.svg'
-import tomatoIcon from '~/assets/icons/tomato.svg'
-import logoLongIcon from '~/assets/icons/logo-long.svg'
+// Import simple icons as components (for Tailwind styling)
+import EmailIcon from '~/assets/icons/email-icon.svg?component'
+import PhoneIcon from '~/assets/icons/phone-icon.svg?component'
+import MapPinIcon from '~/assets/icons/map-pin.svg?component'
+
+// Import decorative/multi-color SVGs and images as URLs (keep as images)
+import appleBadgeIcon from '~/assets/img/apple-badge.svg'
+import playBadgeIcon from '~/assets/img/play-badge.svg'
+import levMapIcon from '~/assets/icons/lev-map.svg'
 import lionBulletIcon from '~/assets/icons/lion-bullet.svg'
+import vegetableIcon from '~/assets/icons/vegetable.svg'
+import saltShakersIcon from '~/assets/icons/salt-shakers.svg'
+import logoLongIcon from '~/assets/icons/logo-long.svg'
+import timerEggIcon from '~/assets/icons/timer-egg.svg'
 import packagesIcon from '~/assets/icons/packages.svg'
 import mobileIcon from '~/assets/icons/mobile.svg'
 import numbersIcon from '~/assets/icons/numbers.svg'
 import smallHatIcon from '~/assets/icons/small-hat.svg'
 import lionFaceIcon from '~/assets/icons/lion-face.svg'
-import vegetableIcon from '~/assets/icons/vegetable.svg'
-import saltShakersIcon from '~/assets/icons/salt-shakers.svg'
-import timerEggIcon from '~/assets/icons/timer-egg.svg'
-import levMapIcon from '~/assets/icons/lev-map.svg'
-import mapPinIcon from '~/assets/icons/map-pin.svg'
-import phoneIcon from '~/assets/icons/phone-icon.svg'
-import emailIcon from '~/assets/icons/email-icon.svg'
-
-// Import app badges
-import appleBadgeIcon from '~/assets/img/apple-badge.svg'
-import playBadgeIcon from '~/assets/img/play-badge.svg'
 
 // Days options for pricing dropdowns
 const daysOptions = [
@@ -98,7 +94,7 @@ onMounted(() => {
               <img 
                 :src="logoLongIcon" 
                 alt="LevFood logo" 
-                class="h-8 sm:h-10 logo-beige"
+                class="w-[240px] h-auto"
               />
             </NuxtLink>
           </div>
@@ -138,24 +134,24 @@ onMounted(() => {
         <div class="text-center">
 
           <!-- Main Heading -->
-          <h1 class="text-5xl sm:text-6xl lg:text-6xl xl:text-8xl font-bold text-[var(--color-orange)] tracking-tight leading-tight mb-6 text-sofia">
+          <h1 class="md:text-[128px] sm:text-[96px] text-[64px] leading-[84%] font-bold text-[var(--color-orange)] tracking-tight mb-6 text-sofia">
             Chutne, <br/> vyvážene a <br/> bez starostí.
           </h1>
 
           <!-- Description -->
-          <p class="mt-6 max-w-2xl mx-auto text-base sm:text-lg text-white leading-relaxed">
-            LevFood prináša chutné a vyvážené jedlá priamo k tvojim dverám v Leviciach a okolí. Zdravé stravovanie nemusí byť zložité — stačí si vybrať balíček, ktorý ti sedí a o zvyšok sa postaráme my.
+          <p class="mt-6 mx-auto text-[18px] leading-[150%] text-white">
+            LevFood prináša chutné a vyvážené jedlá priamo k tvojim dverám v Leviciach a okolí. Zdravé stravovanie nemusí byť zložité – stačí si vybrať balíček, ktorý ti sedí a o zvyšok sa postarámemy.
           </p>
 
           <!-- CTA Buttons -->
           <div class="mt-10 flex flex-col sm:flex-row justify-center gap-6">
             <NuxtLink to="/form">
-              <button class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg">
+              <button class="btn-primary">
                 Objednaj si balíček
               </button>
             </NuxtLink>
             <NuxtLink to="#features">
-              <button class="hero-button border-2 border-[var(--color-orange)] text-[var(--color-orange)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:bg-[var(--color-orange)] hover:text-[var(--color-dark-green)] hover:scale-105 hover:shadow-lg">
+              <button class="btn-secondary">
                 Zisti viac
               </button>
             </NuxtLink>
@@ -217,22 +213,22 @@ onMounted(() => {
     </div>
     <!-- Process Section -->
     <div class="bg-[var(--color-beige)] overflow-hidden relative">
-      <div class="container mx-auto px-4 py-12 relative">
+      <div class="container mx-auto px-4 py-12 px-2 py-24 relative">
         <!-- Main Title -->
-        <div class="text-center mb-16">
-          <h2 class="text-[4rem] lg:text-[6rem] font-condensed font-bold text-[var(--color-dark-green)] tracking-tight">
+        <div class="text-center">
+          <h2 class="md:text-[96px] sm:text-[72px] text-[64px] leading-[120%] font-condensed font-extrabold text-[var(--color-dark-green)] tracking-tight">
             Ako to funguje?
           </h2>
-          <p class="mb-24 max-w-2xl mx-auto text-[1.5rem] lg:text-[2.5rem] font-condensed text-[var(--color-dark-green)] leading-relaxed">
+          <p class="md:text-[40px] sm:text-[32px] text-[24px] lg:mb-[100px] mb-[80px] leading-[150%] font-condensed text-[var(--color-dark-green)]">
             Päť krokov k pohodlnému stravovaniu v Leviciach
           </p>
         </div>
 
         <!-- Process Flow - Mobile (vertical) -->
-        <div class="flex flex-col lg:hidden items-center mb-24 gap-8">
+        <div class="flex flex-col lg:hidden items-center gap-8">
           <!-- Step 1 -->
           <div class="flex flex-col items-center">
-            <img :src="packagesIcon" alt="Packages" class="w-20 h-20 sm:w-24 sm:h-24" />
+            <img :src="packagesIcon" alt="Packages" class="w-20 h-20 sm:w-24 sm:h-24 text-[var(--color-dark-green)]" />
             <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Vyber si svoj plán</span>
           </div>
           
@@ -240,7 +236,7 @@ onMounted(() => {
 
           <!-- Step 2 -->
           <div class="flex flex-col items-center">
-            <img :src="mobileIcon" alt="Mobile" class="w-20 h-20 sm:w-24 sm:h-24" />
+            <img :src="mobileIcon" alt="Mobile" class="w-20 h-20 sm:w-24 sm:h-24 text-[var(--color-dark-green)]" />
             <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Stiahni si App</span>
           </div>
           
@@ -248,7 +244,7 @@ onMounted(() => {
 
           <!-- Step 3 -->
           <div class="flex flex-col items-center">
-            <img :src="numbersIcon" alt="Numbers" class="w-20 h-20 sm:w-24 sm:h-24" />
+            <img :src="numbersIcon" alt="Numbers" class="w-20 h-20 sm:w-24 sm:h-24 text-[var(--color-dark-green)]" />
             <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Zadaj kód</span>
           </div>
           
@@ -256,7 +252,7 @@ onMounted(() => {
 
           <!-- Step 4 -->
           <div class="flex flex-col items-center">
-            <img :src="smallHatIcon" alt="Chef Hat" class="w-20 h-20 sm:w-24 sm:h-24" />
+            <img :src="smallHatIcon" alt="Small Hat" class="w-20 h-20 sm:w-24 sm:h-24 text-[var(--color-dark-green)]" />
             <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">My varíme a balíme</span>
           </div>
           
@@ -264,7 +260,7 @@ onMounted(() => {
 
           <!-- Step 5 -->
           <div class="flex flex-col items-center">
-            <img :src="lionFaceIcon" alt="Lion Face" class="w-20 h-20 sm:w-24 sm:h-24" />
+            <img :src="lionFaceIcon" alt="Lion Face" class="w-20 h-20 sm:w-24 sm:h-24 text-[var(--color-dark-green)]" />
             <span class="text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Ty si len vychutnaj</span>
           </div>
         </div>
@@ -274,33 +270,33 @@ onMounted(() => {
           <!-- Main row with 4 steps -->
           <div class="flex items-center justify-center gap-8 mb-8">
             <!-- Step 1 -->
-            <div class="flex flex-col items-center">
-              <img :src="packagesIcon" alt="Packages" class="w-24 h-24" />
-              <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">Vyber si svoj plán</span>
+            <div class="flex flex-row items-center">
+              <span class="mr-4 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">Vyber si svoj plán</span>
+              <img :src="packagesIcon" alt="Packages" class="h-[60px] text-[var(--color-dark-green)]" />
             </div>
             
             <UIcon name="i-lucide-move-right" class="w-12 h-12 text-[var(--color-dark-green)] flex-shrink-0" />
 
             <!-- Step 2 -->
-            <div class="flex flex-col items-center">
-              <img :src="mobileIcon" alt="Mobile" class="w-24 h-24" />
-              <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">Stiahni si App</span>
+            <div class="flex flex-row items-center">
+              <span class="mr-4 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">Stiahni si App</span>
+              <img :src="mobileIcon" alt="Mobile" class="h-[60px] text-[var(--color-dark-green)]" />
             </div>
             
             <UIcon name="i-lucide-move-right" class="w-12 h-12 text-[var(--color-dark-green)] flex-shrink-0" />
 
             <!-- Step 3 -->
-            <div class="flex flex-col items-center">
-              <img :src="numbersIcon" alt="Numbers" class="w-24 h-24" />
-              <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">Zadaj kód</span>
+            <div class="flex flex-row items-center">
+              <span class="mr-4 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">Zadaj kód</span>
+              <img :src="numbersIcon" alt="Numbers" class="h-[60px] text-[var(--color-dark-green)]" />
             </div>
             
             <UIcon name="i-lucide-move-right" class="w-12 h-12 text-[var(--color-dark-green)] flex-shrink-0" />
 
             <!-- Step 4 -->
-            <div class="flex flex-col items-center">
-              <img :src="smallHatIcon" alt="Chef Hat" class="w-24 h-24" />
-              <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">My varíme a balíme</span>
+            <div class="flex flex-row items-center">
+              <span class="mr-4 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">My varíme a balíme</span>
+              <img :src="smallHatIcon" alt="Small Hat" class="h-[60px] text-[var(--color-dark-green)]" />
             </div>
           </div>
 
@@ -312,8 +308,9 @@ onMounted(() => {
           <!-- Step 5 (centered in its own row) -->
           <div class="flex justify-center">
             <div class="flex flex-col items-center">
-              <img :src="lionFaceIcon" alt="Lion Face" class="w-24 h-24" />
+              <img :src="lionFaceIcon" alt="Lion Face" class="h-[60px] text-[var(--color-dark-green)]" />
               <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">Ty si len vychutnaj</span>
+             
             </div>
           </div>
         </div>
@@ -328,46 +325,45 @@ onMounted(() => {
     <!-- Info Section -->
     <div class="bg-[var(--color-beige)]">
       <div class="bg-[var(--color-dark-green)] relative overflow-hidden pt-[50px] lg:pt-[200px] lg:pb-[200px] pb-[100px] rounded-[40px]">
+        <!-- Lion Bullet - Overflowing on right (half off screen) -->
+        <div class="hidden lg:block absolute right-[-325px] top-[50%] transform -translate-y-[50%]  z-0">
+            <img :src="lionBulletIcon" alt="Lion Bullet" class="w-[650px] h-[650px] object-cover" />
+          </div>
       <div class="container mx-auto px-4 py-20 relative">
         <div class="grid grid-cols-12 gap-4 items-center relative">
           <!-- Content -->
-          <div class="col-span-12 lg:col-span-8 relative z-10">
-            <h2 class="text-[4rem] lg:text-[6rem] font-extrabold text-[var(--color-orange)]">
+          <div class="col-span-12 lg:col-span-8 ">
+            <h2 class="md:text-[96px] sm:text-[72px] text-[64px] leading-[100%] font-condensed font-extrabold text-[var(--color-orange)] tracking-tight">
               LevFood
             </h2>
-            <p class="text-[1.5rem] lg:text-[2.5rem] font-bold text-[var(--color-orange)] font-condensed mb-12">
+            <p class="md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-orange)]">
               viac chuti, menej starostí
             </p>
             
             <!-- Feature List -->
-            <ul class="lg:space-y-1 space-y-6">
-              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+            <ul class="sm:space-y-1 space-y-3 mt-[40px]">
+              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
                 Varíme čerstvo každý deň priamo v Leviciach
               </li>
-              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
                 Vyvážené porcie podľa moderných výživových zásad
               </li>
-              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
                 Sezónne chute
               </li>
-              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
                 Šetríme tvoj čas aj energiu
               </li>
-              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
                 Transparentné zloženie a presné makrá
               </li>
-              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
                 Doručenie priamo k tvojim dverám v Leviciach a okolí
               </li>
-              <li class="text-[var(--color-beige)] text-3xl sm:text-2xl">
+              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
                 Vyzdvihnutie kedykoľvek 24/7
               </li>
             </ul>
-          </div>
-
-          <!-- Lion Bullet - Overflowing on right (half off screen) -->
-          <div class="hidden lg:block absolute right-0 top-1/2 transform -translate-y-[50%] translate-x-[50%] z-0">
-            <img :src="lionBulletIcon" alt="Lion Bullet" class="w-[50vw] h-[50vw] object-cover" />
           </div>
         </div>
       </div>
@@ -380,12 +376,12 @@ onMounted(() => {
       <div class="container mx-auto px-4">
         <!-- Section Header -->
         <div class="flex items-center justify-center gap-4 lg:mb-8 mb-4">
-          <h2 class="text-[4rem] lg:text-[6rem] font-condensed font-bold text-[var(--color-dark-green)] tracking-tight">
+          <h2 class="md:text-[96px] sm:text-[72px] text-[64px] leading-[100%] font-condensed font-extrabold text-[var(--color-dark-green)] tracking-tight">
             Cenník
           </h2>
         </div>
         <div class="text-center mb-8">
-          <p class="text-[1.5rem] lg:text-[2.5rem] font-condensed text-[var(--color-dark-green)] leading-relaxed">
+          <p class="md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-dark-green)]">
             Vyber si plán, ktorý sedí tvojmu životnému štýlu
           </p>
         </div>
@@ -464,7 +460,7 @@ onMounted(() => {
               />
             </div>
             <UButton 
-              class="pricing-button bg-[var(--color-dark-green)] text-white mb-6 h-14 text-lg font-bold"
+              class="pricing-button hover-beige bg-[var(--color-dark-green)] text-white mb-6 h-14 text-lg font-bold"
               block
             >
               Objednať ŠTANDARD
@@ -588,7 +584,7 @@ onMounted(() => {
             <div class="lg:col-span-7 space-y-8 order-1">
               <!-- Address -->
               <div class="flex items-start gap-4">
-                <img :src="mapPinIcon" alt="Adresa" class="w-8 h-8 flex-shrink-0" />
+                <MapPinIcon class="w-8 h-8 flex-shrink-0 text-[var(--color-beige)]" />
                 <div>
                   <h4 class="font-condensed text-2xl font-bold text-[var(--color-beige)] mb-2">Adresa</h4>
                   <p class="text-lg text-[var(--color-beige)]">Nám. sv. Michala 5<br/>934 01 Levice</p>
@@ -597,7 +593,7 @@ onMounted(() => {
               
               <!-- Phone -->
               <div class="flex items-start gap-4">
-                <img :src="phoneIcon" alt="Telefón" class="w-8 h-8 flex-shrink-0" />
+                <PhoneIcon class="w-8 h-8 flex-shrink-0 text-[var(--color-beige)]" />
                 <div>
                   <h4 class="font-condensed text-2xl font-bold text-[var(--color-beige)] mb-2">Telefón</h4>
                   <a href="tel:+421905000000" class="text-lg text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors">+421 905 000 000</a>
@@ -606,7 +602,7 @@ onMounted(() => {
               
               <!-- Email -->
               <div class="flex items-start gap-4">
-                <img :src="emailIcon" alt="Email" class="w-8 h-8 flex-shrink-0" />
+                <EmailIcon class="w-8 h-8 flex-shrink-0 text-[var(--color-beige)]" />
                 <div>
                   <h4 class="font-condensed text-2xl font-bold text-[var(--color-beige)] mb-2">Email</h4>
                   <a href="mailto:info@levfood.sk" class="text-lg text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors">info@levfood.sk</a>

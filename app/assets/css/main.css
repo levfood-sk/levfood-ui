@@ -26,26 +26,6 @@ body {
   @apply bg-gradient-to-br from-slate-50 via-white to-blue-50;
 }
 
-/* Dark mode background gradient */
-.dark .bg-gradient-professional {
-  @apply bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950;
-}
-
-/* Logo beige color filter */
-.logo-beige {
-  filter: brightness(0) saturate(100%) invert(96%) sepia(8%) saturate(2000%) hue-rotate(320deg) brightness(103%) contrast(98%);
-}
-
-/* Alternative: Direct beige color using CSS variables */
-.logo-beige-alt {
-  filter: brightness(0) saturate(0%) invert(97%) sepia(9%) saturate(2800%) hue-rotate(328deg) brightness(101%) contrast(96%);
-}
-
-/* Logo orange color filter */
-.logo-orange {
-  filter: brightness(0) saturate(100%) invert(74%) sepia(22%) saturate(2123%) hue-rotate(327deg) brightness(98%) contrast(93%);
-}
-
 /* Button font - Roboto */
 button,
 .btn,
@@ -62,6 +42,7 @@ input[type="submit"],
 button.bg-\[var\(--color-dark-green\)\] {
   font-family: var(--font-condensed) !important;
   transition: all 0.3s ease !important;
+  cursor: pointer !important;
 }
 
 /* Pricing button hover effects */
@@ -69,6 +50,11 @@ button.bg-\[var\(--color-dark-green\)\] {
   background-color: var(--color-orange) !important;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(14, 40, 37, 0.2) !important;
+}
+
+.pricing-button.hover-beige:hover {
+  background-color: var(--color-beige) !important;
+  color: var(--color-dark-green) !important;
 }
 
 .pricing-button:active {
@@ -144,6 +130,26 @@ button.bg-\[var\(--color-dark-green\)\] {
 .pricing-select :deep(.UBaseInput__wrapper:focus-within) {
   border-color: var(--color-orange) !important;
   box-shadow: 0 0 0 3px rgba(242, 142, 122, 0.1) !important;
+}
+
+/* Unified Button Styles */
+.btn-primary {
+  @apply border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] 
+         py-3 px-6 rounded-lg text-[18px] leading-[150%]
+         transition-all duration-200 cursor-pointer
+         hover:scale-105 hover:shadow-lg
+         active:scale-100;
+  font-family: var(--font-roboto);
+}
+
+.btn-secondary {
+  @apply border-2 border-[var(--color-orange)] text-[var(--color-orange)] bg-transparent
+         py-3 px-6 rounded-lg text-[18px] leading-[150%]
+         transition-all duration-200 cursor-pointer
+         hover:bg-[var(--color-orange)] hover:text-[var(--color-dark-green)] 
+         hover:scale-105 hover:shadow-lg
+         active:scale-100;
+  font-family: var(--font-roboto);
 }
 
 /* Hide scrollbar for gallery scroll snap */

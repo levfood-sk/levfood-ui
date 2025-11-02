@@ -28,6 +28,7 @@
     "@iconify-json/lucide": "^1.2.71",
     "@nuxt/icon": "^2.0.0",
     "@types/node": "^24.5.2",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "vite-svg-loader": "^5.1.0"
   }
 }
