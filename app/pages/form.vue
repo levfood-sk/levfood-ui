@@ -185,38 +185,38 @@ const canProceed = computed(() => {
 const deliverySchedule = [
   {
     orderDay: 'utorok',
-    deliveryDay: 'sobota alebo pondelok',
-    preparedDay: 'piatok alebo sobota obeda'
+    preparedDay: 'sobota/pondelok ráno',
+    deliveryDay: 'piatok/sobota na obed'
   },
   {
     orderDay: 'streda',
-    deliveryDay: 'pondelok',
-    preparedDay: 'sobota obeda'
+    preparedDay: 'pondelok ráno',
+    deliveryDay: 'sobota na obed'
   },
   {
     orderDay: 'štvrtok',
-    deliveryDay: 'utorok',
-    preparedDay: 'pondelok obeda'
+    preparedDay: 'utorok ráno',
+    deliveryDay: 'pondelok na obed'
   },
   {
     orderDay: 'piatok',
-    deliveryDay: 'streda',
-    preparedDay: 'utorok obeda'
+    preparedDay: 'streda ráno',
+    deliveryDay: 'utorok na obed'
   },
   {
     orderDay: 'sobota',
-    deliveryDay: 'štvrtok',
-    preparedDay: 'streda obeda'
+    preparedDay: 'štvrtok ráno',
+    deliveryDay: 'streda na obed'
   },
   {
     orderDay: 'nedeľa',
-    deliveryDay: 'štvrtok',
-    preparedDay: 'streda obeda'
+    preparedDay: 'štvrtok ráno',
+    deliveryDay: 'streda na obed'
   },
   {
     orderDay: 'pondelok',
-    deliveryDay: 'piatok',
-    preparedDay: 'štvrtok obeda'
+    preparedDay: 'piatok ráno',
+    deliveryDay: 'štvrtok na obed'
   }
 ]
 
@@ -227,32 +227,32 @@ function getDeliveryInfo() {
   
   const infoMap: Record<0 | 1 | 2 | 3 | 4 | 5 | 6, { delivery: string; prepared: string }> = {
     2: { // Tuesday
-      delivery: 'sobota alebo pondelok',
-      prepared: 'piatok alebo sobota obeda'
+      prepared: 'sobota/pondelok ráno',
+      delivery: 'piatok/sobota na obed'
     },
     3: { // Wednesday
-      delivery: 'pondelok',
-      prepared: 'sobota obeda'
+      prepared: 'pondelok ráno',
+      delivery: 'sobota na obed'
     },
     4: { // Thursday
-      delivery: 'utorok',
-      prepared: 'pondelok obeda'
+      prepared: 'utorok ráno',
+      delivery: 'pondelok na obed'
     },
     5: { // Friday
-      delivery: 'streda',
-      prepared: 'utorok obeda'
+      prepared: 'streda ráno',
+      delivery: 'utorok na obed'
     },
     6: { // Saturday
-      delivery: 'štvrtok',
-      prepared: 'streda obeda'
+      prepared: 'štvrtok ráno',
+      delivery: 'streda na obed'
     },
     0: { // Sunday
-      delivery: 'štvrtok',
-      prepared: 'streda obeda'
+      prepared: 'štvrtok ráno',
+      delivery: 'streda na obed'
     },
     1: { // Monday
-      delivery: 'piatok',
-      prepared: 'štvrtok obeda'
+      prepared: 'piatok ráno',
+      delivery: 'štvrtok na obed'
     }
   }
   
@@ -262,6 +262,24 @@ function getDeliveryInfo() {
 const deliveryInfo = computed(() => {
   return getDeliveryInfo()
 })
+
+// Helper function to check if schedule is for today
+function isTodaySchedule(orderDay: string) {
+  const today = new Date()
+  const dayOfWeek = today.getDay()
+  
+  const dayMap: Record<number, string> = {
+    0: 'nedeľa',
+    1: 'pondelok',
+    2: 'utorok',
+    3: 'streda',
+    4: 'štvrtok',
+    5: 'piatok',
+    6: 'sobota'
+  }
+  
+  return dayMap[dayOfWeek] === orderDay.toLowerCase()
+}
 
 // Calculate suggested delivery start date based on current day
 function calculateDeliveryStartDate() {
@@ -668,38 +686,67 @@ function handleSubmit() {
     </div>
 
     <!-- Delivery Info Modal -->
-    <UModal v-model:open="showDeliveryInfoModal">
+    <UModal v-model:open="showDeliveryInfoModal" :ui="{ content: 'sm:max-w-3xl' }">
       <template #header>
         <h3 class="text-xl font-bold text-[var(--color-dark-green)] font-condensed">Kedy dostanem svoje jedlo?</h3>
       </template>
       <template #body>
-        <div class="space-y-4">
-          <p class="text-[var(--color-dark-green)] mb-4">
-            Načasovanie doručenia závisí od dňa, keď vytvoríš objednávku. Tu je prehľadný kalendár:
+        <div class="space-y-6">
+          <p class="text-[var(--color-dark-green)]">
+            Načasovanie doručenia závisí od dňa, keď vytvoríš objednávku:
           </p>
           
-          <div class="space-y-3">
-            <div 
-              v-for="(schedule, index) in deliverySchedule" 
-              :key="index"
-              class="bg-[var(--color-beige)] rounded-lg p-4 border border-[var(--color-dark-green)]/20"
-            >
-              <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                <span class="font-semibold text-[var(--color-dark-green)] capitalize">
-                  Ak objednáš v {{ schedule.orderDay }}:
-                </span>
-                <span class="text-[var(--color-dark-green)]">
-                  → Jedlo dostaneš v <strong>{{ schedule.deliveryDay }}</strong> (pripravené bude od <strong>{{ schedule.preparedDay }}</strong>)
-                </span>
+          <!-- Delivery Schedule Table -->
+          <div class="overflow-x-auto rounded-lg border border-[var(--color-dark-green)]/20">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-[var(--color-dark-green)] text-[var(--color-beige)]">
+                  <th class="px-4 py-3 text-left font-semibold font-condensed">Ak objednáš v</th>
+                  <th class="px-4 py-3 text-left font-semibold font-condensed">Pripravené od</th>
+                  <th class="px-4 py-3 text-left font-semibold font-condensed">Doručujeme od</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="(schedule, index) in deliverySchedule" 
+                  :key="index"
+                  class="border-t border-[var(--color-dark-green)]/10 hover:bg-[var(--color-beige)]/50 transition-colors"
+                  :class="{ 'bg-[var(--color-orange)]/10': isTodaySchedule(schedule.orderDay) }"
+                >
+                  <td class="px-4 py-3 text-[var(--color-dark-green)] font-medium capitalize">
+                    {{ schedule.orderDay }}
+                    <span v-if="isTodaySchedule(schedule.orderDay)" class="ml-2 text-xs bg-[var(--color-orange)] text-white px-2 py-0.5 rounded-full">Dnes</span>
+                  </td>
+                  <td class="px-4 py-3 text-[var(--color-dark-green)] font-semibold capitalize">
+                    {{ schedule.preparedDay }}
+                  </td>
+                  <td class="px-4 py-3 text-[var(--color-dark-green)] capitalize">
+                    {{ schedule.deliveryDay }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Today's Info Highlight -->
+          <div v-if="deliveryInfo.delivery" class="p-4 bg-[var(--color-orange)]/20 rounded-lg border-2 border-[var(--color-orange)]">
+            <div class="flex items-start gap-3">
+              <UIcon name="i-lucide-calendar-check" class="w-5 h-5 text-[var(--color-orange)] mt-0.5 flex-shrink-0" />
+              <div>
+                <p class="text-[var(--color-dark-green)] font-semibold mb-1">
+                  Tvoja objednávka dnes
+                </p>
+                <p class="text-[var(--color-dark-green)] text-sm">
+                  Jedlo máš pripravené od <strong>{{ deliveryInfo.prepared }}</strong> (doručujeme od <strong>{{ deliveryInfo.delivery }}</strong>)
+                </p>
               </div>
             </div>
           </div>
 
-          <div v-if="deliveryInfo.delivery" class="mt-6 p-4 bg-[var(--color-orange)]/20 rounded-lg border border-[var(--color-orange)]">
-            <p class="text-[var(--color-dark-green)] font-semibold">
-              <UIcon name="i-lucide-info" class="w-5 h-5 inline mr-2" />
-              Tvoja objednávka dnes: Jedlo bude pripravené od <strong>{{ deliveryInfo.prepared }}</strong> a doručíme ho v <strong>{{ deliveryInfo.delivery }}</strong>.
-            </p>
+          <!-- Additional Info -->
+          <div class="text-sm text-[var(--color-dark-green)]/70 space-y-2 pt-2 border-t border-[var(--color-dark-green)]/10">
+            <p><strong>Poznámka:</strong> „Doručujeme" znamená, že tvoje jedlo už bude pripravené na výdajnom mieste alebo sa bude doručovať podľa tvojho nastavenia.</p>
+            <p><strong>Doba doručenia:</strong> 11:00 - 15:00</p>
           </div>
         </div>
       </template>
