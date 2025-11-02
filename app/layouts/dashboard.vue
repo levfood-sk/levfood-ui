@@ -1,21 +1,3 @@
-<!--
-  Dashboard Layout
-
-  A responsive dashboard layout with:
-  - Fixed top header with logo and user actions
-  - Collapsible sidebar navigation (hidden on mobile, toggleable)
-  - Main content area that adapts to sidebar state
-  - Mobile-friendly with hamburger menu
-  - Smooth transitions and animations
-
-  Best practices:
-  - Uses Nuxt UI components
-  - Tailwind CSS for styling
-  - Responsive design (mobile-first)
-  - Accessible navigation
-  - Smooth UX with transitions
--->
-
 <script setup lang="ts">
 const { user, signOut: firebaseSignOut } = useAuth()
 const route = useRoute()
@@ -60,45 +42,55 @@ watch(route, () => {
 const navItems = [
   {
     label: 'Dashboard',
-    icon: 'i-heroicons-home',
+    icon: 'i-lucide-home',
     to: '/dashboard',
     exact: true,
   },
   {
-    label: 'Užívatelia',
-    icon: 'i-heroicons-users',
-    to: '/dashboard/uzivatelia',
-  },
-  {
     label: 'Objednávky',
-    icon: 'i-heroicons-shopping-cart',
+    icon: 'i-lucide-package-search',
     to: '/dashboard/orders',
   },
   {
+    label: 'Užívatelia',
+    icon: 'i-lucide-users',
+    to: '/dashboard/uzivatelia',
+  },
+  {
+    label: 'Pridanie Jedla',
+    icon: 'i-lucide-carrot',
+    to: '/dashboard/pridanie-jedla',
+  },
+  {
+    label: 'Zamestnanci',
+    icon: 'i-lucide-shield-user',
+    to: '/dashboard/zamestnanci',
+  },
+  {
     label: 'CMS - Modal',
-    icon: 'i-heroicons-window',
+    icon: 'i-lucide-app-window-mac',
     to: '/dashboard/cms-modal',
   },
-  {
-    label: 'Push Notifications',
-    icon: 'i-heroicons-bell',
-    to: '/dashboard/notifications',
-  },
-  {
-    label: 'GoPay Test',
-    icon: 'i-heroicons-credit-card',
-    to: '/dashboard/gopay-test',
-  },
-  {
-    label: 'Stripe Test',
-    icon: 'i-heroicons-banknotes',
-    to: '/dashboard/stripe-test',
-  },
-  {
-    label: 'Superfaktura Test',
-    icon: 'i-heroicons-document-text',
-    to: '/dashboard/superfaktura-test',
-  },
+  // {
+  //   label: 'Push Notifications',
+  //   icon: 'i-heroicons-bell',
+  //   to: '/dashboard/notifications',
+  // },
+  // {
+  //   label: 'GoPay Test',
+  //   icon: 'i-heroicons-credit-card',
+  //   to: '/dashboard/gopay-test',
+  // },
+  // {
+  //   label: 'Stripe Test',
+  //   icon: 'i-heroicons-banknotes',
+  //   to: '/dashboard/stripe-test',
+  // },
+  // {
+  //   label: 'Superfaktura Test',
+  //   icon: 'i-heroicons-document-text',
+  //   to: '/dashboard/superfaktura-test',
+  // },
 ]
 
 // Check if route is active
@@ -132,35 +124,12 @@ const isActiveRoute = (item: typeof navItems[0]) => {
 
             <!-- Logo -->
             <NuxtLink to="/" class="flex items-center">
-              <h1 class="text-2xl font-bold text-slate-900">Levfood</h1>
+              <img src="~/assets/icons/logo-long-orange.svg" alt="Levfood" class="w-[130px]" />
             </NuxtLink>
           </div>
 
           <!-- Right: User Actions -->
           <div class="flex items-center gap-3">
-            <!-- User Avatar & Name (hidden on mobile) -->
-            <div v-if="user" class="hidden sm:flex items-center gap-3">
-              <div class="text-right">
-                <p class="text-sm font-medium text-slate-900">
-                  {{ user.displayName || 'User' }}
-                </p>
-                <p class="text-xs text-slate-500">
-                  {{ user.email }}
-                </p>
-              </div>
-              <UAvatar
-                v-if="user.photoURL"
-                :src="user.photoURL"
-                :alt="user.displayName || user.email || 'User'"
-                size="md"
-              />
-              <UAvatar
-                v-else
-                :alt="user.displayName || user.email || 'User'"
-                size="md"
-              />
-            </div>
-
             <!-- Sign Out Button -->
             <UButton
               color="error"
@@ -169,8 +138,8 @@ const isActiveRoute = (item: typeof navItems[0]) => {
               :loading="loading"
               @click="handleSignOut"
             >
-              <span class="hidden sm:inline">Sign Out</span>
-              <UIcon name="i-heroicons-arrow-right-on-rectangle" class="sm:hidden w-5 h-5" />
+              <span class="hidden sm:inline">Odhlásiť sa</span>
+              <UIcon name="i-lucide-log-out" class="sm:hidden w-5 h-5" />
             </UButton>
           </div>
         </div>
@@ -217,8 +186,8 @@ const isActiveRoute = (item: typeof navItems[0]) => {
               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
               :class="[
                 isActiveRoute(item)
-                  ? 'bg-primary-100 text-primary-900 font-medium shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-orange text-dark-green font-medium'
+                  : 'text-dark-green hover:bg-orange hover:text-white'
               ]"
             >
               <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
@@ -239,8 +208,8 @@ const isActiveRoute = (item: typeof navItems[0]) => {
             class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
             :class="[
               isActiveRoute(item)
-                ? 'bg-primary-100 text-primary-900 font-medium shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                ? 'text-dark-green bg-orange font-medium text-condensed text-18px hover:bg-orange'
+                : 'text-dark-green hover:bg-beige hover:text-dark-green text-condensed text-18px'
             ]"
           >
             <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />

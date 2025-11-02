@@ -144,12 +144,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6">
+  <div>
     <!-- Back Button -->
     <div class="mb-6">
       <UButton
         icon="i-heroicons-arrow-left"
-        color="gray"
+        color="neutral"
         variant="ghost"
         @click="router.push('/dashboard/orders')"
       >

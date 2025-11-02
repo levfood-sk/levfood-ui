@@ -149,7 +149,7 @@ const stats = computed(() => ({
 </script>
 
 <template>
-  <div class="p-6">
+  <div>
     <div class="mb-8">
       <h2 class="text-3xl font-bold text-slate-900">Užívatelia</h2>
       <p class="text-slate-600 mt-2">Prehľad a správa všetkých používateľov</p>

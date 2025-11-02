@@ -44,6 +44,30 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Meals collection - for managing weekly meal plans
+    match /meals/{weekId} {
+      // Only authenticated users (admins) can read meals
+      allow read: if isAuthenticated();
+
+      // Only authenticated users (admins) can write meals
+      allow create, update: if isAuthenticated();
+
+      // No deletion allowed
+      allow delete: if false;
+    }
+
+    // Admin users collection - for managing admin/employee accounts
+    match /admin-users/{userId} {
+      // Only authenticated users (admins) can read admin users
+      allow read: if isAuthenticated();
+
+      // Only authenticated users (admins) can create/update admin users
+      allow create, update: if isAuthenticated();
+
+      // No deletion allowed
+      allow delete: if false;
+    }
+
     // Default: deny all other access
     match /{document=**} {
       allow read, write: if false;

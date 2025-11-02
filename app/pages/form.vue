@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
-import { calculateOrderPrice } from '~~/app/lib/types/order'
 import type { CreateOrderInput } from '~~/app/lib/types/order'
 
 const currentStep = ref(1)

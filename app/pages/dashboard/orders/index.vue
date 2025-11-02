@@ -144,7 +144,7 @@ const stats = computed(() => ({
 </script>
 
 <template>
-  <div class="p-6">
+  <div>
     <div class="mb-8">
       <h2 class="text-3xl font-bold text-slate-900">Objednávky</h2>
       <p class="text-slate-600 mt-2">Spravuj všetky objednávky</p>
@@ -276,13 +276,8 @@ const stats = computed(() => ({
                   class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium"
                   :class="{
                     'text-slate-900': order.orderStatus === 'pending',
-                    'text-white': order.orderStatus === 'approved',
-                    'text-slate-900': order.orderStatus === 'cancelled',
-                  }"
-                  :style="{
-                    backgroundColor: order.orderStatus === 'pending' ? 'var(--color-beige)' :
-                                   order.orderStatus === 'approved' ? 'var(--color-dark-green)' :
-                                   'var(--color-orange)'
+                    'text-beige bg-orange': order.orderStatus === 'approved',
+                    'text-beige bg-dark-green': order.orderStatus === 'cancelled',
                   }"
                 >
                   {{ ORDER_STATUS_LABELS[order.orderStatus] }}
