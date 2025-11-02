@@ -375,7 +375,7 @@ onMounted(() => {
     </div>
 
     <!-- Pricing Section -->
-    <div class="bg-[var(--color-beige)] py-[50px] lg:py-[100px] relative">
+    <div class="bg-[var(--color-beige)] py-[50px] lg:py-[200px] relative">
       <img :src="saltShakersIcon" alt="Salt Shakers" class="hidden lg:block w-32 h-32 xl:w-48 xl:h-48 absolute top-[20px] left-[50%] translate-x-[150px]" />
       <div class="container mx-auto lg:px-4 px-0">
         <!-- Section Header -->
@@ -557,11 +557,14 @@ onMounted(() => {
       </div>
     </div>
 
+
+
     <!-- Gallery Section -->
-    <div class="bg-[var(--color-beige)] relative overflow-hidden">
+    <div class="bg-[var(--color-beige)] relative">
       <!-- Desktop Layout -->
       <div class="hidden lg:flex lg:flex-row">
-        <div class="container mx-auto px-4 lg:py-28 py-10">
+        <div class="container mx-auto px-4 lg:py-28  py-10">
+
           <div class="grid grid-cols-12 gap-4 items-center">
             <!-- Left Text Content -->
             <div class="col-span-12 lg:col-span-6 flex flex-col relative lg:py-20 py-6">
@@ -569,6 +572,13 @@ onMounted(() => {
               <h2 class="text-[4rem] lg:text-[6rem] font-condensed font-bold text-[var(--color-dark-green)] mb-4 relative z-10 text-center lg:text-left">
                 Galéria
               </h2>
+              <div class="relative h-0 hidden lg:block">
+                <p class="font-condensed text-center text-[31px] font-bold relative translate-y-[-550px] translate-x-[100px] trasnns w-[200px] h-[200px] rounded-full bg-[var(--color-orange)] text-white flex items-center justify-center">lokálne suroviny</p>
+                <p class="font-condensed text-center text-[31px] font-bold relative translate-y-[-500px] translate-x-[10px] w-[150px] h-[150px] rounded-full bg-[var(--color-orange)] text-white flex items-center justify-center">eko balenie</p>
+                <p class="font-condensed text-center text-[31px] font-bold relative translate-y-[-700px] translate-x-[310px] w-[170px] h-[170px] rounded-full bg-[var(--color-orange)] text-white flex items-center justify-center">poctivá chuť</p>
+                <p class="py-2 px-4 font-condensed text-[31px] font-bold relative translate-y-[-650px] translate-x-[330px] w-[220px] h-[220px] rounded-full bg-[var(--color-orange)] text-white flex items-center justify-center">kvalita 
+                  bez kompromisov</p>
+              </div>
             </div>
           </div>
         </div>
@@ -580,6 +590,22 @@ onMounted(() => {
 
       <!-- Mobile Layout -->
       <div class="lg:hidden py-10">
+        <div class="block lg:hidden grid md:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-4 mb-4">
+          <div class="flex flex-col items-center justify-center">
+            <p class="font-condensed aspect-square h-[200px] text-center text-[31px] font-bold bg-[var(--color-orange)] text-white flex items-center justify-center rounded-full">lokálne suroviny</p>
+
+          </div>
+          <div class="flex flex-col items-center justify-center">
+            <p class="font-condensed aspect-square h-[200px] text-center text-[31px] font-bold bg-[var(--color-orange)] text-white flex items-center justify-center rounded-full">eko balenie</p>
+          </div>
+          <div class="flex flex-col items-center justify-center">
+            <p class="font-condensed aspect-square h-[200px] text-center text-[31px] font-bold bg-[var(--color-orange)] text-white flex items-center justify-center rounded-full">poctivá chuť</p>
+          </div>
+          <div class="flex flex-col items-center justify-center">
+            <p class="font-condensed aspect-square h-[200px] text-center text-[31px] font-bold bg-[var(--color-orange)] text-white flex items-center justify-center rounded-full">kvalita 
+              bez kompromisov</p>
+          </div>
+        </div>
         <div class="px-4 mb-6">
           <h2 class="text-[4rem] font-condensed font-bold text-[var(--color-dark-green)] text-center">
             Galéria
@@ -598,7 +624,7 @@ onMounted(() => {
           <img 
             :src="timerEggIcon" 
             alt="Timer egg" 
-            class="absolute lg:block hidden top-[40px] xl:right-[80px] right-[60px] w-24 h-28 lg:w-40 lg:h-40 opacity-90 z-10"
+            class="absolute lg:block hidden top-[40px] xl:right-[80px] right-[0px] w-24 h-28 lg:w-40 lg:h-40 opacity-90 z-10"
           />
           
           <div class="col-span-12 lg:col-span-8 lg:col-start-3 text-center">
