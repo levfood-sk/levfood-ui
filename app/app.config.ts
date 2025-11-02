@@ -15,9 +15,9 @@ export default defineAppConfig({
     },
     card: {
       slots: {
-        root: 'bg-white dark:bg-slate-900',
+        root: 'bg-white',
       },
-      ring: 'ring-1 ring-gray-200/50 dark:ring-slate-700/50',
+      ring: 'ring-1 ring-gray-200/50',
       rounded: 'rounded-xl',
       shadow: 'shadow-sm'
     },

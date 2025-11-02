@@ -20,6 +20,10 @@ import mobileIcon from '~/assets/icons/mobile.svg'
 import numbersIcon from '~/assets/icons/numbers.svg'
 import smallHatIcon from '~/assets/icons/small-hat.svg'
 import lionFaceIcon from '~/assets/icons/lion-face.svg'
+import chefHatIcon from '~/assets/icons/chef-hat.svg'
+import wheatIcon from '~/assets/icons/wheat.svg'
+import foodBoxIcon from '~/assets/icons/food-box.svg'
+import tomatoIcon from '~/assets/icons/tomato.svg'
 
 // Days options for pricing dropdowns
 const daysOptions = [
@@ -102,59 +106,60 @@ onMounted(() => {
       </nav>
       <!-- Corner Illustrations -->
       <!-- Top Left: Chef Hat -->
-      <!-- <img 
+      <img 
         :src="chefHatIcon" 
         alt="Chef hat" 
-        class="absolute top-[40px] left-[150px] w-24 h-32 sm:w-32 sm:h-40 lg:w-40 lg:h-48"
-      /> -->
+        class="absolute lg:top-[40px] lg:left-0 bottom-[-20px] left-[0px]"
+      />
       
       <!-- Top Right: Wheat -->
-      <!-- <img 
+      <img 
         :src="wheatIcon" 
         alt="Wheat" 
-        class="absolute top-[180px] right-[60px] w-16 h-20 sm:w-20 sm:h-24 lg:w-24 lg:h-28"
-      /> -->
+        class="absolute top-[220px] right-[60px] hidden lg:block"
+      />
       
       <!-- Bottom Left: Food Box -->
-      <!-- <img 
+      <img 
         :src="foodBoxIcon" 
         alt="Food box" 
-        class="absolute bottom-[100px] left-[150px] w-48 h-48 sm:w-40 sm:h-40 lg:w-48 lg:h-48"
-      /> -->
+        class="absolute bottom-[30px] left-[150px] hidden lg:block"
+      />
       
       <!-- Bottom Right: Tomato -->
-      <!-- <img 
+      <img 
         :src="tomatoIcon" 
         alt="Tomato" 
-        class="absolute bottom-[300px] right-[170px] w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28"
-      /> -->
+        class="absolute bottom-[160px] right-[170px] hidden lg:block"
+      />
 
       <!-- Main Content -->
-      <div class="container mx-auto px-4 py-28 lg:py-32 relative z-10">
-        <div class="text-center">
+      <div class="container mx-auto px-4 pt-28 lg:pb-48 pb-64 relative z-10">
+        <div class="grid grid-cols-12 gap-4">
+          <div class="col-span-12 lg:col-span-8 lg:col-start-3 text-center">
+            <!-- Main Heading -->
+            <h1 class="md:text-[128px] sm:text-[96px] text-[64px] leading-[84%] font-bold text-[var(--color-orange)] tracking-tight mb-6 text-sofia">
+              Chutne, <br/> vyvážene a <br/> bez starostí.
+            </h1>
 
-          <!-- Main Heading -->
-          <h1 class="md:text-[128px] sm:text-[96px] text-[64px] leading-[84%] font-bold text-[var(--color-orange)] tracking-tight mb-6 text-sofia">
-            Chutne, <br/> vyvážene a <br/> bez starostí.
-          </h1>
+            <!-- Description -->
+            <p class="mt-6 mx-auto text-[18px] leading-[150%] text-white">
+              LevFood prináša chutné a vyvážené jedlá priamo k tvojim dverám v Leviciach a okolí. Zdravé stravovanie nemusí byť zložité – stačí si vybrať balíček, ktorý ti sedí a o zvyšok sa postaráme my.
+            </p>
 
-          <!-- Description -->
-          <p class="mt-6 mx-auto text-[18px] leading-[150%] text-white">
-            LevFood prináša chutné a vyvážené jedlá priamo k tvojim dverám v Leviciach a okolí. Zdravé stravovanie nemusí byť zložité – stačí si vybrať balíček, ktorý ti sedí a o zvyšok sa postarámemy.
-          </p>
-
-          <!-- CTA Buttons -->
-          <div class="mt-10 flex flex-col sm:flex-row justify-center gap-6">
-            <NuxtLink to="/form">
-              <button class="btn-primary">
-                Objednaj si balíček
-              </button>
-            </NuxtLink>
-            <NuxtLink to="#features">
-              <button class="btn-secondary">
-                Zisti viac
-              </button>
-            </NuxtLink>
+            <!-- CTA Buttons -->
+            <div class="mt-10 flex flex-col sm:flex-row justify-center gap-6">
+              <NuxtLink to="/form">
+                <button class="btn-primary">
+                  Objednaj si balíček
+                </button>
+              </NuxtLink>
+              <NuxtLink to="#features">
+                <button class="btn-secondary">
+                  Zisti viac
+                </button>
+              </NuxtLink>
+            </div>
           </div>
         </div>
       </div>
@@ -372,21 +377,21 @@ onMounted(() => {
     <!-- Pricing Section -->
     <div class="bg-[var(--color-beige)] py-[50px] lg:py-[100px] relative">
       <img :src="saltShakersIcon" alt="Salt Shakers" class="hidden lg:block w-32 h-32 xl:w-48 xl:h-48 absolute top-[20px] left-[50%] translate-x-[150px]" />
-      <div class="container mx-auto px-4">
+      <div class="container mx-auto lg:px-4 px-0">
         <!-- Section Header -->
-        <div class="flex items-center justify-center gap-4 lg:mb-8 mb-2">
+        <div class="flex items-center justify-center gap-4 lg:mb-8 mb-2 px-4">
           <h2 class="md:text-[96px] sm:text-[72px] text-[64px] leading-[100%] font-condensed font-extrabold text-[var(--color-dark-green)] tracking-tight">
             Cenník
           </h2>
         </div>
-        <div class="text-center mb-8">
+        <div class="text-center mb-8 px-4">
           <p class="md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-dark-green)]">
             Vyber si plán, ktorý sedí tvojmu životnému štýlu
           </p>
         </div>
 
         <!-- Pricing Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 md:gap-6 gap-8">
           <!-- Economy Card -->
           <div class="pricing-card bg-[var(--color-beige)] border-2 border-[var(--color-dark-green)] rounded-[32px] p-6 flex flex-col h-fit relative lg:top-[30px] top-0">
             <h3 class="text-2xl font-bold text-[var(--color-dark-green)] mb-2">
@@ -553,23 +558,62 @@ onMounted(() => {
     </div>
 
     <!-- Gallery Section -->
-    <div class="bg-[var(--color-beige)]">
-      <Gallery 
-        title="Galéria"
-        subtitle=""
-        layout="side"
-      />
+    <div class="bg-[var(--color-beige)] relative overflow-hidden">
+      <!-- Desktop Layout -->
+      <div class="hidden lg:flex lg:flex-row">
+        <div class="container mx-auto px-4 lg:py-28 py-10">
+          <div class="grid grid-cols-12 gap-4 items-center">
+            <!-- Left Text Content -->
+            <div class="col-span-12 lg:col-span-6 flex flex-col relative lg:py-20 py-6">
+              <!-- Gallery Title -->
+              <h2 class="text-[4rem] lg:text-[6rem] font-condensed font-bold text-[var(--color-dark-green)] mb-4 relative z-10 text-center lg:text-left">
+                Galéria
+              </h2>
+            </div>
+          </div>
+        </div>
+        <!-- Right Gallery Content - Overflow design -->
+        <div class="w-1/2 absolute right-0">
+          <ProductGallery />
+        </div>
+      </div>
+
+      <!-- Mobile Layout -->
+      <div class="lg:hidden py-10">
+        <div class="px-4 mb-6">
+          <h2 class="text-[4rem] font-condensed font-bold text-[var(--color-dark-green)] text-center">
+            Galéria
+          </h2>
+        </div>
+        <ProductGallery />
+      </div>
     </div>
 
     <!-- Team Section -->
     <div class="overflow-hidden bg-[var(--color-beige)] py-20">
-      <Gallery 
-        title="Tím, ktorý stojí za prevádzkou LevFood"
-        subtitle="Za každým balíčkom LevFood stoja ľudia, ktorí milujú kvalitné a chutné jedlo. Od šéfkuchára až po vodiča – všetci veríme, že zdravé jedlo má meniť život k lepšiemu."
-        layout="top"
-        :timer-egg-icon="timerEggIcon"
-        :items="teamMembers"
-      />
+      <div class="container mx-auto px-4 lg:py-20 py-10">
+        <!-- Title at Top -->
+        <div class="grid grid-cols-12 gap-4 mb-16 relative items-center justify-center">
+          <!-- Timer Egg Icon (absolute positioned) -->
+          <img 
+            :src="timerEggIcon" 
+            alt="Timer egg" 
+            class="absolute lg:block hidden top-[40px] xl:right-[80px] right-[60px] w-24 h-28 lg:w-40 lg:h-40 opacity-90 z-10"
+          />
+          
+          <div class="col-span-12 lg:col-span-8 lg:col-start-3 text-center">
+            <h2 class="md:text-[96px] sm:text-[72px] text-[64px] leading-[100%] font-condensed font-extrabold text-[var(--color-dark-green)] tracking-tight">
+              Tím, ktorý stojí za prevádzkou LevFood
+            </h2>
+          </div>
+          <div class="col-span-12 text-center">
+            <p class="md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-dark-green)]">Za každým balíčkom LevFood stoja ľudia, ktorí milujú kvalitné a chutné jedlo. Od šéfkuchára až po vodiča – všetci veríme, že zdravé jedlo má meniť život k lepšiemu. </p>
+          </div>
+        </div>
+
+        <!-- Gallery Content -->
+        <PeopleGallery :items="teamMembers" />
+      </div>
     </div>
 
     <!-- Contact Section -->
@@ -578,7 +622,7 @@ onMounted(() => {
         <div class="container mx-auto px-4">
           <!-- Section Header -->
           <div class="text-center mb-16">
-            <h2 class="text-[4rem] lg:text-[6rem] font-condensed font-bold text-[var(--color-beige)] mb-6 leading-tight">
+            <h2 class="md:text-[96px] sm:text-[72px] text-[64px] leading-[120%] font-condensed font-extrabold text-[var(--color-beige)] tracking-tight">
               Kontakt
             </h2>
           </div>
