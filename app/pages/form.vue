@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import logoLongIcon from '~/assets/icons/logo-long.svg'
+import { z } from 'zod'
+import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
 
 const currentStep = ref(1)
 const totalSteps = 4
@@ -26,6 +27,32 @@ const formData = ref({
     deliveryStartDate: '',
     termsAccepted: false
   }
+})
+
+// Validation errors
+const errors = ref({
+  fullName: '',
+  phone: '',
+  email: '',
+  address: ''
+})
+
+// Track if field has been touched
+const touched = ref({
+  fullName: false,
+  phone: false,
+  email: false,
+  address: false
+})
+
+// Zod schemas
+const step3Schema = z.object({
+  fullName: z.string().min(2, 'Meno musí obsahovať aspoň 2 znaky'),
+  phone: z.string()
+    .min(1, 'Telefónne číslo je povinné')
+    .regex(/^(\+421|0)?[0-9]{9,10}$/, 'Neplatné telefónne číslo. Použite formát +421000000000)'),
+  email: z.email('Neplatná emailová adresa'),
+  address: z.string().min(5, 'Adresa musí obsahovať aspoň 5 znakov')
 })
 
 const steps = computed(() => [
@@ -82,6 +109,76 @@ const summaryData = computed(() => {
     price: totalPrice.value,
     address: formData.value.step3.address
   }
+})
+
+// Validation
+const isStep1Valid = computed(() => {
+  return formData.value.step1.package !== '' && formData.value.step1.duration !== ''
+})
+
+// Validate individual field
+function validateField(field: 'fullName' | 'phone' | 'email' | 'address') {
+  // Mark field as touched
+  touched.value[field] = true
+  
+  const fieldSchema = step3Schema.shape[field]
+  const result = fieldSchema.safeParse(formData.value.step3[field])
+  
+  if (!result.success) {
+    errors.value[field] = result.error.issues[0]?.message || ''
+    return false
+  } else {
+    errors.value[field] = ''
+    return true
+  }
+}
+
+// Debounced validation for input events
+let validationTimer: NodeJS.Timeout | null = null
+
+function validateFieldOnInput(field: 'fullName' | 'phone' | 'email' | 'address') {
+  // Only validate if field has been touched
+  if (!touched.value[field]) return
+  
+  if (validationTimer) {
+    clearTimeout(validationTimer)
+  }
+  
+  validationTimer = setTimeout(() => {
+    validateField(field)
+  }, 500)
+}
+
+// Validate all step 3 fields
+function validateStep3() {
+  const result = step3Schema.safeParse(formData.value.step3)
+  
+  if (!result.success) {
+    result.error.issues.forEach((err: z.ZodIssue) => {
+      const field = err.path[0] as 'fullName' | 'phone' | 'email' | 'address'
+      errors.value[field] = err.message
+    })
+    return false
+  } else {
+    errors.value = {
+      fullName: '',
+      phone: '',
+      email: '',
+      address: ''
+    }
+    return true
+  }
+}
+
+const isStep3Valid = computed(() => {
+  const result = step3Schema.safeParse(formData.value.step3)
+  return result.success
+})
+
+const canProceed = computed(() => {
+  if (currentStep.value === 1) return isStep1Valid.value
+  if (currentStep.value === 3) return isStep3Valid.value
+  return true
 })
 
 // Delivery schedule information
@@ -295,8 +392,8 @@ function handleSubmit() {
                 v-model="formData.step1.package"
                 :items="packageOptions"
                 variant="table"
-                color="neutral"
-                size="lg"
+                color="orange"
+                size="xl"
                 orientation="vertical"
                 class="w-full"
               />
@@ -320,7 +417,8 @@ function handleSubmit() {
               Zrušiť
             </button>
             <button 
-              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed"
+              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              :disabled="!isStep1Valid"
               @click="nextStep"
             >
               Ďalej
@@ -341,7 +439,7 @@ function handleSubmit() {
                 v-model="formData.step2.dietaryRequirement"
                 :items="dietaryOptions"
                 variant="card"
-                color="neutral"
+                color="orange"
                 size="lg"
                 orientation="horizontal"
                 :ui="{ fieldset: 'flex flex-wrap gap-2' }"
@@ -367,7 +465,7 @@ function handleSubmit() {
               Späť
             </button>
             <button 
-              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed"
+              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               @click="nextStep"
             >
               Ďalej
@@ -383,26 +481,50 @@ function handleSubmit() {
           </div>
 
           <div class="space-y-6">
-            <UFormField label="Meno a priezvisko" required class="w-full">
+            <UFormField 
+              label="Meno a priezvisko" 
+              required 
+              class="w-full" 
+              :error="touched.fullName ? errors.fullName : ''"
+              eager-validation
+            >
               <UInput 
                 v-model="formData.step3.fullName" 
                 size="lg" 
                 placeholder="Ján Dvořáček"
                 class="w-full"
+                :highlight="!!(touched.fullName && errors.fullName)"
+                @blur="validateField('fullName')"
+                @input="validateFieldOnInput('fullName')"
               />
             </UFormField>
 
-            <UFormField label="Telefónne číslo" required class="w-full">
+            <UFormField 
+              label="Telefónne číslo" 
+              required 
+              class="w-full" 
+              :error="touched.phone ? errors.phone : ''"
+              eager-validation
+            >
               <UInput 
                 v-model="formData.step3.phone" 
                 size="lg" 
                 placeholder="+421 9XX XXX XXX"
                 type="tel"
                 class="w-full"
+                :highlight="!!(touched.phone && errors.phone)"
+                @blur="validateField('phone')"
+                @input="validateFieldOnInput('phone')"
               />
             </UFormField>
 
-            <UFormField label="Email" required class="w-full">
+            <UFormField 
+              label="Email" 
+              required 
+              class="w-full" 
+              :error="touched.email ? errors.email : ''"
+              eager-validation
+            >
               <UInput 
                 v-model="formData.step3.email" 
                 type="email" 
@@ -410,15 +532,27 @@ function handleSubmit() {
                 placeholder="email@levfood.sk"
                 icon="i-lucide-mail"
                 class="w-full"
+                :highlight="!!(touched.email && errors.email)"
+                @blur="validateField('email')"
+                @input="validateFieldOnInput('email')"
               />
             </UFormField>
 
-            <UFormField label="Adresa doručenia" required class="w-full">
+            <UFormField 
+              label="Adresa doručenia" 
+              required 
+              class="w-full" 
+              :error="touched.address ? errors.address : ''"
+              eager-validation
+            >
               <UInput 
                 v-model="formData.step3.address" 
                 size="lg" 
                 placeholder="Ulica, číslo, mesto"
                 class="w-full"
+                :highlight="!!(touched.address && errors.address)"
+                @blur="validateField('address')"
+                @input="validateFieldOnInput('address')"
               />
             </UFormField>
 
@@ -441,7 +575,8 @@ function handleSubmit() {
               Späť
             </button>
             <button 
-              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed"
+              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              :disabled="!isStep3Valid"
               @click="nextStep"
             >
               Ďalej
@@ -505,6 +640,7 @@ function handleSubmit() {
               <div class="flex items-start gap-2">
                 <UCheckbox 
                   v-model="formData.step4.termsAccepted"
+                  color="orange"
                 />
                 <label class="text-sm text-[var(--color-dark-green)]">
                   Súhlasím s <a href="#" class="underline hover:text-[var(--color-orange)]">obchodnými podmienkami</a>, <a href="#" class="underline hover:text-[var(--color-orange)]">zásadami ochrany údajov</a> a spracovaním osobných údajov pre účely objednávky.
