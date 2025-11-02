@@ -65,6 +65,16 @@ const navItems = [
     exact: true,
   },
   {
+    label: 'Užívatelia',
+    icon: 'i-heroicons-users',
+    to: '/dashboard/uzivatelia',
+  },
+  {
+    label: 'Objednávky',
+    icon: 'i-heroicons-shopping-cart',
+    to: '/dashboard/orders',
+  },
+  {
     label: 'CMS - Modal',
     icon: 'i-heroicons-window',
     to: '/dashboard/cms-modal',

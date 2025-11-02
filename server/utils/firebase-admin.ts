@@ -9,7 +9,8 @@ export function initializeFirebaseAdmin(): void {
     return
   }
 
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+  const config = useRuntimeConfig()
+  const serviceAccount = config.firebaseServiceAccount
 
   if (!serviceAccount) {
     throw new Error('FIREBASE_SERVICE_ACCOUNT environment variable is required')
@@ -20,7 +21,7 @@ export function initializeFirebaseAdmin(): void {
 
     adminApp = initializeApp({
       credential: cert(serviceAccountJson),
-      projectId: process.env.FIREBASE_PROJECT_ID,
+      projectId: config.public.firebaseProjectId,
     })
 
     adminAuth = getAuth(adminApp)

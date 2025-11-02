@@ -14,13 +14,35 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
 
-    // You can add more collections here as your app grows
-    // For example:
-    // match /orders/{orderId} {
-    //   allow read: if isAuthenticated();
-    //   allow create: if isAuthenticated();
-    //   allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
-    // }
+    // Clients collection
+    match /clients/{clientId} {
+      // Server can create clients (during order creation)
+      allow create: if true;
+
+      // Only authenticated users can read clients (admin)
+      allow read: if isAuthenticated();
+
+      // Server and admins can update client data
+      allow update: if true;
+
+      // No deletion allowed
+      allow delete: if false;
+    }
+
+    // Orders collection
+    match /orders/{orderId} {
+      // Anyone can create orders (public form submission)
+      allow create: if true;
+
+      // Only authenticated users can read orders (admin)
+      allow read: if isAuthenticated();
+
+      // Only authenticated users can update orders (admin status changes)
+      allow update: if isAuthenticated();
+
+      // No deletion allowed
+      allow delete: if false;
+    }
 
     // Default: deny all other access
     match /{document=**} {

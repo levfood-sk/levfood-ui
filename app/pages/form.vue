@@ -1,10 +1,24 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
+import { calculateOrderPrice } from '~~/app/lib/types/order'
+import type { CreateOrderInput } from '~~/app/lib/types/order'
 
 const currentStep = ref(1)
 const totalSteps = 4
 const showDeliveryInfoModal = ref(false)
+
+// Stripe integration
+const { stripe } = useClientStripe()
+const stripeLoading = ref(false)
+const stripeProcessing = ref(false)
+const stripeError = ref<string | null>(null)
+const clientSecret = ref<string | null>(null)
+const paymentIntentId = ref<string | null>(null)
+const elements = ref<any>(null)
+const paymentElement = ref<any>(null)
+const orderSuccess = ref(false)
+const createdOrderId = ref<string | null>(null)
 
 // Form data
 const formData = ref({
@@ -14,7 +28,15 @@ const formData = ref({
   },
   step2: {
     dietaryRequirement: [] as string[],
-    notes: ''
+    notes: '',
+    // Personal info (Niečo o tebe)
+    birthDate: '',
+    height: null as number | null,
+    weight: null as number | null,
+    physicalActivity: '' as 'nízka' | 'stredná' | 'vysoká' | '',
+    workActivity: '' as 'ľahká' | 'mierne náročná' | 'náročná' | '',
+    stressLevel: '' as 'nízky' | 'stredný' | 'vysoký' | '',
+    goal: ''
   },
   step3: {
     fullName: '',
@@ -85,16 +107,40 @@ const dietaryOptions = [
   { value: 'žiadne', label: 'Nemám špeciálne požiadavky' }
 ]
 
-// Pricing
+// Personal info options (Niečo o tebe)
+const physicalActivityOptions = [
+  { label: 'Nízka', value: 'nízka' },
+  { label: 'Stredná', value: 'stredná' },
+  { label: 'Vysoká', value: 'vysoká' }
+]
+
+const workActivityOptions = [
+  { label: 'Ľahká', value: 'ľahká' },
+  { label: 'Mierne náročná', value: 'mierne náročná' },
+  { label: 'Náročná', value: 'náročná' }
+]
+
+const stressLevelOptions = [
+  { label: 'Nízky', value: 'nízky' },
+  { label: 'Stredný', value: 'stredný' },
+  { label: 'Vysoký', value: 'vysoký' }
+]
+
+// Pricing (in cents for Stripe)
 const packagePrices = {
-  EKONOMY: 290,
-  ŠTANDARD: 350,
-  PREMIUM: 400
+  EKONOMY: 29000,  // 290€ in cents
+  ŠTANDARD: 35000, // 350€ in cents
+  PREMIUM: 40000   // 400€ in cents
 }
 
 const totalPrice = computed(() => {
   if (!formData.value.step1.package) return 0
   return packagePrices[formData.value.step1.package] || 0
+})
+
+const totalPriceFormatted = computed(() => {
+  const euros = totalPrice.value / 100
+  return `${euros.toFixed(2)}€`
 })
 
 const daysCount = computed(() => {
@@ -345,14 +391,201 @@ function handleCancel() {
   navigateTo('/')
 }
 
-function handleSubmit() {
+/**
+ * Initialize Stripe payment when entering step 4
+ */
+const initializePayment = async () => {
+  stripeLoading.value = true
+  stripeError.value = null
+
+  try {
+    // Call server endpoint to create payment intent
+    const response = await $fetch('/api/stripe/create-payment-intent', {
+      method: 'POST',
+      body: {
+        amount: totalPrice.value,
+        currency: 'eur',
+        description: `Levfood ${formData.value.step1.package} balíček`,
+      },
+    })
+
+    clientSecret.value = response.clientSecret
+    paymentIntentId.value = response.paymentIntentId
+
+    console.log('Payment intent created:', paymentIntentId.value)
+  } catch (e: any) {
+    console.error('Payment initialization error:', e)
+    stripeError.value = e.data?.message || e.message || 'Nepodarilo sa inicializovať platbu'
+  } finally {
+    stripeLoading.value = false
+  }
+}
+
+/**
+ * Initialize Stripe Elements when stripe and clientSecret are ready
+ */
+watch([stripe, clientSecret], async () => {
+  if (stripe.value && clientSecret.value && !paymentElement.value) {
+    try {
+      // Wait for next tick to ensure DOM is ready
+      await nextTick()
+
+      // Check if container exists
+      const container = document.getElementById('payment-element')
+      if (!container) {
+        console.error('Payment element container not found')
+        return
+      }
+
+      // Create Elements instance with client secret
+      elements.value = stripe.value.elements({
+        clientSecret: clientSecret.value,
+        appearance: {
+          theme: 'stripe',
+          variables: {
+            colorPrimary: '#f97316', // Orange color
+            colorBackground: '#ffffff',
+            colorText: '#1e293b',
+            colorDanger: '#ef4444',
+            fontFamily: 'system-ui, sans-serif',
+            borderRadius: '8px',
+          },
+        },
+      })
+
+      // Create and mount Payment Element
+      paymentElement.value = elements.value.create('payment', {
+        layout: 'tabs',
+      })
+
+      // Mount to DOM
+      paymentElement.value.mount('#payment-element')
+      console.log('Stripe Payment Element mounted successfully')
+    } catch (e: any) {
+      console.error('Elements initialization error:', e)
+      stripeError.value = 'Nepodarilo sa načítať platobný formulár'
+    }
+  }
+})
+
+/**
+ * Handle payment submission
+ */
+async function handleSubmit() {
   if (!formData.value.step4.termsAccepted) {
     alert('Musíte súhlasiť s obchodnými podmienkami')
     return
   }
-  console.log('Form submitted:', formData.value)
-  // Handle form submission logic here
+
+  if (!stripe.value || !elements.value) {
+    stripeError.value = 'Platobný systém nie je pripravený'
+    return
+  }
+
+  stripeProcessing.value = true
+  stripeError.value = null
+
+  try {
+    // Confirm payment with Stripe
+    const { error: submitError, paymentIntent } = await stripe.value.confirmPayment({
+      elements: elements.value,
+      redirect: 'if_required', // Don't redirect, handle success here
+    })
+
+    if (submitError) {
+      stripeError.value = submitError.message || 'Platba zlyhala'
+      stripeProcessing.value = false
+      return
+    }
+
+    if (paymentIntent && paymentIntent.status === 'succeeded') {
+      // Payment successful, save order to database
+      await saveOrder(paymentIntent.id)
+    }
+  } catch (e: any) {
+    console.error('Payment confirmation error:', e)
+    stripeError.value = 'Spracovanie platby zlyhalo'
+    stripeProcessing.value = false
+  }
 }
+
+/**
+ * Save order to Firestore after successful payment
+ */
+async function saveOrder(stripePaymentIntentId: string) {
+  try {
+    const orderData: CreateOrderInput = {
+      // Step 1
+      package: formData.value.step1.package as any,
+      duration: formData.value.step1.duration as any,
+
+      // Step 2
+      dietaryRequirements: formData.value.step2.dietaryRequirement,
+      notes: formData.value.step2.notes || '',
+
+      // Step 2b - Personal info
+      birthDate: formData.value.step2.birthDate,
+      height: Number(formData.value.step2.height),
+      weight: Number(formData.value.step2.weight),
+      physicalActivity: formData.value.step2.physicalActivity as any,
+      workActivity: formData.value.step2.workActivity as any,
+      stressLevel: formData.value.step2.stressLevel as any,
+      goal: formData.value.step2.goal,
+
+      // Step 3
+      fullName: formData.value.step3.fullName,
+      phone: formData.value.step3.phone,
+      email: formData.value.step3.email,
+      address: formData.value.step3.address,
+      courierNotes: formData.value.step3.courierNotes || '',
+
+      // Step 4
+      deliveryStartDate: formData.value.step4.deliveryStartDate,
+      termsAccepted: formData.value.step4.termsAccepted,
+      stripePaymentIntentId,
+    }
+
+    console.log('Order data being sent:', orderData)
+
+    const response = await $fetch('/api/orders/create', {
+      method: 'POST',
+      body: orderData,
+    })
+
+    console.log('Order created:', response)
+
+    // Show success notification
+    useToast().add({
+      title: 'Objednávka úspešná!',
+      description: `Tvoja objednávka #${response.orderId} bola prijatá. Ďakujeme!`,
+      color: 'success',
+      timeout: 8000,
+    })
+
+    // Show success state
+    orderSuccess.value = true
+    createdOrderId.value = response.orderId
+  } catch (e: any) {
+    console.error('Order creation error:', e)
+    stripeError.value = 'Platba bola úspešná, ale nepodarilo sa uložiť objednávku. Kontaktujte nás.'
+
+    useToast().add({
+      title: 'Chyba',
+      description: 'Platba bola úspešná, ale objednávka nebola uložená. Kontaktujte nás.',
+      color: 'error',
+      timeout: 10000,
+    })
+  } finally {
+    stripeProcessing.value = false
+  }
+}
+
+// Watch for step 4 and initialize payment
+watch(() => currentStep.value, (newStep) => {
+  if (newStep === 4 && !clientSecret.value) {
+    initializePayment()
+  }
+})
 </script>
 
 <template>
@@ -465,11 +698,92 @@ function handleSubmit() {
             </UFormField>
 
             <UFormField label="Iné poznámky alebo alergie" class="w-full">
-              <UTextarea 
-                v-model="formData.step2.notes" 
+              <UTextarea
+                v-model="formData.step2.notes"
                 size="lg"
                 placeholder="Napríklad: nemám rád huby, prosím menej pikantné jedlá…"
                 :rows="4"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+
+          <!-- Niečo o tebe section -->
+          <div class="">
+            <div class="text-center mb-4">
+              <h3 class="text-xl font-bold text-[var(--color-dark-green)] font-condensed">Niečo o tebe</h3>
+              <p class="text-sm text-[var(--color-dark-green)] mt-1">Pomôžu nám lepšie nastaviť tvoj plán</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <UFormField label="Dátum narodenia" class="w-full">
+                <UInput
+                  v-model="formData.step2.birthDate"
+                  type="date"
+                  size="lg"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Výška (cm)" class="w-full">
+                <UInput
+                  v-model.number="formData.step2.height"
+                  type="number"
+                  size="lg"
+                  placeholder="napr. 175"
+                  max="300"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Aktuálna hmotnosť (kg)" class="w-full">
+                <UInput
+                  v-model.number="formData.step2.weight"
+                  type="number"
+                  size="lg"
+                  placeholder="napr. 70"
+                  max="500"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Fyzická aktivita" class="w-full">
+                <USelect
+                  v-model="formData.step2.physicalActivity"
+                  :items="physicalActivityOptions"
+                  placeholder="Vyber úroveň"
+                  size="lg"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Pracovná aktivita" class="w-full">
+                <USelect
+                  v-model="formData.step2.workActivity"
+                  :items="workActivityOptions"
+                  placeholder="Vyber typ"
+                  size="lg"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Stres" class="w-full">
+                <USelect
+                  v-model="formData.step2.stressLevel"
+                  :items="stressLevelOptions"
+                  placeholder="Vyber úroveň"
+                  size="lg"
+                  class="min-w-full"
+                />
+              </UFormField>
+            </div>
+
+            <UFormField label="Aký máš cieľ?" class="w-full mt-4">
+              <UTextarea
+                v-model="formData.step2.goal"
+                size="lg"
+                placeholder="Napríklad: chcem schudnúť 5 kg, chcem nabrať svalovú hmotu, chhem sa cítiť lepšie..."
+                :rows="3"
                 class="w-full"
               />
             </UFormField>
@@ -482,8 +796,8 @@ function handleSubmit() {
             >
               Späť
             </button>
-            <button 
-              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            <button
+              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed"
               @click="nextStep"
             >
               Ďalej
@@ -604,82 +918,138 @@ function handleSubmit() {
 
         <!-- Step 4 - Payment -->
         <div v-if="currentStep === 4" class="space-y-8">
-          <div class="text-center">
-            <h2 class="text-2xl font-bold text-[var(--color-dark-green)] mb-3 font-condensed">Zhrnutie objednávky a platba</h2>
-            <p class="text-sm text-[var(--color-dark-green)]">Skontroluj údaje a dokonči objednávku.</p>
-          </div>
-
-          <!-- Summary Section -->
-          <div class="bg-white rounded-lg p-6 mb-6">
-            <h3 class="text-lg font-bold text-[var(--color-dark-green)] mb-4 font-condensed">Zhrnutie</h3>
-            <div class="space-y-2 text-[var(--color-dark-green)]">
-              <div class="flex justify-between">
-                <span>Balíček:</span>
-                <span class="font-semibold">{{ summaryData.package || '-' }}</span>
+          <!-- Success Message -->
+          <div v-if="orderSuccess" class="text-center py-12">
+            <div class="mb-6">
+              <div class="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-orange)] rounded-full mb-4">
+                <UIcon name="i-heroicons-check" class="w-10 h-10 text-white" />
               </div>
-              <div class="flex justify-between">
-                <span>Počet dní:</span>
-                <span class="font-semibold">{{ summaryData.days || '-' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>Cena spolu:</span>
-                <span class="font-semibold">{{ summaryData.price ? `${summaryData.price}€` : '-' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>Doručenie:</span>
-                <span class="font-semibold">{{ summaryData.address || '-' }}</span>
-              </div>
+              <h2 class="text-2xl font-bold text-[var(--color-dark-green)] mb-3 font-condensed">Objednávka úspešná!</h2>
+              <p class="text-[var(--color-dark-green)] mb-4">
+                Tvoja objednávka bola prijatá.<br>
+                Číslo objednávky: <strong class="text-2xl">{{ createdOrderId }}</strong>
+              </p>
+              <p class="text-sm text-[var(--color-dark-green)] mb-6">
+                Budeme ťa kontaktovať na {{ formData.step3.email }}
+              </p>
+              <button
+                class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-8 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed"
+                @click="navigateTo('/')"
+              >
+                Späť na hlavnú stránku
+              </button>
             </div>
           </div>
 
-          <div class="space-y-6">
-            <UFormField label="Začiatok dodávky" class="w-full">
-              <div class="flex items-center gap-2">
-                <UInput 
-                  v-model="formData.step4.deliveryStartDate" 
-                  type="date"
-                  size="lg"
-                  icon="i-lucide-calendar"
-                  placeholder="dd/mm/rrrr"
-                  class="flex-1"
-                />
-                <UButton
-                  variant="ghost"
-                  color="neutral"
-                  @click="showDeliveryInfoModal = true"
-                  class="text-[var(--color-dark-green)]"
+          <!-- Payment Form -->
+          <div v-else>
+            <div class="text-center mb-6">
+              <h2 class="text-2xl font-bold text-[var(--color-dark-green)] mb-3 font-condensed">Zhrnutie objednávky a platba</h2>
+              <p class="text-sm text-[var(--color-dark-green)]">Skontroluj údaje a dokonči objednávku.</p>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="bg-white rounded-lg p-6 mb-6">
+              <h3 class="text-lg font-bold text-[var(--color-dark-green)] mb-4 font-condensed">Zhrnutie</h3>
+              <div class="space-y-2 text-[var(--color-dark-green)]">
+                <div class="flex justify-between">
+                  <span>Balíček:</span>
+                  <span class="font-semibold">{{ summaryData.package || '-' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Počet dní:</span>
+                  <span class="font-semibold">{{ summaryData.days || '-' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Cena spolu:</span>
+                  <span class="font-semibold">{{ totalPriceFormatted }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Doručenie:</span>
+                  <span class="font-semibold">{{ summaryData.address || '-' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-6">
+              <UFormField label="Začiatok dodávky" class="w-full">
+                <div class="flex items-center gap-2">
+                  <UInput
+                    v-model="formData.step4.deliveryStartDate"
+                    type="date"
+                    size="lg"
+                    icon="i-lucide-calendar"
+                    placeholder="dd/mm/rrrr"
+                    class="flex-1"
+                  />
+                  <button
+                    class="p-2 text-[var(--color-dark-green)] hover:text-[var(--color-orange)] transition-colors"
+                    @click="showDeliveryInfoModal = true"
+                  >
+                    <UIcon name="i-lucide-info" class="w-5 h-5" />
+                  </button>
+                </div>
+              </UFormField>
+
+              <!-- Loading State -->
+              <div v-if="stripeLoading" class="flex flex-col items-center justify-center py-12 bg-white rounded-lg">
+                <UIcon name="i-heroicons-arrow-path" class="w-12 h-12 text-orange-500 animate-spin mb-4" />
+                <p class="text-sm text-slate-600">Načítavam platobný formulár...</p>
+              </div>
+
+              <!-- Error Alert -->
+              <div v-if="stripeError && !stripeLoading" class="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                <div class="flex items-start gap-3">
+                  <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p class="font-semibold text-red-900">Chyba</p>
+                    <p class="text-sm text-red-700">{{ stripeError }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stripe Payment Element -->
+              <div v-if="clientSecret && !stripeLoading" class="space-y-6">
+                <div class="bg-white rounded-lg p-6">
+                  <h3 class="text-lg font-bold text-[var(--color-dark-green)] mb-4 font-condensed">Platobné údaje</h3>
+                  <div id="payment-element" class="min-h-[200px]"></div>
+                </div>
+
+                <UFormField>
+                  <div class="flex items-start gap-2">
+                    <UCheckbox
+                      v-model="formData.step4.termsAccepted"
+                      color="orange"
+                    />
+                    <label class="text-sm text-[var(--color-dark-green)]">
+                      Súhlasím s <a href="#" class="underline hover:text-[var(--color-orange)]">obchodnými podmienkami</a>, <a href="#" class="underline hover:text-[var(--color-orange)]">zásadami ochrany údajov</a> a spracovaním osobných údajov pre účely objednávky.
+                    </label>
+                  </div>
+                </UFormField>
+              </div>
+
+              <div class="flex justify-end gap-3">
+                <button
+                  class="hero-button border-2 border-[var(--color-orange)] text-[var(--color-orange)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:bg-[var(--color-orange)] hover:text-[var(--color-dark-green)] hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="stripeProcessing"
+                  @click="previousStep"
                 >
-                  <UIcon name="i-lucide-info" class="w-5 h-5" />
-                </UButton>
+                  Späť
+                </button>
+                <button
+                  class="flex items-center hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  :disabled="!formData.step4.termsAccepted || stripeProcessing || stripeLoading || !clientSecret"
+                  @click="handleSubmit"
+                >
+                  <UIcon v-if="stripeProcessing" name="i-heroicons-arrow-path" class="w-5 h-5 mr-2 animate-spin" />
+                  {{ stripeProcessing ? 'Spracúvam platbu...' : `Zaplatiť ${totalPriceFormatted}` }}
+                </button>
               </div>
-            </UFormField>
 
-            <UFormField>
-              <div class="flex items-start gap-2">
-                <UCheckbox 
-                  v-model="formData.step4.termsAccepted"
-                  color="orange"
-                />
-                <label class="text-sm text-[var(--color-dark-green)]">
-                  Súhlasím s <a href="#" class="underline hover:text-[var(--color-orange)]">obchodnými podmienkami</a>, <a href="#" class="underline hover:text-[var(--color-orange)]">zásadami ochrany údajov</a> a spracovaním osobných údajov pre účely objednávky.
-                </label>
-              </div>
-            </UFormField>
-          </div>
-
-          <div class="flex justify-end gap-3">
-            <button 
-              class="hero-button border-2 border-[var(--color-orange)] text-[var(--color-orange)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:bg-[var(--color-orange)] hover:text-[var(--color-dark-green)] hover:scale-105 hover:shadow-lg"
-              @click="previousStep"
-            >
-              Späť
-            </button>
-            <button 
-              class="hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed"
-              @click="handleSubmit"
-            >
-              Zaplatiť a dokončiť objednávku
-            </button>
+              <p v-if="clientSecret" class="text-xs text-center text-slate-500">
+                Zabezpečené platbou cez Stripe. Tvoje platobné údaje sú šifrované.
+              </p>
+            </div>
           </div>
         </div>
       </div>
