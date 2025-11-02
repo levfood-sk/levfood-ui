@@ -266,7 +266,7 @@ onMounted(() => {
         </div>
 
         <!-- Process Flow - Desktop (horizontal with step 5 centered below) -->
-        <div class="hidden lg:block mb-48">
+        <div class="hidden lg:block mb-[200px]">
           <!-- Main row with 4 steps -->
           <div class="flex items-center justify-center gap-8 mb-8">
             <!-- Step 1 -->
@@ -315,10 +315,9 @@ onMounted(() => {
           </div>
         </div>
       </div>
-
       <!-- Decorative Vegetable - Off screen at bottom -->
-      <div class="absolute bottom-[-20px] left-3/4 hidden lg:block">
-        <img :src="vegetableIcon" alt="Vegetable" class="w-[300px]" />
+      <div class="absolute bottom-[-20px] lg:right-[100px] right-[50px]">
+        <img :src="vegetableIcon" alt="Vegetable" class="lg:w-[500px] md:w-[300px] w-[200px] h-auto" />
       </div>
     </div>
 
@@ -327,8 +326,8 @@ onMounted(() => {
       <div class="bg-[var(--color-dark-green)] relative overflow-hidden pt-[50px] lg:pt-[200px] lg:pb-[200px] pb-[100px] rounded-[40px]">
         <!-- Lion Bullet - Overflowing on right (half off screen) -->
         <div class="hidden lg:block absolute right-[-325px] top-[50%] transform -translate-y-[50%]  z-0">
-            <img :src="lionBulletIcon" alt="Lion Bullet" class="w-[650px] h-[650px] object-cover" />
-          </div>
+          <img :src="lionBulletIcon" alt="Lion Bullet" class="w-[650px] h-[650px] object-cover" />
+        </div>
       <div class="container mx-auto px-4 py-20 relative">
         <div class="grid grid-cols-12 gap-4 items-center relative">
           <!-- Content -->
@@ -375,7 +374,7 @@ onMounted(() => {
       <img :src="saltShakersIcon" alt="Salt Shakers" class="hidden lg:block w-32 h-32 xl:w-48 xl:h-48 absolute top-[20px] left-[50%] translate-x-[150px]" />
       <div class="container mx-auto px-4">
         <!-- Section Header -->
-        <div class="flex items-center justify-center gap-4 lg:mb-8 mb-4">
+        <div class="flex items-center justify-center gap-4 lg:mb-8 mb-2">
           <h2 class="md:text-[96px] sm:text-[72px] text-[64px] leading-[100%] font-condensed font-extrabold text-[var(--color-dark-green)] tracking-tight">
             Cenník
           </h2>
@@ -406,7 +405,9 @@ onMounted(() => {
                 v-model="economyDays"
                 :items="daysOptions" 
                 placeholder="Vyber počet dní"
-                class="pricing-select w-full bg-transparent"
+                color="neutral"
+                highlight
+                class="pricing-select w-full bg-transparent h-[3.5rem]"
               />
             </div>
             <UButton 
@@ -416,20 +417,20 @@ onMounted(() => {
               Objednať EKONOMY
             </UButton>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
-            <ul class="space-y-3">
-              <li class="flex items-start gap-3">
+            <ul class="space-y-1">
+              <li class="flex items-center gap-3">
                 <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
                 <span class="text-[var(--color-dark-green)]">Vyvážené denné menu</span>
               </li>
-              <li class="flex items-start gap-3">
+              <li class="flex items-center gap-3">
                 <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
                 <span class="text-[var(--color-dark-green)]">4 jedlá denne (raňajky + obed s polievkou + večera)</span>
               </li>
-              <li class="flex items-start gap-3">
+              <li class="flex items-center gap-3">
                 <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
@@ -456,7 +457,9 @@ onMounted(() => {
                 v-model="standardDays"
                 :items="daysOptions" 
                 placeholder="Vyber počet dní"
-                class="pricing-select w-full bg-transparent"
+                color="neutral"
+                highlight
+                class="pricing-select w-full bg-transparent h-[3.5rem]"
               />
             </div>
             <UButton 
@@ -500,7 +503,9 @@ onMounted(() => {
                 v-model="premiumDays"
                 :items="daysOptions" 
                 placeholder="Vyber počet dní"
-                class="pricing-select w-full bg-transparent text-[var(--color-dark-green)]"
+                color="neutral"
+                highlight
+                class="pricing-select w-full bg-transparent h-[3.5rem]"
               />
             </div>
             <UButton 

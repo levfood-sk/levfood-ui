@@ -72,65 +72,13 @@ button.bg-\[var\(--color-dark-green\)\] {
   font-family: var(--font-condensed);
 }
 
-/* Pricing dropdown styling */
-.pricing-select {
-  width: 100% !important;
-  height: 3.5rem !important;
-}
-
-.pricing-select :deep(.UBaseInput__wrapper) {
-  background: transparent !important;
-  border-color: var(--color-dark-green) !important;
-}
-
-.pricing-select :deep(input) {
+button.pricing-select[role="combobox"] span {
   color: var(--color-dark-green) !important;
-  background: transparent !important;
-  font-size: 1.125rem !important;
-  font-weight: 700 !important;
-  height: 3.5rem !important;
-  padding: 0 1rem !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  line-height: 150% !important;
 }
 
-.pricing-select :deep(button) {
-  color: var(--color-dark-green) !important;
-  background: transparent !important;
-  height: 3.5rem !important;
-}
-
-.pricing-select :deep(.UBaseInput__base) {
-  background: transparent !important;
-  border-color: var(--color-dark-green) !important;
-  height: 3.5rem !important;
-}
-
-.pricing-select :deep(.UBaseInput__prefix),
-.pricing-select :deep(.UBaseInput__suffix) {
-  background: transparent !important;
-}
-
-/* Dropdown menu */
-.pricing-select :deep(.UPopover__panel) {
-  background: var(--color-beige) !important;
-}
-
-.pricing-select :deep(.UIcon) {
-  color: var(--color-dark-green) !important;
-}
-
-.pricing-select :deep(.UBaseInput__input) {
-  font-family: var(--font-condensed) !important;
-}
-
-/* Pricing select hover effects */
-.pricing-select :deep(.UBaseInput__wrapper:hover) {
-  border-color: var(--color-orange) !important;
-}
-
-.pricing-select :deep(.UBaseInput__wrapper:focus-within) {
-  border-color: var(--color-orange) !important;
-  box-shadow: 0 0 0 3px rgba(242, 142, 122, 0.1) !important;
-}
 
 /* Unified Button Styles */
 .btn-primary {
