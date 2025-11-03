@@ -3,8 +3,8 @@ import logoSmallIcon from '@/assets/icons/logo-small.svg'
 
 const currentYear = new Date().getFullYear()
 const legalLinks = [
-  { label: 'Privacy Policy', to: '#' },
-  { label: 'Terms of Service', to: '#' },
+  { label: 'Zásady ochrany osobných údajov', to: '/zasady-ochrany' },
+  { label: 'Terms of Service', to: '/podmienky-pouzivania' },
   { label: 'Cookies Settings', to: '#' }
 ]
 const socials = [
@@ -33,10 +33,10 @@ const socials = [
 
       <div class="flex flex-col items-center justify-center gap-3 text-[var(--color-beige)]">
         <div class="flex lg:flex-row flex-col items-center gap-3">
-          <p class="text-sm lg:block hidden">© {{ currentYear }} All rights reserved.</p>
+          <p class="text-sm lg:block hidden">© {{ currentYear }} Všetky práva vyhradené.</p>
           <NuxtLink v-for="l in legalLinks" :key="l.label" :to="l.to" class="hover:text-[var(--color-orange)] transition-colors text-sm">{{ l.label }}</NuxtLink>
         </div>
-        <p class="text-sm mt-4 lg:hidden block">© {{ currentYear }} All rights reserved.</p>
+        <p class="text-sm mt-4 lg:hidden block">© {{ currentYear }} Všetky práva vyhradené.</p>
       </div>
     </div>
   </footer>
