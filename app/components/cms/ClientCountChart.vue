@@ -106,15 +106,15 @@ const chartOptions = {
       titleFont: { 
         size: 13,
         weight: '600',
+        family: 'Sofia Sans',
       },
       bodyFont: { 
         size: 12,
         weight: '400',
+        family: 'Sofia Sans',
       },
       titleColor: '#FCEFE6',
       bodyColor: '#FCEFE6',
-      borderColor: '#F28E7A',
-      borderWidth: 1,
       cornerRadius: 8,
       displayColors: false,
     },
@@ -128,6 +128,7 @@ const chartOptions = {
         color: '#6B7280',
         font: {
           size: 11,
+          family: 'Sofia Sans',
         },
       },
       grid: {
@@ -139,6 +140,7 @@ const chartOptions = {
         color: '#6B7280',
         font: {
           size: 11,
+          family: 'Sofia Sans',
         },
       },
       grid: {

@@ -27,12 +27,16 @@ interface ChartData {
   count: number
 }
 
+type ViewType = 'year' | 'month' | 'week'
+
 interface Props {
   data: ChartData[]
+  viewType?: ViewType
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  data: () => []
+  data: () => [],
+  viewType: 'month'
 })
 
 
@@ -44,7 +48,11 @@ const chartData = computed(() => {
     }
   }
 
-  const labels = props.data.map(d => d.package)
+  // Ensure packages are in consistent order
+  const packageOrder: Array<'EKONOMY' | 'ŠTANDARD' | 'PREMIUM'> = ['EKONOMY', 'ŠTANDARD', 'PREMIUM']
+  const dataMap = new Map(props.data.map(d => [d.package, d.count]))
+  
+  const labels = packageOrder
   const colors = {
     EKONOMY: '#F28E7A',
     ŠTANDARD: '#0E2825',
@@ -53,12 +61,12 @@ const chartData = computed(() => {
   const borderColors = {
     EKONOMY: '#F28E7A',
     ŠTANDARD: '#0E2825',
-    PREMIUM: '#0E2825', // Dark border for light beige background
+    PREMIUM: '#0E2825',
   }
 
-  const dataValues = props.data.map(d => d.count)
-  const backgroundColorsArray = props.data.map(d => colors[d.package as keyof typeof colors] || '#9CA3AF')
-  const borderColorsArray = props.data.map(d => borderColors[d.package as keyof typeof borderColors] || '#9CA3AF')
+  const dataValues = labels.map(pkg => dataMap.get(pkg) || 0)
+  const backgroundColorsArray = labels.map(pkg => colors[pkg as keyof typeof colors] || '#9CA3AF')
+  const borderColorsArray = labels.map(pkg => borderColors[pkg as keyof typeof borderColors] || '#9CA3AF')
 
   return {
     labels,

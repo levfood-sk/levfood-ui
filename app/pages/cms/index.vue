@@ -15,15 +15,24 @@ const stats = ref({
 const chartData = ref({
   clientCount: [] as Array<{ month: string; count: number }>,
   orderTrend: [] as Array<{ package: string; count: number }>,
+  orderTrendByWeek: [] as Array<{ package: string; count: number }>,
+  orderTrendByYear: [] as Array<{ package: string; count: number }>,
 })
 
 const loading = ref(true)
 const clientCountView = ref<'year' | 'month'>('month')
+const orderTrendView = ref<'year' | 'month' | 'week'>('month')
 
 // View options for select
 const viewOptions = [
   { label: 'Rok', value: 'year' },
   { label: 'Mesiac', value: 'month' },
+]
+
+const orderTrendViewOptions = [
+  { label: 'Rok', value: 'year' },
+  { label: 'Mesiac', value: 'month' },
+  { label: 'Týždeň', value: 'week' },
 ]
 
 // Transform chart data based on selected view
@@ -51,6 +60,23 @@ const transformedClientCountData = computed(() => {
   }
 
   return data
+})
+
+// Transform order trend data based on selected view
+const transformedOrderTrendData = computed(() => {
+  if (orderTrendView.value === 'month') {
+    return chartData.value.orderTrend
+  }
+
+  if (orderTrendView.value === 'week') {
+    return chartData.value.orderTrendByWeek
+  }
+
+  if (orderTrendView.value === 'year') {
+    return chartData.value.orderTrendByYear
+  }
+
+  return chartData.value.orderTrend
 })
 
 // Load statistics
@@ -180,16 +206,24 @@ onMounted(() => {
       <!-- Order Trend Chart -->
       <UCard>
         <template #header>
-          <h3 class="text-lg font-semibold text-slate-900">Trend objednávok</h3>
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-slate-900">Trend objednávok</h3>
+            <USelect
+              v-model="orderTrendView"
+              :items="orderTrendViewOptions"
+              class="w-32"
+              size="sm"
+            />
+          </div>
         </template>
         <div v-if="loading" class="flex items-center justify-center h-64">
           <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-orange-500" />
         </div>
-        <div v-else-if="chartData.orderTrend.length === 0" class="flex items-center justify-center h-64 text-slate-500">
+        <div v-else-if="transformedOrderTrendData.length === 0" class="flex items-center justify-center h-64 text-slate-500">
           <p>Žiadne dáta</p>
         </div>
         <div v-else class="h-64">
-          <CmsOrderTrendChart :key="`order-${chartData.orderTrend.length}`" :data="chartData.orderTrend" />
+          <CmsOrderTrendChart :key="`order-${orderTrendView}-${transformedOrderTrendData.length}`" :data="transformedOrderTrendData" :view-type="orderTrendView" />
         </div>
       </UCard>
     </div>
