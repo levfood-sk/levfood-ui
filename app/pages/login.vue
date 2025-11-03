@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
+
 definePageMeta({
   layout: false
 })
@@ -31,7 +33,7 @@ const handleEmailLogin = async () => {
       <template #header>
         <div class="text-center pt-2">
           <NuxtLink to="/" class="inline-block mb-4">
-            <h1 class="text-3xl font-bold text-slate-900">Levfood</h1>
+            <img :src="logoLongIcon" alt="LevFood logo" class="w-[240px] h-auto" />
           </NuxtLink>
           <h2 class="text-2xl font-bold text-slate-900">Prihlásenie do Admin Panelu</h2>
           <p class="text-sm text-slate-600 mt-2">Prihláste sa pomocou svojho admin účtu</p>
@@ -88,6 +90,7 @@ const handleEmailLogin = async () => {
             block
             size="lg"
             :loading="loading"
+            class="bg-[var(--color-orange)] hover:bg-[var(--color-dark-green)] text-[var(--color-dark-green)] hover:text-[var(--color-orange)] cursor-pointer h-[3.5rem]"
           >
             Prihlásiť sa
           </UButton>

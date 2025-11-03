@@ -174,7 +174,7 @@ const isActiveRoute = (item: typeof navItems[0]) => {
           </nav>
           
           <!-- Sidebar Footer (User Info) -->
-          <div class="p-4 border-t border-gray-200/50 flex-shrink-0">
+          <div class="p-4 border-t border-gray-200/50 flex-shrink-0 space-y-2">
             <div v-if="user" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-50">
               <UAvatar
                 v-if="user.photoURL"
@@ -196,6 +196,14 @@ const isActiveRoute = (item: typeof navItems[0]) => {
                 </p>
               </div>
             </div>
+            <button
+              @click="handleSignOut"
+              :disabled="loading"
+              class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-dark-green hover:orange"
+            >
+              <UIcon name="i-lucide-log-out" class="w-5 h-5 flex-shrink-0 text-dark-green" />
+              <span>Odhlásiť sa</span>
+            </button>
           </div>
         </aside>
       </transition>
@@ -240,7 +248,7 @@ const isActiveRoute = (item: typeof navItems[0]) => {
         </nav>
 
         <!-- Sidebar Footer (Always Visible at Bottom) -->
-        <div class="p-4 border-t border-gray-200/50 flex-shrink-0">
+        <div class="p-4 border-t border-gray-200/50 flex-shrink-0 space-y-2">
           <div v-if="user" :class="[
             'flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-50',
             isDesktopCollapsed ? 'justify-center' : ''
@@ -270,6 +278,18 @@ const isActiveRoute = (item: typeof navItems[0]) => {
               </p>
             </div>
           </div>
+          <button
+            @click="handleSignOut"
+            :disabled="loading"
+            :class="[
+              'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-dark-green hover:bg-beige cursor-pointer',
+              isDesktopCollapsed ? 'justify-center' : ''
+            ]"
+            :title="isDesktopCollapsed ? 'Odhlásiť sa' : ''"
+          >
+            <UIcon name="i-lucide-log-out" class="w-5 h-5 flex-shrink-0" />
+            <span v-show="!isDesktopCollapsed" :class="['transition-all duration-300 overflow-hidden whitespace-nowrap', isDesktopCollapsed ? 'hidden' : 'block']">Odhlásiť sa</span>
+          </button>
         </div>
       </aside>
 
