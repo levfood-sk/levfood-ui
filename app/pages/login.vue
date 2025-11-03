@@ -16,7 +16,7 @@ const handleEmailLogin = async () => {
 
   try {
     await signIn(email.value, password.value)
-    await navigateTo('/dashboard')
+    await navigateTo('/cms')
   } catch (e: any) {
     error.value = e.message || 'Prihlásenie zlyhalo'
   } finally {

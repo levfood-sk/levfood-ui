@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto max-w-7xl">
+  <div class="container max-w-7xl">
     <div class="mb-8">
       <h1 class="text-3xl font-bold mb-2">Pridanie Jedla</h1>
       <p class="text-gray-600">Spravujte jedálny lístok pre každý deň v týždni</p>
@@ -248,7 +248,7 @@ watch(currentWeekId, () => {
 // Auto-select first day when week loads (after data is fetched)
 watch(() => weekMealsData.value, (newData) => {
   if (newData && !selectedDay.value && daysOfWeek.length > 0) {
-    selectedDay.value = daysOfWeek[0]
+    selectedDay.value = daysOfWeek[0] ?? null
   }
 }, { immediate: false })
 </script>

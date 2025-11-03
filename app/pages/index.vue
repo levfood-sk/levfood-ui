@@ -79,7 +79,7 @@ const teamMembers = [
 // Redirect to dashboard if already logged in (client-side only)
 onMounted(() => {
   if (user.value) {
-    navigateTo('/dashboard')
+    navigateTo('/cms')
   }
 })
 </script>

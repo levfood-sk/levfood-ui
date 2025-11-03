@@ -132,7 +132,7 @@ function formatDate(timestamp: any): string {
 
 // Navigate to order detail page
 function viewOrderDetails(order: OrderWithClient) {
-  navigateTo(`/dashboard/orders/${order.orderId}`)
+  navigateTo(`/cms/orders/${order.orderId}`)
 }
 
 // Statistics

@@ -49,33 +49,33 @@ const navItems = [
   {
     label: 'Dashboard',
     icon: 'i-lucide-home',
-    to: '/dashboard',
+    to: '/cms',
     exact: true,
   },
   {
     label: 'Objednávky',
     icon: 'i-lucide-package-search',
-    to: '/dashboard/orders',
+    to: '/cms/orders',
   },
   {
     label: 'Užívatelia',
     icon: 'i-lucide-users',
-    to: '/dashboard/uzivatelia',
+    to: '/cms/uzivatelia',
   },
   {
     label: 'Pridanie Jedla',
     icon: 'i-lucide-carrot',
-    to: '/dashboard/pridanie-jedla',
+    to: '/cms/pridanie-jedla',
   },
   {
     label: 'Zamestnanci',
     icon: 'i-lucide-shield-user',
-    to: '/dashboard/zamestnanci',
+    to: '/cms/zamestnanci',
   },
   {
     label: 'CMS - Modal',
     icon: 'i-lucide-app-window-mac',
-    to: '/dashboard/cms-modal',
+    to: '/cms/cms-modal',
   },
   // {
   //   label: 'Push Notifications',
@@ -166,11 +166,11 @@ const isActiveRoute = (item: typeof navItems[0]) => {
 
       <!-- Desktop Sidebar (Always Visible) -->
       <aside :class="[
-        'hidden md:flex md:flex-col border-r border-gray-200/50 bg-white/50 backdrop-blur-sm h-screen sticky  transition-all duration-300',
+        'hidden md:flex md:flex-col border-r border-gray-200/50 bg-white/50 backdrop-blur-sm fixed top-0 left-0 h-screen max-h-screen z-30 transition-all duration-300',
         isDesktopCollapsed ? 'w-20' : 'w-64'
       ]">
         <!-- Logo / Toggle Section -->
-        <div class="p-4 border-b border-gray-200/50 flex items-center justify-end">
+        <div class="p-4 border-b border-gray-200/50 flex items-center justify-end flex-shrink-0">
           <button
             @click="toggleDesktopSidebar"
             class="p-2 rounded-lg hover:bg-beige transition-colors cursor-pointer flex items-center justify-center"
@@ -184,7 +184,7 @@ const isActiveRoute = (item: typeof navItems[0]) => {
         </div>
 
         <!-- Navigation (Scrollable) -->
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto overflow-x-hidden min-h-0">
           <NuxtLink
             v-for="item in navItems"
             :key="item.to"
@@ -238,7 +238,10 @@ const isActiveRoute = (item: typeof navItems[0]) => {
       </aside>
 
       <!-- Main Content Area -->
-      <main class="flex-1 min-w-0">
+      <main :class="[
+        'flex-1 min-w-0 transition-all duration-300',
+        isDesktopCollapsed ? 'md:ml-20' : 'md:ml-64'
+      ]">
         <div class="px-4 sm:px-6 lg:px-8 py-8">
           <!-- Page Content -->
           <slot />

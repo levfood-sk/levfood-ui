@@ -9,7 +9,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const loading = useState('firebase-auth-loading')
 
   // Protected routes
-  const protectedRoutes = ['/app', '/dashboard']
+  const protectedRoutes = ['/app', '/cms']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route))
 
   // Auth routes
@@ -40,6 +40,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Redirect authenticated users from auth routes
   if (isAuthRoute && user.value) {
-    return navigateTo('/dashboard')
+    return navigateTo('/cms')
   }
 })
