@@ -3,6 +3,8 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, type Unsubscrib
 import { formatPrice } from '~~/app/lib/types/order'
 import type { Client, AccountStatus, OrderWithClient } from '~~/app/lib/types/order'
 
+const { exportToPdf } = usePdfExport()
+
 definePageMeta({
   layout: 'dashboard',
 })
@@ -146,6 +148,77 @@ const stats = computed(() => ({
   endingSoon: clients.value.filter(c => isSubscriptionEndingSoon(c)).length,
   totalRevenue: clients.value.reduce((sum, c) => sum + c.totalSpent, 0),
 }))
+
+// PDF Export
+const exportingPdf = ref(false)
+
+const exportClientsToPdf = async () => {
+  if (filteredClients.value.length === 0) {
+    useToast().add({
+      title: 'Upozornenie',
+      description: 'Nie sú žiadne dáta na export',
+      color: 'warning',
+    })
+    return
+  }
+
+  exportingPdf.value = true
+
+  try {
+    const now = new Date()
+    const dateStr = now.toISOString().split('T')[0]
+    const filename = `pouzivatelia-${dateStr}.pdf`
+
+    const columns = [
+      { header: 'Meno', dataKey: 'fullName' },
+      { header: 'Email', dataKey: 'email' },
+      { header: 'Telefón', dataKey: 'phone' },
+      { header: 'Aktuálny plán', dataKey: 'currentPlan' },
+      { header: 'Dátum registrácie', dataKey: 'createdAt' },
+      { header: 'Stav účtu', dataKey: 'accountStatus' },
+      { header: 'Posledná platba', dataKey: 'lastPaymentDate' },
+      { header: 'Suma platby', dataKey: 'lastPaymentAmount' },
+      { header: 'Koniec predplatného', dataKey: 'subscriptionEndDate' },
+      { header: 'Objednávky', dataKey: 'totalOrders' },
+    ]
+
+    const rows = filteredClients.value.map(client => ({
+      fullName: client.fullName,
+      email: client.email,
+      phone: client.phone,
+      currentPlan: client.currentPlan || '-',
+      createdAt: client.createdAt,
+      accountStatus: client.accountStatus,
+      lastPaymentDate: client.lastPaymentDate,
+      lastPaymentAmount: client.lastPaymentAmount ? formatPrice(client.lastPaymentAmount) : '-',
+      subscriptionEndDate: client.subscriptionEndDate,
+      totalOrders: client.totalOrders,
+    }))
+
+    await exportToPdf({
+      title: 'Zoznam používateľov',
+      columns,
+      rows,
+      filename,
+      orientation: 'landscape',
+    })
+
+    useToast().add({
+      title: 'Úspech',
+      description: 'PDF bol úspešne vygenerovaný',
+      color: 'success',
+    })
+  } catch (error: any) {
+    console.error('PDF export error:', error)
+    useToast().add({
+      title: 'Chyba',
+      description: error.message || 'Nepodarilo sa vytvoriť PDF',
+      color: 'error',
+    })
+  } finally {
+    exportingPdf.value = false
+  }
+}
 </script>
 
 <template>
@@ -191,7 +264,7 @@ const stats = computed(() => ({
 
     <!-- Filters and Search -->
     <UCard class="mb-6">
-      <div class="flex flex-col md:flex-row gap-4">
+      <div class="flex flex-col md:flex-row gap-4 items-end">
         <!-- Search -->
         <div class="flex-1">
           <UInput
@@ -219,6 +292,17 @@ const stats = computed(() => ({
           size="lg"
           class="w-full md:w-48"
         />
+
+        <!-- Export Button -->
+        <UButton
+          :disabled="exportingPdf || filteredClients.length === 0"
+          :loading="exportingPdf"
+          icon="i-lucide-file-down"
+          class="flex items-center justify-center bg-beige h-[3.5rem] w-[3.5rem] text-dark-green hover:bg-orange hover:text-dark-green cursor-pointer disabled:bg-beige disabled:text-dark-green disabled:cursor-not-allowed"
+          color="neutral"
+          size="lg"
+          @click="exportClientsToPdf"
+        ></UButton>
       </div>
     </UCard>
 

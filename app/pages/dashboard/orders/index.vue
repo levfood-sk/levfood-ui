@@ -3,6 +3,8 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, type Un
 import { formatPrice, ORDER_STATUS_LABELS } from '~~/app/lib/types/order'
 import type { Order, OrderWithClient, OrderStatus, Client } from '~~/app/lib/types/order'
 
+const { exportToPdf } = usePdfExport()
+
 definePageMeta({
   layout: 'dashboard',
 })
@@ -141,6 +143,73 @@ const stats = computed(() => ({
   cancelled: orders.value.filter(o => o.orderStatus === 'cancelled').length,
   totalRevenue: orders.value.reduce((sum, o) => sum + o.totalPrice, 0),
 }))
+
+// PDF Export
+const exportingPdf = ref(false)
+
+const exportOrdersToPdf = async () => {
+  if (filteredOrders.value.length === 0) {
+    useToast().add({
+      title: 'Upozornenie',
+      description: 'Nie sú žiadne dáta na export',
+      color: 'warning',
+    })
+    return
+  }
+
+  exportingPdf.value = true
+
+  try {
+    const now = new Date()
+    const dateStr = now.toISOString().split('T')[0]
+    const filename = `objednavky-${dateStr}.pdf`
+
+    const columns = [
+      { header: 'ID objednávky', dataKey: 'orderId' },
+      { header: 'Meno', dataKey: 'fullName' },
+      { header: 'Email', dataKey: 'email' },
+      { header: 'Balíček', dataKey: 'package' },
+      { header: 'Cena', dataKey: 'totalPrice' },
+      { header: 'Stav', dataKey: 'orderStatus' },
+      { header: 'Platba', dataKey: 'paymentStatus' },
+      { header: 'Vytvorené', dataKey: 'createdAt' },
+    ]
+
+    const rows = filteredOrders.value.map(order => ({
+      orderId: `#${order.orderId}`,
+      fullName: order.client?.fullName || '-',
+      email: order.client?.email || '-',
+      package: order.package,
+      totalPrice: formatPrice(order.totalPrice),
+      orderStatus: ORDER_STATUS_LABELS[order.orderStatus],
+      paymentStatus: order.paymentStatus === 'succeeded' ? 'Úspešná' : order.paymentStatus === 'pending' ? 'Čaká' : 'Neúspešná',
+      createdAt: order.createdAt,
+    }))
+
+    await exportToPdf({
+      title: 'Zoznam objednávok',
+      columns,
+      rows,
+      filename,
+      orientation: 'landscape',
+    })
+
+    useToast().add({
+      title: 'Úspech',
+      description: 'PDF bol úspešne vygenerovaný',
+      color: 'success',
+    })
+  } catch (error: any) {
+    console.error('PDF export error:', error)
+    useToast().add({
+      title: 'Chyba',
+      description: error.message || 'Nepodarilo sa vytvoriť PDF',
+      color: 'error',
+    })
+  } finally {
+    exportingPdf.value = false
+  }
+}
 </script>
 
 <template>
@@ -186,7 +255,7 @@ const stats = computed(() => ({
 
     <!-- Filters and Search -->
     <UCard class="mb-6">
-      <div class="flex flex-col md:flex-row gap-4">
+      <div class="flex flex-col md:flex-row gap-4 items-end">
         <!-- Search -->
         <div class="flex-1">
           <UInput
@@ -205,6 +274,17 @@ const stats = computed(() => ({
           size="lg"
           class="w-full md:w-48"
         />
+
+        <!-- Export Button -->
+        <UButton
+          :disabled="exportingPdf || filteredOrders.length === 0"
+          :loading="exportingPdf"
+          icon="i-lucide-file-down"
+          class="flex items-center justify-center bg-beige h-[3.5rem] w-[3.5rem] text-dark-green hover:bg-orange hover:text-dark-green cursor-pointer disabled:bg-beige disabled:text-dark-green disabled:cursor-not-allowed"
+          color="neutral"
+          size="lg"
+          @click="exportOrdersToPdf"
+        ></UButton>
       </div>
     </UCard>
 

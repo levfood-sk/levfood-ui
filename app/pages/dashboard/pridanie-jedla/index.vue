@@ -175,8 +175,6 @@ async function fetchWeekMeals() {
 
 function handleWeekChange(newMonday: Date) {
   currentMonday.value = newMonday
-  selectedDay.value = null
-  fetchWeekMeals()
 }
 
 function handleDayClick(day: DayName) {
@@ -243,6 +241,14 @@ onMounted(() => {
 
 // Watch for week changes
 watch(currentWeekId, () => {
+  selectedDay.value = null
   fetchWeekMeals()
 })
+
+// Auto-select first day when week loads (after data is fetched)
+watch(() => weekMealsData.value, (newData) => {
+  if (newData && !selectedDay.value && daysOfWeek.length > 0) {
+    selectedDay.value = daysOfWeek[0]
+  }
+}, { immediate: false })
 </script>
