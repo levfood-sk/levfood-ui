@@ -110,8 +110,19 @@ const isActiveRoute = (item: typeof navItems[0]) => {
 
 <template>
   <div class="min-h-screen bg-gradient-professional">
-    <!-- Top Header -->
-
+    <!-- Mobile Header -->
+    <header class="fixed top-0 left-0 right-0 h-16 border-b bg-white border-gray-200/50 z-50 md:hidden flex items-center justify-start px-4">
+      <button
+        @click="toggleSidebar"
+        class="p-2 rounded-lg hover:bg-beige transition-colors cursor-pointer flex items-center justify-center"
+        aria-label="Toggle menu"
+      >
+        <UIcon
+          :name="isSidebarOpen ? 'i-lucide-x' : 'i-lucide-menu'"
+          class="w-6 h-6 text-dark-green"
+        />
+      </button>
+    </header>
 
     <!-- Layout Container -->
     <div class="flex relative">
@@ -143,9 +154,9 @@ const isActiveRoute = (item: typeof navItems[0]) => {
       >
         <aside
           v-show="isSidebarOpen"
-          class="fixed left-0 top-16 bottom-0 w-64 bg-white/50 backdrop-blur-sm border-r border-gray-200/50 z-40 md:hidden overflow-y-auto"
+          class="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200/50 z-40 md:hidden overflow-y-auto flex flex-col"
         >
-          <nav class="p-4 space-y-2">
+          <nav class="flex-1 p-4 space-y-2 overflow-y-auto min-h-0">
             <NuxtLink
               v-for="item in navItems"
               :key="item.to"
@@ -161,6 +172,31 @@ const isActiveRoute = (item: typeof navItems[0]) => {
               <span>{{ item.label }}</span>
             </NuxtLink>
           </nav>
+          
+          <!-- Sidebar Footer (User Info) -->
+          <div class="p-4 border-t border-gray-200/50 flex-shrink-0">
+            <div v-if="user" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-50">
+              <UAvatar
+                v-if="user.photoURL"
+                :src="user.photoURL"
+                :alt="user.displayName || user.email || 'User'"
+                size="sm"
+              />
+              <UAvatar
+                v-else
+                :alt="user.displayName || user.email || 'User'"
+                size="sm"
+              />
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-slate-900 truncate">
+                  {{ user.displayName || 'User' }}
+                </p>
+                <p class="text-xs text-slate-500 truncate">
+                  {{ user.email }}
+                </p>
+              </div>
+            </div>
+          </div>
         </aside>
       </transition>
 
@@ -242,7 +278,7 @@ const isActiveRoute = (item: typeof navItems[0]) => {
         'flex-1 min-w-0 transition-all duration-300',
         isDesktopCollapsed ? 'md:ml-20' : 'md:ml-64'
       ]">
-        <div class="px-4 sm:px-6 lg:px-8 py-8">
+        <div class="px-4 sm:px-6 lg:px-8 py-8 pt-20 md:pt-8">
           <!-- Page Content -->
           <slot />
         </div>
