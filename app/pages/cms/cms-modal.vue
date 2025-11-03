@@ -163,7 +163,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6">
+  <div>
     <h2 class="text-3xl font-bold text-slate-900 mb-6">CMS - Modálne okno</h2>
 
     <UCard v-if="loading" class="max-w-3xl">
