@@ -118,7 +118,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Navigation Controls -->
-    <div class="flex justify-start gap-6 mt-6">
+    <div class="flex lg:justify-start justify-center gap-6 mt-6">
       <button
         @click="goToPrevious"
         class="w-12 h-12 rounded-full bg-[var(--color-orange)] flex items-center justify-center shadow-lg hover:opacity-80 transition-opacity"

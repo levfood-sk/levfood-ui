@@ -168,7 +168,7 @@ onMounted(() => {
     <!-- Features Section Wrapper -->
     <div class="bg-[var(--color-beige)]">
       <!-- Features Section -->
-      <div class="bg-[var(--color-dark-green)] pb-[200px] rounded-b-[40px]">
+      <div class="bg-[var(--color-dark-green)] pb-[200px] md:rounded-b-[40px] rounded-b-[20px]">
         <div class="container mx-auto px-4">
           <div class="flex flex-col items-center">
             <!-- Features List -->
@@ -328,7 +328,7 @@ onMounted(() => {
 
     <!-- Info Section -->
     <div class="bg-[var(--color-beige)]">
-      <div class="bg-[var(--color-dark-green)] relative overflow-hidden pt-[50px] lg:pt-[200px] lg:pb-[200px] pb-[100px] rounded-[40px]">
+      <div class="bg-[var(--color-dark-green)] relative overflow-hidden pt-[50px] lg:pt-[200px] lg:pb-[200px] pb-[100px] md:rounded-[40px] rounded-[20px]">
         <!-- Lion Bullet - Overflowing on right (half off screen) -->
         <div class="hidden lg:block absolute right-[-325px] top-[50%] transform -translate-y-[50%]  z-0">
           <img :src="lionBulletIcon" alt="Lion Bullet" class="w-[650px] h-[650px] object-cover" />
@@ -644,7 +644,7 @@ onMounted(() => {
 
     <!-- Contact Section -->
     <div class="bg-[var(--color-beige)]">
-      <div class="bg-[var(--color-dark-green)] rounded-t-[40px] py-20">
+      <div class="bg-[var(--color-dark-green)] md:rounded-t-[40px] rounded-t-[20px] py-20">
         <div class="container mx-auto px-4">
           <!-- Section Header -->
           <div class="text-center mb-16">
