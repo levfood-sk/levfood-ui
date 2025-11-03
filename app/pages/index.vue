@@ -87,6 +87,7 @@ onMounted(() => {
 <template>
   <div class="min-h-screen bg-gradient-professional">
     <AuthLoading />
+    <AnnouncementModal />
     
     <!-- Hero Section -->
     <div class="relative min-h-[80vh] pb-[30px] lg:pb-[200px] pt-[50px] flex items-center justify-center bg-[var(--color-dark-green)] overflow-hidden">
