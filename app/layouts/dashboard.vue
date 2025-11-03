@@ -5,6 +5,7 @@ const route = useRoute()
 // Sidebar state (open on desktop, closed on mobile by default)
 const isSidebarOpen = ref(false)
 const loading = ref(false)
+const isDesktopCollapsed = ref(false)
 
 // Sign out handler
 const handleSignOut = async () => {
@@ -22,6 +23,11 @@ const handleSignOut = async () => {
 // Toggle sidebar (mobile only)
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
+}
+
+// Toggle desktop sidebar collapse
+const toggleDesktopSidebar = () => {
+  isDesktopCollapsed.value = !isDesktopCollapsed.value
 }
 
 // Close sidebar when clicking outside (mobile only)
@@ -105,46 +111,7 @@ const isActiveRoute = (item: typeof navItems[0]) => {
 <template>
   <div class="min-h-screen bg-gradient-professional">
     <!-- Top Header -->
-    <header class="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
-      <div class="px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
-          <!-- Left: Logo + Mobile Menu Toggle -->
-          <div class="flex items-center gap-4">
-            <!-- Mobile Hamburger Menu -->
-            <button
-              @click="toggleSidebar"
-              class="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
-              aria-label="Toggle menu"
-            >
-              <UIcon
-                :name="isSidebarOpen ? 'i-heroicons-x-mark' : 'i-heroicons-bars-3'"
-                class="w-6 h-6 text-slate-700"
-              />
-            </button>
 
-            <!-- Logo -->
-            <NuxtLink to="/" class="flex items-center">
-              <img src="~/assets/icons/logo-long-orange.svg" alt="Levfood" class="w-[130px]" />
-            </NuxtLink>
-          </div>
-
-          <!-- Right: User Actions -->
-          <div class="flex items-center gap-3">
-            <!-- Sign Out Button -->
-            <UButton
-              color="error"
-              variant="soft"
-              size="sm"
-              :loading="loading"
-              @click="handleSignOut"
-            >
-              <span class="hidden sm:inline">Odhlásiť sa</span>
-              <UIcon name="i-lucide-log-out" class="sm:hidden w-5 h-5" />
-            </UButton>
-          </div>
-        </div>
-      </div>
-    </header>
 
     <!-- Layout Container -->
     <div class="flex relative">
@@ -198,28 +165,50 @@ const isActiveRoute = (item: typeof navItems[0]) => {
       </transition>
 
       <!-- Desktop Sidebar (Always Visible) -->
-      <aside class="hidden md:flex md:flex-col w-64 border-r border-gray-200/50 bg-white/50 backdrop-blur-sm h-[calc(100vh-4rem)] sticky top-16">
+      <aside :class="[
+        'hidden md:flex md:flex-col border-r border-gray-200/50 bg-white/50 backdrop-blur-sm h-screen sticky  transition-all duration-300',
+        isDesktopCollapsed ? 'w-20' : 'w-64'
+      ]">
+        <!-- Logo / Toggle Section -->
+        <div class="p-4 border-b border-gray-200/50 flex items-center justify-end">
+          <button
+            @click="toggleDesktopSidebar"
+            class="p-2 rounded-lg hover:bg-beige transition-colors cursor-pointer flex items-center justify-center"
+            aria-label="Toggle sidebar"
+          >
+            <UIcon
+              :name="isDesktopCollapsed ? 'i-lucide-panel-left-open' : 'i-lucide-panel-right-open'"
+              class="w-5 h-5 flex-shrink-0 text-18px px-4 py-3"
+            />
+          </button>
+        </div>
+
         <!-- Navigation (Scrollable) -->
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
           <NuxtLink
             v-for="item in navItems"
             :key="item.to"
             :to="item.to"
-            class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+            class="flex items-start gap-3 px-4 py-3 rounded-lg transition-all duration-200"
             :class="[
               isActiveRoute(item)
                 ? 'text-dark-green bg-orange font-medium text-condensed text-18px hover:bg-orange'
-                : 'text-dark-green hover:bg-beige hover:text-dark-green text-condensed text-18px'
+                : 'text-dark-green hover:bg-beige hover:text-dark-green text-condensed text-18px',
+              isDesktopCollapsed ? 'justify-center' : ''
             ]"
+            :title="isDesktopCollapsed ? item.label : ''"
           >
-            <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
-            <span>{{ item.label }}</span>
+            <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0 " />
+            <span v-show="!isDesktopCollapsed" :class="['transition-all duration-300 overflow-hidden whitespace-nowrap', isDesktopCollapsed ? 'hidden' : 'block']">{{ item.label }}</span>
           </NuxtLink>
         </nav>
 
         <!-- Sidebar Footer (Always Visible at Bottom) -->
         <div class="p-4 border-t border-gray-200/50 flex-shrink-0">
-          <div v-if="user" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-50">
+          <div v-if="user" :class="[
+            'flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-50',
+            isDesktopCollapsed ? 'justify-center' : ''
+          ]">
             <UAvatar
               v-if="user.photoURL"
               :src="user.photoURL"
@@ -231,7 +220,12 @@ const isActiveRoute = (item: typeof navItems[0]) => {
               :alt="user.displayName || user.email || 'User'"
               size="sm"
             />
-            <div class="flex-1 min-w-0">
+            <div 
+              :class="[
+                'flex-1 min-w-0 transition-all duration-300 overflow-hidden',
+                isDesktopCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+              ]"
+            >
               <p class="text-sm font-medium text-slate-900 truncate">
                 {{ user.displayName || 'User' }}
               </p>
