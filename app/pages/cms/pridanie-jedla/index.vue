@@ -18,7 +18,7 @@
       </div>
 
       <!-- Days Grid (All 7 days in one row) -->
-      <div v-else class="grid grid-cols-7 gap-2">
+      <div v-else class="grid grid-cols-3 md:grid-cols-7 gap-2">
         <MealsDayCard
           v-for="(day, index) in daysOfWeek"
           :key="day"
@@ -42,7 +42,7 @@
       </div>
 
       <!-- Meal Editor Form (inline, shown when day is selected) -->
-      <div v-if="selectedDay && !isLoading">
+      <div v-if="selectedDay && !isLoading" class="w-full">
         <UCard>
           <MealsMealEditorForm
             :day="selectedDay"

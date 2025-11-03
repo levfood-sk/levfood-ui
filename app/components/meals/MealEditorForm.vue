@@ -13,7 +13,7 @@
         class="space-y-3"
       >
         <h4 class="font-medium text-gray-700">{{ MEAL_LABELS[mealType] }}</h4>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label class="block text-sm text-gray-600 mb-1">Variant A</label>
             <UInput
@@ -34,7 +34,7 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-3 pt-4">
+    <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3 pt-4">
       <button
         class="flex items-center hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         :disabled="!isFormValid || isSaving"

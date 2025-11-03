@@ -257,34 +257,39 @@ const exportOrdersToPdf = async () => {
     <UCard class="mb-6">
       <div class="flex flex-col md:flex-row gap-4 items-end">
         <!-- Search -->
-        <div class="flex-1">
+        <div class="flex-1 w-full">
           <UInput
             v-model="searchQuery"
             placeholder="Hľadať podľa ID, mena, emailu alebo telefónu..."
             icon="i-heroicons-magnifying-glass"
             size="lg"
+            class="w-full"
           />
         </div>
 
         <!-- Status Filter -->
-        <USelect
-          v-model="selectedStatus"
-          :items="statusOptions"
-          placeholder="Filter podľa stavu"
-          size="lg"
-          class="w-full md:w-48"
-        />
+        <div class="w-full md:w-48">
+          <USelect
+            v-model="selectedStatus"
+            :items="statusOptions"
+            placeholder="Filter podľa stavu"
+            size="lg"
+            class="w-full"
+          />
+        </div>
 
         <!-- Export Button -->
         <UButton
           :disabled="exportingPdf || filteredOrders.length === 0"
           :loading="exportingPdf"
           icon="i-lucide-file-down"
-          class="flex items-center justify-center bg-beige h-[3.5rem] w-[3.5rem] text-dark-green hover:bg-orange hover:text-dark-green cursor-pointer disabled:bg-beige disabled:text-dark-green disabled:cursor-not-allowed"
+          class="w-full md:w-auto flex items-center justify-center gap-2 bg-beige h-[3.5rem] md:h-[3.5rem] md:w-[3.5rem] text-dark-green hover:bg-orange hover:text-dark-green cursor-pointer disabled:bg-beige disabled:text-dark-green disabled:cursor-not-allowed"
           color="neutral"
           size="lg"
           @click="exportOrdersToPdf"
-        ></UButton>
+        >
+          <span class="md:hidden">Exportovať do PDF</span>
+        </UButton>
       </div>
     </UCard>
 

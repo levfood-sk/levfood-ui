@@ -272,19 +272,117 @@ const handleDeleteAdmin = async () => {
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
       <div>
         <h1 class="text-3xl font-bold" style="color: var(--color-dark-green)">Zamestnanci</h1>
         <p class="text-slate-600 mt-1">Správa administrátorov a zamestnancov</p>
       </div>
       <button
-        class="flex items-center gap-2 bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-roboto"
+        class="flex items-center justify-center gap-2 w-full md:w-auto bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-roboto mt-4 md:mt-0"
         @click="toggleCreateForm"
       >
         <UIcon :name="showCreateForm ? 'i-heroicons-x-mark' : 'i-heroicons-plus'" class="w-5 h-5" />
         {{ showCreateForm ? 'Zrušiť' : 'Pridať zamestnanca' }}
       </button>
     </div>
+
+    <!-- Create Admin Form -->
+    <UCard v-if="showCreateForm">
+      <template #header>
+        <h2 class="text-xl font-semibold" style="color: var(--color-dark-green)">Pridať nového zamestnanca</h2>
+      </template>
+
+      <form @submit.prevent="handleCreateAdmin" class="space-y-6">
+        <!-- Name Fields -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="block text-sm font-medium" style="color: var(--color-dark-green)">Meno *</label>
+            <UInput
+              v-model="form.firstName"
+              placeholder="Janko"
+              size="lg"
+              :disabled="createLoading"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-sm font-medium" style="color: var(--color-dark-green)">Priezvisko *</label>
+            <UInput
+              v-model="form.lastName"
+              placeholder="Hraško"
+              size="lg"
+              :disabled="createLoading"
+            />
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium" style="color: var(--color-dark-green)">Email *</label>
+          <UInput
+            v-model="form.email"
+            type="email"
+            placeholder="email@example.com"
+            size="lg"
+            :disabled="createLoading"
+          />
+        </div>
+
+        <!-- Password -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium" style="color: var(--color-dark-green)">Heslo *</label>
+          <UInput
+            v-model="form.password"
+            type="text"
+            placeholder="Minimálne 6 znakov"
+            size="lg"
+            :disabled="createLoading"
+          />
+          <p class="text-xs text-slate-500">
+            Minimálne 6 znakov
+          </p>
+        </div>
+
+        <!-- Role -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium" style="color: var(--color-dark-green)">Rola *</label>
+          <URadioGroup
+            v-model="form.role"
+            :items="ADMIN_ROLES"
+            :disabled="createLoading"
+            color="orange"
+            variant="table"
+          >
+            <template #label="{ item }">
+              <div class="flex flex-col gap-1">
+                <p class="font-semibold" style="color: var(--color-dark-green)">{{ item.label }}</p>
+                <p class="text-sm text-slate-600">{{ item.description }}</p>
+              </div>
+            </template>
+          </URadioGroup>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="flex flex-col md:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
+          <button
+            type="button"
+            @click="toggleCreateForm"
+            :disabled="createLoading"
+            class="w-full md:w-auto px-6 py-3 rounded-lg border-2 text-slate-600 border-gray-300 font-semibold hover:bg-gray-50 transition-all font-roboto disabled:opacity-50"
+          >
+            Zrušiť
+          </button>
+          <button
+            type="submit"
+            :disabled="createLoading || !isFormValid"
+            class="w-full md:w-auto flex items-center justify-center gap-2 bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-roboto disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            <UIcon v-if="createLoading" name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
+            {{ createLoading ? 'Vytváram...' : 'Vytvoriť zamestnanca' }}
+          </button>
+        </div>
+      </form>
+    </UCard>
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -407,104 +505,6 @@ const handleDeleteAdmin = async () => {
           </tbody>
         </table>
       </div>
-    </UCard>
-
-    <!-- Create Admin Form -->
-    <UCard v-if="showCreateForm">
-      <template #header>
-        <h2 class="text-xl font-semibold" style="color: var(--color-dark-green)">Pridať nového zamestnanca</h2>
-      </template>
-
-      <form @submit.prevent="handleCreateAdmin" class="space-y-6">
-        <!-- Name Fields -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <label class="block text-sm font-medium" style="color: var(--color-dark-green)">Meno *</label>
-            <UInput
-              v-model="form.firstName"
-              placeholder="Janko"
-              size="lg"
-              :disabled="createLoading"
-            />
-          </div>
-
-          <div class="space-y-2">
-            <label class="block text-sm font-medium" style="color: var(--color-dark-green)">Priezvisko *</label>
-            <UInput
-              v-model="form.lastName"
-              placeholder="Hraško"
-              size="lg"
-              :disabled="createLoading"
-            />
-          </div>
-        </div>
-
-        <!-- Email -->
-        <div class="space-y-2">
-          <label class="block text-sm font-medium" style="color: var(--color-dark-green)">Email *</label>
-          <UInput
-            v-model="form.email"
-            type="email"
-            placeholder="email@example.com"
-            size="lg"
-            :disabled="createLoading"
-          />
-        </div>
-
-        <!-- Password -->
-        <div class="space-y-2">
-          <label class="block text-sm font-medium" style="color: var(--color-dark-green)">Heslo *</label>
-          <UInput
-            v-model="form.password"
-            type="text"
-            placeholder="Minimálne 6 znakov"
-            size="lg"
-            :disabled="createLoading"
-          />
-          <p class="text-xs text-slate-500">
-            Minimálne 6 znakov
-          </p>
-        </div>
-
-        <!-- Role -->
-        <div class="space-y-2">
-          <label class="block text-sm font-medium" style="color: var(--color-dark-green)">Rola *</label>
-          <URadioGroup
-            v-model="form.role"
-            :items="ADMIN_ROLES"
-            :disabled="createLoading"
-            color="orange"
-            variant="table"
-          >
-            <template #label="{ item }">
-              <div class="flex flex-col gap-1">
-                <p class="font-semibold" style="color: var(--color-dark-green)">{{ item.label }}</p>
-                <p class="text-sm text-slate-600">{{ item.description }}</p>
-              </div>
-            </template>
-          </URadioGroup>
-        </div>
-
-        <!-- Footer Buttons -->
-        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            @click="toggleCreateForm"
-            :disabled="createLoading"
-            class="px-6 py-3 rounded-lg border-2 text-slate-600 border-gray-300 font-semibold hover:bg-gray-50 transition-all font-roboto disabled:opacity-50"
-          >
-            Zrušiť
-          </button>
-          <button
-            type="submit"
-            :disabled="createLoading || !isFormValid"
-            class="flex items-center gap-2 bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-roboto disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          >
-            <UIcon v-if="createLoading" name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
-            {{ createLoading ? 'Vytváram...' : 'Vytvoriť zamestnanca' }}
-          </button>
-        </div>
-      </form>
     </UCard>
 
     <!-- Edit Role Modal -->
