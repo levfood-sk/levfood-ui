@@ -59,14 +59,14 @@ export default defineAppConfig({
           color: 'orange',
           variant: ['outline', 'subtle'],
           slots: {
-            content: 'bg-[var(--color-beige)] color-[var(--color-dark-green)]'
+            content: 'bg-red-500 color-[var(--color-dark-green)]'
           },
           class: 'data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]'
         },
         {
           color: 'orange',
           highlight: true,
-          class: 'border-[var(--color-green)] ring ring-inset ring-[var(--color-orange)]'
+          class: 'bg-red-500 border-[var(--color-green)] ring ring-inset ring-[var(--color-orange)]'
         }
       ]
     },
@@ -100,8 +100,8 @@ export default defineAppConfig({
       variants: {
         color: {
           orange: {
-            base: 'focus-visible:outline-orange-500',
-            indicator: 'bg-orange'
+            indicator: 'bg-orange',
+            item: 'border-[var(--color-dark-green)] border-1',
           }
         }
       },
@@ -117,7 +117,7 @@ export default defineAppConfig({
           color: 'orange',
           variant: 'table',
           class: {
-            item: 'has-data-[state=checked]:bg-orange-500/10 has-data-[state=checked]:border-orange-500/50 has-data-[state=checked]:z-[1]'
+            item: 'has-data-[state=checked]:bg-orange-500/10 has-data-[state=unchecked]:border-[var(--color-dark-green)] has-data-[state=checked]:border-orange-500/50 has-data-[state=checked]:z-[1]'
           }
         }
       ]
@@ -139,7 +139,10 @@ export default defineAppConfig({
           color: 'orange',
           variant: 'card',
           class: {
-            root: 'border-orange-500'
+            root: 'border-orange-500 has-data-[state=checked]:color-[var(--color-dark-green)] '
+          },
+          checked: {
+            true: 'color-[var(--color-dark-green)]'
           }
         }
       ]

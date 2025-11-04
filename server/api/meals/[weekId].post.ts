@@ -6,6 +6,7 @@ import {
   isDayComplete
 } from '~~/server/utils/mealsHelper'
 import type { DayName, DayMeals } from '~/lib/types/meals'
+import { DAY_LABELS } from '~/lib/types/meals'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -14,7 +15,7 @@ export default defineEventHandler(async (event) => {
     if (!weekId) {
       throw createError({
         statusCode: 400,
-        message: 'Week ID is required'
+        message: 'ID týždňa je povinné'
       })
     }
 
@@ -23,7 +24,7 @@ export default defineEventHandler(async (event) => {
     if (!weekIdRegex.test(weekId)) {
       throw createError({
         statusCode: 400,
-        message: 'Invalid week ID format. Expected YYYY-MM-DD'
+        message: 'Neplatný formát ID týždňa. Očakávaný formát: YYYY-MM-DD'
       })
     }
 
@@ -32,7 +33,7 @@ export default defineEventHandler(async (event) => {
     if (!body || !body.days) {
       throw createError({
         statusCode: 400,
-        message: 'Request body must include days object'
+        message: 'Požiadavka musí obsahovať objekt days'
       })
     }
 
@@ -46,7 +47,7 @@ export default defineEventHandler(async (event) => {
       if (!dayData) {
         throw createError({
           statusCode: 400,
-          message: `Missing data for ${day}`
+          message: `Chýbajú údaje pre ${DAY_LABELS[day]}`
         })
       }
 
@@ -54,7 +55,7 @@ export default defineEventHandler(async (event) => {
       if (!isDayComplete(dayData)) {
         throw createError({
           statusCode: 400,
-          message: `All meals must be filled for ${day}. Both Option A and Option B are required for each meal.`
+          message: `Všetky jedlá musia byť vyplnené pre ${DAY_LABELS[day]}. Obed vyžaduje obe možnosti (Variant A a Variant B), ostatné jedlá vyžadujú jednu hodnotu.`
         })
       }
 
@@ -91,7 +92,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: 'Meals saved successfully',
+      message: 'Jedlá boli úspešne uložené',
       weekId,
       data: weekMealsData
     }
@@ -105,7 +106,7 @@ export default defineEventHandler(async (event) => {
 
     throw createError({
       statusCode: 500,
-      message: 'Failed to save meals'
+      message: 'Nepodarilo sa uložiť jedlá'
     })
   }
 })

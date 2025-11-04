@@ -25,7 +25,7 @@ body {
 
 /* Professional background gradient */
 .bg-gradient-professional {
-  @apply bg-gradient-to-br from-slate-50 via-white to-blue-50;
+  @apply bg-gradient-to-br from-slate-50 via-white to-[var(--color-beige)];
 }
 
 /* Button font - Roboto */

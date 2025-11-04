@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
     if (!weekId) {
       throw createError({
         statusCode: 400,
-        message: 'Week ID is required'
+        message: 'ID týždňa je povinné'
       })
     }
 
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     if (!weekIdRegex.test(weekId)) {
       throw createError({
         statusCode: 400,
-        message: 'Invalid week ID format. Expected YYYY-MM-DD'
+        message: 'Neplatný formát ID týždňa. Očakávaný formát: YYYY-MM-DD'
       })
     }
 
@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
     console.error('Error fetching meals:', error)
     throw createError({
       statusCode: 500,
-      message: 'Failed to fetch meals'
+      message: 'Nepodarilo sa načítať jedlá'
     })
   }
 })

@@ -80,7 +80,7 @@ const steps = computed(() => [
   { number: 1, title: 'Tvoj balíček', completed: currentStep.value > 1 },
   { number: 2, title: 'Tvoje preferencie', completed: currentStep.value > 2 },
   { number: 3, title: 'Doručenie', completed: currentStep.value > 3 },
-  { number: 4, title: 'Platba', completed: currentStep.value > 4 }
+  { number: 4, title: 'Platba', completed: currentStep.value > 4 || orderSuccess.value }
 ])
 
 // Package options
@@ -367,8 +367,41 @@ const suggestedDeliveryDate = computed(() => {
   return calculateDeliveryStartDate()
 })
 
-// Initialize delivery date with suggested date
+// Read query parameters and pre-fill form
+const route = useRoute()
+
+// Map lowercase English package names from URL to internal values
+const packageMap: Record<string, 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM'> = {
+  economy: 'EKONOMY',
+  standard: 'ŠTANDARD',
+  premium: 'PREMIUM'
+}
+
+// Initialize delivery date with suggested date and pre-fill from query params
 onMounted(() => {
+  // Pre-fill from query parameters if present
+  const packageParam = route.query.package as string
+  const durationParam = route.query.duration as string
+  
+  // Validate and set package (accept lowercase English names)
+  if (packageParam) {
+    const mappedPackage = packageMap[packageParam.toLowerCase()]
+    if (mappedPackage) {
+      formData.value.step1.package = mappedPackage
+    }
+  }
+  
+  // Validate and set duration
+  if (durationParam && ['5', '6'].includes(durationParam)) {
+    formData.value.step1.duration = durationParam as '5' | '6'
+  }
+  
+  // Ensure we're on step 1 when coming from pricing cards
+  if (packageParam || durationParam) {
+    currentStep.value = 1
+  }
+  
+  // Initialize delivery date with suggested date
   if (!formData.value.step4.deliveryStartDate && suggestedDeliveryDate.value) {
     formData.value.step4.deliveryStartDate = suggestedDeliveryDate.value
   }
@@ -609,21 +642,21 @@ watch(() => currentStep.value, (newStep) => {
               class="flex items-center justify-center w-8 h-8 rounded-full border-2 transition-colors"
               :class="[
                 step.completed ? 'bg-[var(--color-orange)] border-[var(--color-orange)] text-white' : 
-                currentStep === step.number ? 'border-[var(--color-dark-green)] text-[var(--color-dark-green)]' : 
-                'border-gray-300 text-gray-400'
-              ]"
+                currentStep === step.number ? 'border-[var(--color-orange)] text-[var(--color-orange)]' : 
+                'border-[var(--color-dark-green)]/50 text-[var(--color-dark-green)]/50'
+              ]"  
             >
               <UIcon v-if="step.completed" name="i-lucide-check" class="w-4 h-4" />
               <span v-else class="text-sm font-medium">{{ step.number }}</span>
             </div>
             <span 
               class="text-xs font-medium hidden sm:inline font-condensed"
-              :class="currentStep >= step.number ? 'text-[var(--color-dark-green)]' : 'text-gray-400'"
+              :class="currentStep >= step.number ? 'text-[var(--color-orange)]' : 'text-[var(--color-dark-green)]/50'"
             >
               {{ step.title }}
             </span>
           </div>
-          <div v-if="index < steps.length - 1" class="w-8 h-0.5 mx-2" :class="currentStep > step.number ? 'bg-[var(--color-orange)]' : 'bg-gray-300'" />
+          <div v-if="index < steps.length - 1" class="w-8 h-0.5 mx-2" :class="currentStep > step.number ? 'bg-[var(--color-orange)]' : 'bg-[var(--color-dark-green)]/50'" />
         </div>
       </div>
 
@@ -653,8 +686,10 @@ watch(() => currentStep.value, (newStep) => {
               <USelect 
                 v-model="formData.step1.duration" 
                 :items="durationOptions"
+                color="orange"
+                variant="subtle"
                 placeholder="Vyber dĺžku objednávky"
-                class="pricing-select w-full bg-transparent"
+                class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
               />
             </UFormField>
           </div>
@@ -692,7 +727,7 @@ watch(() => currentStep.value, (newStep) => {
                 color="orange"
                 size="lg"
                 orientation="horizontal"
-                :ui="{ fieldset: 'flex flex-wrap gap-2' }"
+                :ui="{ fieldset: 'flex flex-wrap gap-2', label: 'text-[var(--color-dark-green)]', icon: 'text-[var(--color-dark-green)]' }"
               />
             </UFormField>
 
@@ -703,6 +738,8 @@ watch(() => currentStep.value, (newStep) => {
                 placeholder="Napríklad: nemám rád huby, prosím menej pikantné jedlá…"
                 :rows="4"
                 class="w-full"
+                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
               />
             </UFormField>
           </div>
@@ -721,6 +758,8 @@ watch(() => currentStep.value, (newStep) => {
                   type="date"
                   size="lg"
                   class="w-full"
+                  :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
                 />
               </UFormField>
 
@@ -732,6 +771,8 @@ watch(() => currentStep.value, (newStep) => {
                   placeholder="napr. 175"
                   max="300"
                   class="w-full"
+                  :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
                 />
               </UFormField>
 
@@ -742,7 +783,8 @@ watch(() => currentStep.value, (newStep) => {
                   size="lg"
                   placeholder="napr. 70"
                   max="500"
-                  class="w-full"
+                  :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
                 />
               </UFormField>
 
@@ -752,7 +794,7 @@ watch(() => currentStep.value, (newStep) => {
                   :items="physicalActivityOptions"
                   placeholder="Vyber úroveň"
                   size="lg"
-                  class="w-full"
+                  class="pricing-select w-full h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
                 />
               </UFormField>
 
@@ -762,7 +804,7 @@ watch(() => currentStep.value, (newStep) => {
                   :items="workActivityOptions"
                   placeholder="Vyber typ"
                   size="lg"
-                  class="w-full"
+                  class="pricing-select w-full  h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
                 />
               </UFormField>
 
@@ -772,7 +814,7 @@ watch(() => currentStep.value, (newStep) => {
                   :items="stressLevelOptions"
                   placeholder="Vyber úroveň"
                   size="lg"
-                  class="min-w-full"
+                  class="pricing-select w-full h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
                 />
               </UFormField>
             </div>
@@ -784,6 +826,8 @@ watch(() => currentStep.value, (newStep) => {
                 placeholder="Napríklad: chcem schudnúť 5 kg, chcem nabrať svalovú hmotu, chhem sa cítiť lepšie..."
                 :rows="3"
                 class="w-full"
+                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
               />
             </UFormField>
           </div>
@@ -827,6 +871,8 @@ watch(() => currentStep.value, (newStep) => {
                 :highlight="!!(touched.fullName && errors.fullName)"
                 @blur="validateField('fullName')"
                 @input="validateFieldOnInput('fullName')"
+                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
               />
             </UFormField>
 
@@ -846,6 +892,8 @@ watch(() => currentStep.value, (newStep) => {
                 :highlight="!!(touched.phone && errors.phone)"
                 @blur="validateField('phone')"
                 @input="validateFieldOnInput('phone')"
+                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
               />
             </UFormField>
 
@@ -866,6 +914,8 @@ watch(() => currentStep.value, (newStep) => {
                 :highlight="!!(touched.email && errors.email)"
                 @blur="validateField('email')"
                 @input="validateFieldOnInput('email')"
+                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
               />
             </UFormField>
 
@@ -884,6 +934,8 @@ watch(() => currentStep.value, (newStep) => {
                 :highlight="!!(touched.address && errors.address)"
                 @blur="validateField('address')"
                 @input="validateFieldOnInput('address')"
+                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
               />
             </UFormField>
 
@@ -894,6 +946,7 @@ watch(() => currentStep.value, (newStep) => {
                 placeholder="Napríklad: žltý dom, 4. naľavo…"
                 :rows="3"
                 class="w-full"
+                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
               />
             </UFormField>
           </div>
@@ -948,8 +1001,8 @@ watch(() => currentStep.value, (newStep) => {
             </div>
 
             <!-- Summary Section -->
-            <div class="bg-white rounded-lg p-6 mb-6">
-              <h3 class="text-lg font-bold text-[var(--color-dark-green)] mb-4 font-condensed">Zhrnutie</h3>
+            <div class="bg-orange border-1 border-[var(--color-dark-green)] rounded-lg p-6 mb-6">
+              <h3 class="text-lg font-bold text-[var(--color-dark-green)] mb-4 font-condensed ">Zhrnutie</h3>
               <div class="space-y-2 text-[var(--color-dark-green)]">
                 <div class="flex justify-between">
                   <span>Balíček:</span>
@@ -972,7 +1025,7 @@ watch(() => currentStep.value, (newStep) => {
 
             <div class="space-y-6">
               <UFormField label="Začiatok dodávky" class="w-full">
-                <div class="flex items-center gap-2">
+                <div class="flex flex-col items-start gap-2">
                   <UInput
                     v-model="formData.step4.deliveryStartDate"
                     type="date"
@@ -981,12 +1034,12 @@ watch(() => currentStep.value, (newStep) => {
                     placeholder="dd/mm/rrrr"
                     class="flex-1"
                   />
-                  <button
-                    class="p-2 text-[var(--color-dark-green)] hover:text-[var(--color-orange)] transition-colors"
+                  <span
+                    class="p-2 text-[var(--color-dark-green)] hover:text-[var(--color-orange)] transition-colors font-condensed text-[16px]"
                     @click="showDeliveryInfoModal = true"
                   >
-                    <UIcon name="i-lucide-info" class="w-5 h-5" />
-                  </button>
+                  Kedy dostanem objednávku?
+                </span>
                 </div>
               </UFormField>
 

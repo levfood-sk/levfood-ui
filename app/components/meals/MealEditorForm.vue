@@ -13,11 +13,13 @@
         class="space-y-3"
       >
         <h4 class="font-medium text-gray-700">{{ MEAL_LABELS[mealType] }}</h4>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        
+        <!-- Variant inputs for obed only -->
+        <div v-if="mealType === 'obed'" class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label class="block text-sm text-gray-600 mb-1">Variant A</label>
             <UInput
-              v-model="formData[mealType].optionA"
+              v-model="formData.obed.optionA"
               placeholder="Zadajte názov jedla"
               size="md"
             />
@@ -25,11 +27,20 @@
           <div>
             <label class="block text-sm text-gray-600 mb-1">Variant B</label>
             <UInput
-              v-model="formData[mealType].optionB"
+              v-model="formData.obed.optionB"
               placeholder="Zadajte názov jedla"
               size="md"
             />
           </div>
+        </div>
+        
+        <!-- Single input for all other meals -->
+        <div v-else>
+          <UInput
+            v-model="formData[mealType]"
+            placeholder="Zadajte názov jedla"
+            size="md"
+          />
         </div>
       </div>
     </div>
@@ -77,12 +88,12 @@ const isSaving = ref(false)
 const mealTypes: MealType[] = ['ranaiky', 'desiata', 'obed', 'polievka', 'olovrant', 'vecera']
 
 const formData = ref<Omit<DayMeals, 'isComplete'>>({
-  ranaiky: { optionA: '', optionB: '' },
-  desiata: { optionA: '', optionB: '' },
+  ranaiky: '',
+  desiata: '',
   obed: { optionA: '', optionB: '' },
-  polievka: { optionA: '', optionB: '' },
-  olovrant: { optionA: '', optionB: '' },
-  vecera: { optionA: '', optionB: '' }
+  polievka: '',
+  olovrant: '',
+  vecera: ''
 })
 
 const dayLabel = computed(() => {
@@ -100,8 +111,13 @@ const formattedDate = computed(() => {
 
 const isFormValid = computed(() => {
   return mealTypes.every(meal => {
-    return formData.value[meal].optionA.trim() !== '' &&
-           formData.value[meal].optionB.trim() !== ''
+    if (meal === 'obed') {
+      return formData.value.obed.optionA.trim() !== '' &&
+             formData.value.obed.optionB.trim() !== ''
+    } else {
+      return typeof formData.value[meal] === 'string' && 
+             formData.value[meal].trim() !== ''
+    }
   })
 })
 
@@ -109,22 +125,22 @@ const isFormValid = computed(() => {
 watch(() => props.initialData, (newData) => {
   if (newData) {
     formData.value = {
-      ranaiky: { ...newData.ranaiky },
-      desiata: { ...newData.desiata },
+      ranaiky: newData.ranaiky,
+      desiata: newData.desiata,
       obed: { ...newData.obed },
-      polievka: { ...newData.polievka },
-      olovrant: { ...newData.olovrant },
-      vecera: { ...newData.vecera }
+      polievka: newData.polievka,
+      olovrant: newData.olovrant,
+      vecera: newData.vecera
     }
   } else {
     // Reset form if no initial data
     formData.value = {
-      ranaiky: { optionA: '', optionB: '' },
-      desiata: { optionA: '', optionB: '' },
+      ranaiky: '',
+      desiata: '',
       obed: { optionA: '', optionB: '' },
-      polievka: { optionA: '', optionB: '' },
-      olovrant: { optionA: '', optionB: '' },
-      vecera: { optionA: '', optionB: '' }
+      polievka: '',
+      olovrant: '',
+      vecera: ''
     }
   }
 }, { immediate: true, deep: true })

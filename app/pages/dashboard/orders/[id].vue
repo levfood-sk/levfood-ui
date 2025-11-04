@@ -34,7 +34,7 @@ const loadOrder = async () => {
         description: 'Objednávka nenájdená',
         color: 'error',
       })
-      router.push('/cms/orders')
+      router.push('/dashboard/orders')
       return
     }
 

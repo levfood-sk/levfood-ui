@@ -49,33 +49,33 @@ const navItems = [
   {
     label: 'Dashboard',
     icon: 'i-lucide-home',
-    to: '/cms',
+    to: '/dashboard',
     exact: true,
   },
   {
     label: 'Objednávky',
     icon: 'i-lucide-package-search',
-    to: '/cms/orders',
+    to: '/dashboard/orders',
   },
   {
     label: 'Užívatelia',
     icon: 'i-lucide-users',
-    to: '/cms/uzivatelia',
+    to: '/dashboard/uzivatelia',
   },
   {
     label: 'Pridanie Jedla',
     icon: 'i-lucide-carrot',
-    to: '/cms/pridanie-jedla',
+    to: '/dashboard/pridanie-jedla',
   },
   {
     label: 'Zamestnanci',
     icon: 'i-lucide-shield-user',
-    to: '/cms/zamestnanci',
+    to: '/dashboard/zamestnanci',
   },
   {
     label: 'CMS - Modal',
     icon: 'i-lucide-app-window-mac',
-    to: '/cms/cms-modal',
+    to: '/dashboard/cms-modal',
   },
   // {
   //   label: 'Push Notifications',
@@ -111,7 +111,7 @@ const isActiveRoute = (item: typeof navItems[0]) => {
 <template>
   <div class="min-h-screen bg-gradient-professional">
     <!-- Mobile Header -->
-    <header class="fixed top-0 left-0 right-0 h-16 border-b bg-white border-gray-200/50 z-50 md:hidden flex items-center justify-start px-4">
+    <header class="fixed top-0 left-0 right-0 h-16 bg-[var(--color-dark-green)] z-50 md:hidden flex items-center justify-start px-4">
       <button
         @click="toggleSidebar"
         class="p-2 rounded-lg hover:bg-beige transition-colors cursor-pointer flex items-center justify-center"
@@ -119,7 +119,7 @@ const isActiveRoute = (item: typeof navItems[0]) => {
       >
         <UIcon
           :name="isSidebarOpen ? 'i-lucide-x' : 'i-lucide-menu'"
-          class="w-6 h-6 text-dark-green"
+          class="w-6 h-6 text-beige"
         />
       </button>
     </header>
@@ -154,7 +154,7 @@ const isActiveRoute = (item: typeof navItems[0]) => {
       >
         <aside
           v-show="isSidebarOpen"
-          class="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200/50 z-40 md:hidden overflow-y-auto flex flex-col"
+          class="fixed left-0 top-16 bottom-0 w-64 bg-[var(--color-dark-green)] z-40 md:hidden overflow-y-auto flex flex-col"
         >
           <nav class="flex-1 p-4 space-y-2 overflow-y-auto min-h-0">
             <NuxtLink
@@ -163,10 +163,10 @@ const isActiveRoute = (item: typeof navItems[0]) => {
               :to="item.to"
               class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200"
               :class="[
-                isActiveRoute(item)
-                  ? 'bg-orange text-dark-green font-medium'
-                  : 'text-dark-green hover:bg-orange hover:text-white'
-              ]"
+              isActiveRoute(item)
+                ? 'text-beige bg-orange font-medium text-condensed text-18px hover:bg-orange'
+                : 'text-beige hover:bg-beige hover:text-dark-green text-condensed text-18px',
+            ]"
             >
               <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
               <span>{{ item.label }}</span>
@@ -174,8 +174,8 @@ const isActiveRoute = (item: typeof navItems[0]) => {
           </nav>
           
           <!-- Sidebar Footer (User Info) -->
-          <div class="p-4 border-t border-gray-200/50 flex-shrink-0 space-y-2">
-            <div v-if="user" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-50">
+          <div class="p-4 flex-shrink-0 space-y-2">
+            <div v-if="user" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-[var(--color-dark-green)]">
               <UAvatar
                 v-if="user.photoURL"
                 :src="user.photoURL"
@@ -183,25 +183,31 @@ const isActiveRoute = (item: typeof navItems[0]) => {
                 size="sm"
               />
               <UAvatar
-                v-else
-                :alt="user.displayName || user.email || 'User'"
-                size="sm"
-              />
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-slate-900 truncate">
-                  {{ user.displayName || 'User' }}
-                </p>
-                <p class="text-xs text-slate-500 truncate">
-                  {{ user.email }}
-                </p>
-              </div>
+              v-else
+              :alt="user.displayName || user.email || 'User'"
+              size="sm"
+              class="bg-beige text-oragne"
+            />
+            <div
+              :class="[
+                'flex-1 min-w-0 transition-all duration-300 overflow-hidden',
+                isDesktopCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+              ]"
+            >
+              <p class="text-sm font-medium text-beige truncate">
+                {{ user.displayName || 'User' }}
+              </p>
+              <p class="text-xs text-beige truncate">
+                {{ user.email }}
+              </p>
+            </div>
             </div>
             <button
               @click="handleSignOut"
               :disabled="loading"
-              class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-dark-green hover:orange"
+              class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-orange border-1 border-orange hover:bg-orange hover:text-beige cursor-pointer"
             >
-              <UIcon name="i-lucide-log-out" class="w-5 h-5 flex-shrink-0 text-dark-green" />
+              <UIcon name="i-lucide-log-out" class="w-5 h-5 flex-shrink-0 text-orange" />
               <span>Odhlásiť sa</span>
             </button>
           </div>
@@ -210,19 +216,19 @@ const isActiveRoute = (item: typeof navItems[0]) => {
 
       <!-- Desktop Sidebar (Always Visible) -->
       <aside :class="[
-        'hidden md:flex md:flex-col border-r border-gray-200/50 bg-white/50 backdrop-blur-sm fixed top-0 left-0 h-screen max-h-screen z-30 transition-all duration-300',
+        'hidden md:flex md:flex-col bg-[var(--color-dark-green)] backdrop-blur-sm fixed top-0 left-0 h-screen max-h-screen z-30 transition-all duration-300',
         isDesktopCollapsed ? 'w-20' : 'w-64'
       ]">
         <!-- Logo / Toggle Section -->
-        <div class="p-4 border-b border-gray-200/50 flex items-center justify-end flex-shrink-0">
+        <div class="p-4 flex items-center justify-end flex-shrink-0">
           <button
             @click="toggleDesktopSidebar"
-            class="p-2 rounded-lg hover:bg-beige transition-colors cursor-pointer flex items-center justify-center"
+            class="p-2 rounded-lg hover:bg-beige hover:text-dark-green transition-colors cursor-pointer flex items-center justify-center"
             aria-label="Toggle sidebar"
           >
             <UIcon
               :name="isDesktopCollapsed ? 'i-lucide-panel-left-open' : 'i-lucide-panel-right-open'"
-              class="w-5 h-5 flex-shrink-0 text-18px px-4 py-3"
+              class="w-5 h-5 flex-shrink-0 text-18px px-4 py-3 text-beige hover:text-dark-green"
             />
           </button>
         </div>
@@ -233,11 +239,11 @@ const isActiveRoute = (item: typeof navItems[0]) => {
             v-for="item in navItems"
             :key="item.to"
             :to="item.to"
-            class="flex items-start gap-3 px-4 py-3 rounded-lg transition-all duration-200"
+            class="flex items-start text-beige gap-3 px-4 py-3 rounded-lg transition-all duration-200"
             :class="[
               isActiveRoute(item)
-                ? 'text-dark-green bg-orange font-medium text-condensed text-18px hover:bg-orange'
-                : 'text-dark-green hover:bg-beige hover:text-dark-green text-condensed text-18px',
+                ? 'text-beige bg-orange font-medium text-condensed text-18px hover:bg-orange'
+                : 'text-beige hover:bg-beige hover:text-dark-green text-condensed text-18px',
               isDesktopCollapsed ? 'justify-center' : ''
             ]"
             :title="isDesktopCollapsed ? item.label : ''"
@@ -248,9 +254,9 @@ const isActiveRoute = (item: typeof navItems[0]) => {
         </nav>
 
         <!-- Sidebar Footer (Always Visible at Bottom) -->
-        <div class="p-4 border-t border-gray-200/50 flex-shrink-0 space-y-2">
+        <div class="p-4 flex-shrink-0 space-y-2">
           <div v-if="user" :class="[
-            'flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-50',
+            'flex items-center gap-3 px-4 py-3 rounded-lg bg-[var(--color-dark-green)]',
             isDesktopCollapsed ? 'justify-center' : ''
           ]">
             <UAvatar
@@ -258,22 +264,24 @@ const isActiveRoute = (item: typeof navItems[0]) => {
               :src="user.photoURL"
               :alt="user.displayName || user.email || 'User'"
               size="sm"
+              
             />
             <UAvatar
               v-else
               :alt="user.displayName || user.email || 'User'"
               size="sm"
+              class="bg-beige text-oragne"
             />
-            <div 
+            <div
               :class="[
                 'flex-1 min-w-0 transition-all duration-300 overflow-hidden',
                 isDesktopCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
               ]"
             >
-              <p class="text-sm font-medium text-slate-900 truncate">
+              <p class="text-sm font-medium text-beige truncate">
                 {{ user.displayName || 'User' }}
               </p>
-              <p class="text-xs text-slate-500 truncate">
+              <p class="text-xs text-beige truncate">
                 {{ user.email }}
               </p>
             </div>
@@ -282,7 +290,7 @@ const isActiveRoute = (item: typeof navItems[0]) => {
             @click="handleSignOut"
             :disabled="loading"
             :class="[
-              'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-dark-green hover:bg-beige cursor-pointer',
+              'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-orange hover:bg-orange hover:text-beige cursor-pointer',
               isDesktopCollapsed ? 'justify-center' : ''
             ]"
             :title="isDesktopCollapsed ? 'Odhlásiť sa' : ''"

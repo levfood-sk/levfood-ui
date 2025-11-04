@@ -4,12 +4,12 @@ export interface MealOptions {
 }
 
 export interface DayMeals {
-  ranaiky: MealOptions
-  desiata: MealOptions
+  ranaiky: string
+  desiata: string
   obed: MealOptions
-  polievka: MealOptions
-  olovrant: MealOptions
-  vecera: MealOptions
+  polievka: string
+  olovrant: string
+  vecera: string
   isComplete: boolean
 }
 

@@ -18,7 +18,7 @@ const handleEmailLogin = async () => {
 
   try {
     await signIn(email.value, password.value)
-    await navigateTo('/cms')
+    await navigateTo('/dashboard')
   } catch (e: any) {
     error.value = e.message || 'Prihlásenie zlyhalo'
   } finally {
@@ -28,8 +28,8 @@ const handleEmailLogin = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-professional px-4">
-    <UCard class="w-full max-w-md shadow-lg">
+  <div class="min-h-screen flex items-center justify-center bg-beige px-4">
+    <UCard class="w-full bg-beige max-w-md shadow-lg">
       <template #header>
         <div class="text-center pt-2">
           <NuxtLink to="/" class="inline-block mb-4">
@@ -61,7 +61,9 @@ const handleEmailLogin = async () => {
               size="lg"
               :disabled="loading"
               required
-              class="w-full"
+              class="w-full bg-beige"
+              :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
             >
               <template #leading>
                 <Icon name="lucide:mail" class="w-5 h-5" />
@@ -78,6 +80,8 @@ const handleEmailLogin = async () => {
               :disabled="loading"
               required
               class="w-full"
+              :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+
             >
               <template #leading>
                 <Icon name="lucide:lock" class="w-5 h-5" />
@@ -88,9 +92,10 @@ const handleEmailLogin = async () => {
           <UButton
             type="submit"
             block
+            color="neutral"
             size="lg"
             :loading="loading"
-            class="bg-[var(--color-orange)] hover:bg-[var(--color-dark-green)] text-[var(--color-dark-green)] hover:text-[var(--color-orange)] cursor-pointer h-[3.5rem]"
+            class="pricing-button bg-[var(--color-dark-green)] text-beige mb-6 h-14 text-lg font-bold"
           >
             Prihlásiť sa
           </UButton>

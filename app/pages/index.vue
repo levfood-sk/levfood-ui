@@ -37,6 +37,27 @@ const economyDays = ref('')
 const standardDays = ref('')
 const premiumDays = ref('')
 
+// Map internal package names to lowercase English URL params
+const packageUrlMap: Record<'EKONOMY' | 'ŠTANDARD' | 'PREMIUM', string> = {
+  EKONOMY: 'economy',
+  ŠTANDARD: 'standard',
+  PREMIUM: 'premium'
+}
+
+// Handle order button click
+function handleOrderClick(packageType: 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM', selectedDays: string) {
+  // Default to 5 days if no selection
+  const duration = selectedDays || '5'
+  
+  navigateTo({
+    path: '/objednavka',
+    query: {
+      package: packageUrlMap[packageType],
+      duration: duration
+    }
+  })
+}
+
 // Features list
 const features = [
   'Sleduj svoj plán stravovania prehľadne v kalendári',
@@ -80,7 +101,7 @@ const teamMembers = [
 // Redirect to dashboard if already logged in (client-side only)
 onMounted(() => {
   if (user.value) {
-    navigateTo('/cms')
+    navigateTo('/dashboard')
   }
 })
 </script>
@@ -416,12 +437,14 @@ onMounted(() => {
                 v-model="economyDays"
                 :items="daysOptions" 
                 placeholder="Vyber počet dní"
-                class="pricing-select w-full bg-transparent h-[3.5rem]"
+                class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
+
               />
             </div>
             <UButton 
-              class="pricing-button bg-[var(--color-dark-green)] text-white mb-6 h-14 text-lg font-bold"
+              class="pricing-button bg-[var(--color-dark-green)] text-beige mb-6 h-14 text-lg font-bold"
               block
+              @click="handleOrderClick('EKONOMY', economyDays)"
             >
               Objednať EKONOMY
             </UButton>
@@ -466,13 +489,13 @@ onMounted(() => {
                 v-model="standardDays"
                 :items="daysOptions" 
                 placeholder="Vyber počet dní"
-                
                 class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-dark-green)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-orange)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-dark-green)] data-[state=closed]:ring-[var(--color-dark-green)]"
               />
             </div>
             <UButton 
-              class="pricing-button hover-beige bg-[var(--color-dark-green)] text-white mb-6 h-14 text-lg font-bold"
+              class="pricing-button hover-beige bg-[var(--color-dark-green)] text-beige mb-6 h-14 text-lg font-bold"
               block
+              @click="handleOrderClick('ŠTANDARD', standardDays)"
             >
               Objednať ŠTANDARD
             </UButton>
@@ -511,12 +534,13 @@ onMounted(() => {
                 v-model="premiumDays"
                 :items="daysOptions" 
                 placeholder="Vyber počet dní"
-                class="pricing-select w-full bg-transparent h-[3.5rem]"
+                class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
               />
             </div>
             <UButton 
-              class="pricing-button bg-[var(--color-dark-green)] text-white mb-6 h-14 text-lg font-bold"
+              class="pricing-button bg-[var(--color-dark-green)] text-beige mb-6 h-14 text-lg font-bold"
               block
+              @click="handleOrderClick('PREMIUM', premiumDays)"
             >
               Objednať PREMIUM
             </UButton>

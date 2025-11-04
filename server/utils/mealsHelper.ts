@@ -78,12 +78,12 @@ export function createEmptyMealOptions(): MealOptions {
  */
 export function createEmptyDayMeals(): DayMeals {
   return {
-    ranaiky: createEmptyMealOptions(),
-    desiata: createEmptyMealOptions(),
+    ranaiky: '',
+    desiata: '',
     obed: createEmptyMealOptions(),
-    polievka: createEmptyMealOptions(),
-    olovrant: createEmptyMealOptions(),
-    vecera: createEmptyMealOptions(),
+    polievka: '',
+    olovrant: '',
+    vecera: '',
     isComplete: false
   }
 }
@@ -97,8 +97,13 @@ export function isDayComplete(dayMeals: DayMeals): boolean {
   ]
 
   return meals.every(meal => {
-    const mealData = dayMeals[meal] as MealOptions
-    return mealData.optionA.trim() !== '' && mealData.optionB.trim() !== ''
+    if (meal === 'obed') {
+      const obedData = dayMeals.obed
+      return obedData.optionA.trim() !== '' && obedData.optionB.trim() !== ''
+    } else {
+      const mealData = dayMeals[meal] as string
+      return typeof mealData === 'string' && mealData.trim() !== ''
+    }
   })
 }
 
