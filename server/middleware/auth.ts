@@ -17,10 +17,17 @@ export default defineEventHandler(async (event) => {
   const authHeader = getHeader(event, 'authorization')
 
   if (!authHeader?.startsWith('Bearer ')) {
+    event.context.user = null
     return
   }
 
   const token = authHeader.substring(7)
+
+  // Don't try to verify null or empty tokens
+  if (!token || token === 'null' || token === 'undefined') {
+    event.context.user = null
+    return
+  }
 
   try {
     const decodedToken = await verifyIdToken(token)

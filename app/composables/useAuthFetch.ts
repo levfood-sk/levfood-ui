@@ -8,8 +8,23 @@ export const useAuthFetch = async <T>(
   url: string,
   options?: UseFetchOptions<T> & { method?: 'GET' | 'POST' | 'PATCH' | 'DELETE' }
 ) => {
-  const { getIdToken } = useAuth()
+  const { getIdToken, isAuthenticated } = useAuth()
+  
+  if (!isAuthenticated.value) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized - Please log in to access this resource'
+    })
+  }
+
   const token = await getIdToken()
+
+  if (!token) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized - Failed to get authentication token'
+    })
+  }
 
   return $fetch<T>(url, {
     ...options,

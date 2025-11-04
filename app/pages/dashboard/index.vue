@@ -128,9 +128,26 @@ const loadData = async () => {
   loading.value = false
 }
 
-// Load on mount
-onMounted(() => {
-  loadData()
+// Load on mount - wait for auth to be ready
+onMounted(async () => {
+  const { isAuthenticated, loading: authLoading } = useAuth()
+  
+  // Wait for auth to initialize
+  if (authLoading.value) {
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(authLoading, (loading) => {
+        if (!loading) {
+          unwatch()
+          resolve()
+        }
+      }, { immediate: true })
+    })
+  }
+
+  // Only load data if authenticated
+  if (isAuthenticated.value) {
+    loadData()
+  }
 })
 </script>
 

@@ -3,6 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // NOTE: These rules apply to client-side Firestore SDK access only.
+    // Server-side API routes use Firebase Admin SDK which bypasses these rules.
+    // Server-side authentication is enforced by requireAuth() in API routes.
+
     // Helper function to check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
@@ -16,14 +20,15 @@ service cloud.firestore {
 
     // Clients collection
     match /clients/{clientId} {
-      // Server can create clients (during order creation)
+      // Server can create clients (during order creation via API)
+      // Also allow client-side creation for public order forms
       allow create: if true;
 
-      // Only authenticated users can read clients (admin)
+      // Only authenticated users can read clients (admin dashboard)
       allow read: if isAuthenticated();
 
-      // Server and admins can update client data
-      allow update: if true;
+      // Only authenticated users (admins) can update client data
+      allow update: if isAuthenticated();
 
       // No deletion allowed
       allow delete: if false;
@@ -34,7 +39,7 @@ service cloud.firestore {
       // Anyone can create orders (public form submission)
       allow create: if true;
 
-      // Only authenticated users can read orders (admin)
+      // Only authenticated users can read orders (admin dashboard)
       allow read: if isAuthenticated();
 
       // Only authenticated users can update orders (admin status changes)

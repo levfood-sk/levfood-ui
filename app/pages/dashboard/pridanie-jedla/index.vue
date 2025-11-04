@@ -158,7 +158,7 @@ function isDayComplete(day: DayName): boolean {
 async function fetchWeekMeals() {
   isLoading.value = true
   try {
-    const response = await $fetch(`/api/meals/${currentWeekId.value}`)
+    const response = await useAuthFetch(`/api/meals/${currentWeekId.value}`)
     weekMealsData.value = response as any
     hasUnsavedChanges.value = false
   } catch (error) {
@@ -209,7 +209,7 @@ async function handleSave() {
 
   isSaving.value = true
   try {
-    await $fetch(`/api/meals/${currentWeekId.value}`, {
+    await useAuthFetch(`/api/meals/${currentWeekId.value}`, {
       method: 'POST',
       body: {
         days: weekMealsData.value.days
@@ -234,9 +234,26 @@ async function handleSave() {
   }
 }
 
-// Initial load
-onMounted(() => {
-  fetchWeekMeals()
+// Initial load - wait for auth to be ready
+onMounted(async () => {
+  const { isAuthenticated, loading: authLoading } = useAuth()
+  
+  // Wait for auth to initialize
+  if (authLoading.value) {
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(authLoading, (loading) => {
+        if (!loading) {
+          unwatch()
+          resolve()
+        }
+      }, { immediate: true })
+    })
+  }
+
+  // Only fetch data if authenticated
+  if (isAuthenticated.value) {
+    fetchWeekMeals()
+  }
 })
 
 // Watch for week changes
