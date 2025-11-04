@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { user } = useAuth()
+const { scrollToSection } = useScrollTo()
 
 // Import simple icons as components (for Tailwind styling)
 import EmailIcon from '~/assets/icons/email-icon.svg?component'
@@ -69,7 +70,7 @@ const teamMembers = [
   },
   {
     id: 4,
-    name: 'Mgr. Filip',
+    name: 'Mgr. Filip Dvořáček',
     role: 'Nutričný špecialista',
     description: 'Zdravé stravovanie nie je o obmedzovaní – je o rovnováhe. Každé jedlo navrhujem tak, aby podporovalo tvoje ciele a chuťové bunky.',
     icon: 'i-lucide-user'
@@ -144,22 +145,24 @@ onMounted(() => {
             </h1>
 
             <!-- Description -->
-            <p class="mt-6 mx-auto text-[18px] leading-[150%] text-white">
+            <p class="mt-6 mx-auto text-[18px] leading-[150%] text-beige">
               LevFood prináša chutné a vyvážené jedlá priamo k tvojim dverám v Leviciach a okolí. Zdravé stravovanie nemusí byť zložité – stačí si vybrať balíček, ktorý ti sedí a o zvyšok sa postaráme my.
             </p>
 
             <!-- CTA Buttons -->
             <div class="mt-10 flex flex-col sm:flex-row justify-center gap-6">
-              <NuxtLink to="/form">
-                <button class="btn-primary">
-                  Objednaj si balíček
-                </button>
-              </NuxtLink>
-              <NuxtLink to="#features">
-                <button class="btn-secondary">
-                  Zisti viac
-                </button>
-              </NuxtLink>
+              <button 
+                @click="scrollToSection('pricing-section')" 
+                class="btn-primary"
+              >
+                Objednaj si balíček
+              </button>
+              <button 
+                @click="scrollToSection('info-section')" 
+                class="btn-secondary"
+              >
+                Zisti viac
+              </button>
             </div>
           </div>
         </div>
@@ -322,8 +325,8 @@ onMounted(() => {
         </div>
       </div>
       <!-- Decorative Vegetable - Off screen at bottom -->
-      <div class="absolute bottom-[-20px] lg:right-[100px] right-[50px]">
-        <img :src="vegetableIcon" alt="Vegetable" class="lg:w-[500px] md:w-[300px] w-[200px] h-auto" />
+      <div class="absolute bottom-[-20px] lg:right-[100px] right-[20px]">
+        <img :src="vegetableIcon" alt="Vegetable" class="lg:w-[500px] md:w-[300px] w-[250px] h-auto" />
       </div>
     </div>
 
@@ -335,37 +338,38 @@ onMounted(() => {
           <img :src="lionBulletIcon" alt="Lion Bullet" class="w-[650px] h-[650px] object-cover" />
         </div>
       <div class="container mx-auto px-4 py-20 relative">
+        <div id="info-section" class="absolute -top-[40px]"></div>
         <div class="grid grid-cols-12 gap-4 items-center relative">
           <!-- Content -->
-          <div class="col-span-12 lg:col-span-8 ">
+          <div  class="col-span-12 lg:col-span-8 ">
             <h2 class="md:text-[96px] sm:text-[72px] text-[64px] leading-[100%] font-condensed font-extrabold text-[var(--color-orange)] tracking-tight">
               LevFood
             </h2>
-            <p class="md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-orange)]">
+            <p class="md:text-[40px] sm:text-[32px] text-[22px] leading-[150%] font-condensed text-[var(--color-orange)]">
               viac chuti, menej starostí
             </p>
             
             <!-- Feature List -->
             <ul class="sm:space-y-1 space-y-3 mt-[40px]">
-              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
+              <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
                 Varíme čerstvo každý deň priamo v Leviciach
               </li>
-              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
+              <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
                 Vyvážené porcie podľa moderných výživových zásad
               </li>
-              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
+              <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
                 Sezónne chute
               </li>
-              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
+              <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
                 Šetríme tvoj čas aj energiu
               </li>
-              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
+              <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
                 Transparentné zloženie a presné makrá
               </li>
-              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
+              <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
                 Doručenie priamo k tvojim dverám v Leviciach a okolí
               </li>
-              <li class="text-[var(--color-beige)] text-[24px] sm:text-[32px] leading-[120%]">
+              <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
                 Vyzdvihnutie kedykoľvek 24/7
               </li>
             </ul>
@@ -378,7 +382,8 @@ onMounted(() => {
     <!-- Pricing Section -->
     <div class="bg-[var(--color-beige)] py-[50px] lg:py-[200px] relative">
       <img :src="saltShakersIcon" alt="Salt Shakers" class="hidden lg:block w-32 h-32 xl:w-48 xl:h-48 absolute top-[20px] left-[50%] translate-x-[150px]" />
-      <div class="container mx-auto lg:px-4 px-0">
+      <div class="container mx-auto lg:px-4 px-0 relative">
+        <div id="pricing-section" class="absolute -top-[50px]"></div>
         <!-- Section Header -->
         <div class="flex items-center justify-center gap-4 lg:mb-8 mb-2 px-4">
           <h2 class="md:text-[96px] sm:text-[72px] text-[64px] leading-[100%] font-condensed font-extrabold text-[var(--color-dark-green)] tracking-tight">
@@ -392,7 +397,7 @@ onMounted(() => {
         </div>
 
         <!-- Pricing Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 md:gap-6 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 md:gap-6 gap-8 p-4 lg:p-0">
           <!-- Economy Card -->
           <div class="pricing-card bg-[var(--color-beige)] border-2 border-[var(--color-dark-green)] rounded-[32px] p-6 flex flex-col h-fit relative lg:top-[30px] top-0">
             <h3 class="text-2xl font-bold text-[var(--color-dark-green)] mb-2">
@@ -411,8 +416,6 @@ onMounted(() => {
                 v-model="economyDays"
                 :items="daysOptions" 
                 placeholder="Vyber počet dní"
-                color="neutral"
-                highlight
                 class="pricing-select w-full bg-transparent h-[3.5rem]"
               />
             </div>
@@ -463,9 +466,8 @@ onMounted(() => {
                 v-model="standardDays"
                 :items="daysOptions" 
                 placeholder="Vyber počet dní"
-                color="neutral"
-                highlight
-                class="pricing-select w-full bg-transparent h-[3.5rem]"
+                
+                class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-dark-green)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-orange)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-dark-green)] data-[state=closed]:ring-[var(--color-dark-green)]"
               />
             </div>
             <UButton 
@@ -509,8 +511,6 @@ onMounted(() => {
                 v-model="premiumDays"
                 :items="daysOptions" 
                 placeholder="Vyber počet dní"
-                color="neutral"
-                highlight
                 class="pricing-select w-full bg-transparent h-[3.5rem]"
               />
             </div>
@@ -518,7 +518,7 @@ onMounted(() => {
               class="pricing-button bg-[var(--color-dark-green)] text-white mb-6 h-14 text-lg font-bold"
               block
             >
-              Objednať Premium
+              Objednať PREMIUM
             </UButton>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <ul class="space-y-3">
@@ -577,7 +577,7 @@ onMounted(() => {
                 <p class="font-condensed text-center text-[31px] font-bold relative translate-y-[-550px] translate-x-[100px] trasnns w-[200px] h-[200px] rounded-full bg-[var(--color-orange)] text-white flex items-center justify-center">lokálne suroviny</p>
                 <p class="font-condensed text-center text-[31px] font-bold relative translate-y-[-500px] translate-x-[10px] w-[150px] h-[150px] rounded-full bg-[var(--color-orange)] text-white flex items-center justify-center">eko balenie</p>
                 <p class="font-condensed text-center text-[31px] font-bold relative translate-y-[-700px] translate-x-[310px] w-[170px] h-[170px] rounded-full bg-[var(--color-orange)] text-white flex items-center justify-center">poctivá chuť</p>
-                <p class="py-2 px-4 font-condensed text-[31px] font-bold relative translate-y-[-650px] translate-x-[330px] w-[220px] h-[220px] rounded-full bg-[var(--color-orange)] text-white flex items-center justify-center">kvalita 
+                <p class="text-center py-2 px-4 font-condensed text-[31px] font-bold relative translate-y-[-650px] translate-x-[330px] w-[220px] h-[220px] rounded-full bg-[var(--color-orange)] text-white flex items-center justify-center">kvalita 
                   bez kompromisov</p>
               </div>
             </div>

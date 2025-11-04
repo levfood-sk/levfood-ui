@@ -40,7 +40,7 @@ watch(isOpen, (newVal) => {
 </script>
 
 <template>
-  <UModal v-model:open="isOpen" :ui="{ content: 'max-w-xl sm:rounded-[40px] rounded-[20px]' }">
+  <UModal v-model:open="isOpen" :ui="{ content: 'max-w-xl sm:rounded-[40px] rounded-[20px]', overlay: 'bg-[#0E2825]/75' }">
     <template #content>
       <div class="py-[70px] bg-beige">
         <!-- Replace this content with your styled content -->

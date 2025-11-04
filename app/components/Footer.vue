@@ -4,15 +4,14 @@ import logoSmallIcon from '@/assets/icons/logo-small.svg'
 const currentYear = new Date().getFullYear()
 const legalLinks = [
   { label: 'Zásady ochrany osobných údajov', to: '/zasady-ochrany' },
-  { label: 'Terms of Service', to: '/podmienky-pouzivania' },
-  { label: 'Cookies Settings', to: '#' }
+  { label: 'Cookie Settings', to: '#' }
 ]
 const socials = [
-  { icon: 'i-lucide-facebook', to: '#' },
-  { icon: 'i-lucide-instagram', to: '#' },
-  { icon: 'i-lucide-twitter', to: '#' },
-  { icon: 'i-lucide-linkedin', to: '#' },
-  { icon: 'i-lucide-youtube', to: '#' }
+  { icon: 'i-fa7-brands:facebook-f', to: '#' },
+  { icon: 'i-fa7-brands:instagram', to: '#' },
+  { icon: 'i-fa7-brands:x-twitter', to: '#' },
+  { icon: 'i-fa7-brands:square-linkedin', to: '#' },
+  { icon: 'i-fa7-brands:youtube', to: '#' }
 ]
 </script>
 
@@ -20,7 +19,7 @@ const socials = [
   <footer class="bg-[var(--color-dark-green)] py-10">
     <div class="container mx-auto px-4">
       <div class="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-0">
-        <img :src="logoSmallIcon" alt="LevFood Logo" class="w-16 lg:w-24 h-auto" />
+        <img :src="logoSmallIcon" alt="LevFood Logo" class="w-12 lg:w-16 h-auto" />
         <div class="flex gap-6 items-center">
           <NuxtLink v-for="s in socials" :key="s.icon" :to="s.to" aria-label="social" class="text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors flex items-center justify-center">
             <UIcon :name="s.icon" class="w-6 h-6" />

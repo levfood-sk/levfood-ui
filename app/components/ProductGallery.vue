@@ -101,7 +101,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative p-4 lg:p-0">
     <!-- Images in Row -->
     <div ref="scrollContainer" class="flex lg:gap-6 gap-0 overflow-x-auto max-lg:snap-x max-lg:snap-mandatory scrollbar-hide" style="-webkit-overflow-scrolling: touch;">
       <div 

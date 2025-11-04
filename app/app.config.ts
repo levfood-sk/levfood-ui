@@ -46,21 +46,27 @@ export default defineAppConfig({
     },
     select: {
       slots: {
-        base: 'h-14'
+        base: 'h-14',
+        content: 'bg-[var(--color-beige)]',
+        item: 'text-[var(--color-dark-green)] hover:bg-[var(--color-orange)]/20'
       },
       defaultVariants: {
-        color: 'orange'
+        color: 'orange',
+        variant: 'outline'
       },
       compoundVariants: [
         {
           color: 'orange',
           variant: ['outline', 'subtle'],
-          class: 'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500'
+          slots: {
+            content: 'bg-[var(--color-beige)] color-[var(--color-dark-green)]'
+          },
+          class: 'data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]'
         },
         {
           color: 'orange',
           highlight: true,
-          class: 'ring ring-inset ring-orange-500'
+          class: 'border-[var(--color-green)] ring ring-inset ring-[var(--color-orange)]'
         }
       ]
     },
@@ -165,6 +171,6 @@ export default defineAppConfig({
           }
         }
       }
-    }
+    },
   }
 })

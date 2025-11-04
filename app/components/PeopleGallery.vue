@@ -99,13 +99,13 @@ onUnmounted(() => {
             <!-- Social Links (only show if name exists, indicating a team member) -->
             <div v-if="item.name" class="flex gap-3">
               <button class="w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity">
-                <UIcon name="i-lucide-linkedin" class="w-6 h-6 text-[var(--color-dark-green)]" />
+                <UIcon name="i-fa7-brands:square-linkedin" class="w-6 h-6 text-[var(--color-dark-green)]" />
               </button>
               <button class="w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity">
-                <UIcon name="i-lucide-twitter" class="w-6 h-6 text-[var(--color-dark-green)]" />
+                <UIcon name="i-fa7-brands:x-twitter" class="w-6 h-6 text-[var(--color-dark-green)]" />
               </button>
               <button class="w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity">
-                <UIcon name="i-lucide-dribbble" class="w-6 h-6 text-[var(--color-dark-green)]" />
+                <UIcon name="i-fa7-brands:dribbble" class="w-6 h-6 text-[var(--color-dark-green)]" />
               </button>
             </div>
           </div>

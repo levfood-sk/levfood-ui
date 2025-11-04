@@ -30,6 +30,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@iconify-json/fa7-brands": "^1.2.0",
     "@iconify-json/lucide": "^1.2.71",
     "@nuxt/icon": "^2.0.0",
     "@types/node": "^24.5.2",

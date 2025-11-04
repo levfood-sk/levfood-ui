@@ -81,6 +81,18 @@ button.pricing-select[role="combobox"] span {
   line-height: 150% !important;
 }
 
+/* Select dropdown menu styling */
+.pricing-select ~ [data-radix-popper-content-wrapper] [role="listbox"],
+.pricing-select ~ [data-radix-popper-content-wrapper] [role="menu"],
+[data-radix-select-content] {
+  background-color: var(--color-beige) !important;
+}
+
+[data-radix-select-content] [role="option"],
+[data-radix-select-content] [role="menuitem"] {
+  color: var(--color-dark-green) !important;
+}
+
 
 /* Unified Button Styles */
 .btn-primary {
