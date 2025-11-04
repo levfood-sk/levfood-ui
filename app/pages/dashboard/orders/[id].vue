@@ -174,7 +174,7 @@ onMounted(() => {
         <!-- Status and Actions -->
         <div class="flex items-center gap-4">
           <span
-            class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
+            class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium"
             :class="{
               'text-white bg-orange': order.orderStatus === 'pending',
               'text-white bg-dark-green': order.orderStatus === 'approved',
@@ -188,6 +188,7 @@ onMounted(() => {
           <div v-if="order.orderStatus === 'pending'" class="flex gap-2">
             <UButton
               color="green"
+              class="cursor-pointer"
               :loading="updating"
               @click="updateOrderStatus('approved')"
             >
@@ -195,6 +196,7 @@ onMounted(() => {
             </UButton>
             <UButton
               color="red"
+              class="cursor-pointer"
               variant="outline"
               :loading="updating"
               @click="updateOrderStatus('cancelled')"
