@@ -10,6 +10,9 @@ export default defineNuxtConfig({
   colorMode: {
     preference: 'light'
   },
+  ui: {
+    colorMode: false
+  },
 
   // App metadata
   app: {
