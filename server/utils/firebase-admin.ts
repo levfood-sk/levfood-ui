@@ -58,6 +58,14 @@ export function getFirebaseAdmin(): { app: App; auth: Auth; firestore: Firestore
 }
 
 export async function verifyIdToken(token: string) {
-  const { auth } = getFirebaseAdmin()
-  return await auth.verifyIdToken(token)
+  try {
+    const { auth } = getFirebaseAdmin()
+    return await auth.verifyIdToken(token)
+  } catch (error: any) {
+    // If Firebase Admin isn't initialized, provide a clearer error
+    if (error.message?.includes('FIREBASE_SERVICE_ACCOUNT') || !adminAuth) {
+      throw new Error('Firebase Admin SDK not initialized. FIREBASE_SERVICE_ACCOUNT environment variable is required.')
+    }
+    throw error
+  }
 }

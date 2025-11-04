@@ -29,14 +29,14 @@ const handleEmailLogin = async () => {
 
 <template>
   <div class="min-h-screen flex items-center justify-center bg-beige px-4">
-    <UCard class="w-full bg-beige max-w-md shadow-lg">
-      <template #header>
-        <div class="text-center pt-2">
+    <UCard class="w-full bg-beige max-w-md" :ui="{ root: 'border-0 ring-0', header: 'border-0 ring-0' }">
+      <template #header >
+        <div class="text-center pt-2" >
           <NuxtLink to="/" class="inline-block mb-4">
             <img :src="logoLongIcon" alt="LevFood logo" class="w-[240px] h-auto" />
           </NuxtLink>
-          <h2 class="text-2xl font-bold text-slate-900">Prihlásenie do Admin Panelu</h2>
-          <p class="text-sm text-slate-600 mt-2">Prihláste sa pomocou svojho admin účtu</p>
+          <h2 class="text-2xl font-bold text-[var(--color-dark-green)]">Prihlásenie do Admin Panelu</h2>
+          <p class="text-sm text-[var(--color-dark-green)]/80 mt-2">Prihláste sa pomocou svojho admin účtu</p>
         </div>
       </template>
 
@@ -62,7 +62,7 @@ const handleEmailLogin = async () => {
               :disabled="loading"
               required
               class="w-full bg-beige"
-              :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+              :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]', icon: 'text-[var(--color-dark-green)]' }"
 
             >
               <template #leading>
@@ -80,7 +80,7 @@ const handleEmailLogin = async () => {
               :disabled="loading"
               required
               class="w-full"
-              :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+              :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]', icon: 'text-[var(--color-dark-green)]' }"
 
             >
               <template #leading>

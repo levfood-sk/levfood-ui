@@ -7,9 +7,6 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxt/icon', '@unlok-co/nuxt-stripe', '@nuxt/scripts'],
   css: ['~/assets/css/main.css'],
-  colorMode: {
-    preference: 'light'
-  },
   ui: {
     colorMode: false
   },

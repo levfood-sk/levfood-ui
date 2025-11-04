@@ -32,8 +32,17 @@ export default defineEventHandler(async (event) => {
   try {
     const decodedToken = await verifyIdToken(token)
     event.context.user = decodedToken
-  } catch (error) {
-    console.error('Token verification failed:', error)
+  } catch (error: any) {
+    // Log detailed error information
+    if (error.message?.includes('FIREBASE_SERVICE_ACCOUNT')) {
+      console.error('❌ Firebase Admin SDK not configured:', error.message)
+      console.error('   Please set FIREBASE_SERVICE_ACCOUNT environment variable in Vercel')
+    } else if (error.message?.includes('JSON')) {
+      console.error('❌ Firebase Admin SDK configuration error:', error.message)
+      console.error('   FIREBASE_SERVICE_ACCOUNT must be a valid JSON string')
+    } else {
+      console.error('Token verification failed:', error.message || error)
+    }
     event.context.user = null
   }
 })

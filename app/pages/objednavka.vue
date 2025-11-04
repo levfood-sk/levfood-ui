@@ -738,7 +738,7 @@ watch(() => currentStep.value, (newStep) => {
                 placeholder="Napríklad: nemám rád huby, prosím menej pikantné jedlá…"
                 :rows="4"
                 class="w-full"
-                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
 
               />
             </UFormField>
@@ -758,7 +758,7 @@ watch(() => currentStep.value, (newStep) => {
                   type="date"
                   size="lg"
                   class="w-full"
-                  :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                  :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
 
                 />
               </UFormField>
@@ -771,7 +771,7 @@ watch(() => currentStep.value, (newStep) => {
                   placeholder="napr. 175"
                   max="300"
                   class="w-full"
-                  :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                  :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
 
                 />
               </UFormField>
@@ -783,7 +783,7 @@ watch(() => currentStep.value, (newStep) => {
                   size="lg"
                   placeholder="napr. 70"
                   max="500"
-                  :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                  :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
 
                 />
               </UFormField>
@@ -794,7 +794,7 @@ watch(() => currentStep.value, (newStep) => {
                   :items="physicalActivityOptions"
                   placeholder="Vyber úroveň"
                   size="lg"
-                  class="pricing-select w-full h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
+                  class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
                 />
               </UFormField>
 
@@ -804,7 +804,7 @@ watch(() => currentStep.value, (newStep) => {
                   :items="workActivityOptions"
                   placeholder="Vyber typ"
                   size="lg"
-                  class="pricing-select w-full  h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
+                  class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
                 />
               </UFormField>
 
@@ -814,7 +814,7 @@ watch(() => currentStep.value, (newStep) => {
                   :items="stressLevelOptions"
                   placeholder="Vyber úroveň"
                   size="lg"
-                  class="pricing-select w-full h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
+                  class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
                 />
               </UFormField>
             </div>
@@ -826,7 +826,7 @@ watch(() => currentStep.value, (newStep) => {
                 placeholder="Napríklad: chcem schudnúť 5 kg, chcem nabrať svalovú hmotu, chhem sa cítiť lepšie..."
                 :rows="3"
                 class="w-full"
-                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
 
               />
             </UFormField>
@@ -871,7 +871,7 @@ watch(() => currentStep.value, (newStep) => {
                 :highlight="!!(touched.fullName && errors.fullName)"
                 @blur="validateField('fullName')"
                 @input="validateFieldOnInput('fullName')"
-                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
 
               />
             </UFormField>
@@ -892,7 +892,7 @@ watch(() => currentStep.value, (newStep) => {
                 :highlight="!!(touched.phone && errors.phone)"
                 @blur="validateField('phone')"
                 @input="validateFieldOnInput('phone')"
-                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
 
               />
             </UFormField>
@@ -914,7 +914,7 @@ watch(() => currentStep.value, (newStep) => {
                 :highlight="!!(touched.email && errors.email)"
                 @blur="validateField('email')"
                 @input="validateFieldOnInput('email')"
-                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]', icon: 'text-[var(--color-dark-green)]' }"
 
               />
             </UFormField>
@@ -934,7 +934,7 @@ watch(() => currentStep.value, (newStep) => {
                 :highlight="!!(touched.address && errors.address)"
                 @blur="validateField('address')"
                 @input="validateFieldOnInput('address')"
-                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
 
               />
             </UFormField>
@@ -946,7 +946,7 @@ watch(() => currentStep.value, (newStep) => {
                 placeholder="Napríklad: žltý dom, 4. naľavo…"
                 :rows="3"
                 class="w-full"
-                :ui="{ base: 'rounded-md ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
               />
             </UFormField>
           </div>
