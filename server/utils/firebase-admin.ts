@@ -15,11 +15,19 @@ export function initializeFirebaseAdmin(): void {
   const serviceAccount = config.firebaseServiceAccount
 
   if (!serviceAccount) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT environment variable is required')
+    const error = new Error('FIREBASE_SERVICE_ACCOUNT environment variable is required. Please set it in your Vercel environment variables.')
+    console.error('Firebase Admin initialization error:', error.message)
+    throw error
   }
 
   try {
-    const serviceAccountJson = JSON.parse(serviceAccount)
+    const serviceAccountJson = typeof serviceAccount === 'string' 
+      ? JSON.parse(serviceAccount) 
+      : serviceAccount
+
+    if (!config.public.firebaseProjectId) {
+      throw new Error('FIREBASE_PROJECT_ID environment variable is required')
+    }
 
     adminApp = initializeApp({
       credential: cert(serviceAccountJson),
@@ -28,8 +36,11 @@ export function initializeFirebaseAdmin(): void {
 
     adminAuth = getAuth(adminApp)
     adminFirestore = getFirestore(adminApp)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to initialize Firebase Admin:', error)
+    if (error.message?.includes('JSON')) {
+      throw new Error('FIREBASE_SERVICE_ACCOUNT must be a valid JSON string. Please check your Vercel environment variable.')
+    }
     throw error
   }
 }

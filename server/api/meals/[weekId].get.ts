@@ -1,4 +1,5 @@
 import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
+import { requireAuth, handleApiError } from '~~/server/utils/auth'
 import {
   parseWeekId,
   getSaturdayOfWeek,
@@ -9,6 +10,7 @@ import type { WeekMeals } from '~/lib/types/meals'
 
 export default defineEventHandler(async (event) => {
   try {
+    requireAuth(event)
     const weekId = getRouterParam(event, 'weekId')
 
     if (!weekId) {
@@ -66,11 +68,7 @@ export default defineEventHandler(async (event) => {
       weekId,
       ...emptyWeekMeals
     }
-  } catch (error) {
-    console.error('Error fetching meals:', error)
-    throw createError({
-      statusCode: 500,
-      message: 'Nepodarilo sa načítať jedlá'
-    })
+  } catch (error: any) {
+    return handleApiError(error, 'Nepodarilo sa načítať jedlá')
   }
 })

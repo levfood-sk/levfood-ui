@@ -1,4 +1,5 @@
 import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
+import { requireAuth, handleApiError } from '~~/server/utils/auth'
 import {
   parseWeekId,
   getSaturdayOfWeek,
@@ -10,6 +11,7 @@ import { DAY_LABELS } from '~/lib/types/meals'
 
 export default defineEventHandler(async (event) => {
   try {
+    requireAuth(event)
     const weekId = getRouterParam(event, 'weekId')
 
     if (!weekId) {
@@ -97,16 +99,6 @@ export default defineEventHandler(async (event) => {
       data: weekMealsData
     }
   } catch (error: any) {
-    console.error('Error saving meals:', error)
-
-    // If it's already a H3Error (from createError), rethrow it
-    if (error.statusCode) {
-      throw error
-    }
-
-    throw createError({
-      statusCode: 500,
-      message: 'Nepodarilo sa uložiť jedlá'
-    })
+    return handleApiError(error, 'Nepodarilo sa uložiť jedlá')
   }
 })
