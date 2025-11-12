@@ -22,7 +22,7 @@ const createdOrderId = ref<string | null>(null)
 // Form data
 const formData = ref({
   step1: {
-    package: '' as 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | '',
+    package: '' as 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | 'OFFICE' | '',
     duration: '' as '5' | '6' | ''
   },
   step2: {
@@ -107,14 +107,25 @@ const steps = computed(() => [
 const packageOptions = [
   { value: 'EKONOMY', label: 'EKONOMY', description: '4 jedlá denne / jednoduché, vyvážené menu' },
   { value: 'ŠTANDARD', label: 'ŠTANDARD', description: '5 jedál denne / pestrá ponuka a viac chutí' },
-  { value: 'PREMIUM', label: 'PREMIUM', description: '6 jedál denne / nutrične prispôsobené' }
+  { value: 'PREMIUM', label: 'PREMIUM', description: '6 jedál denne / nutrične prispôsobené' },
+  { value: 'OFFICE', label: 'OFFICE', description: '4 jedlá denne / kompletné riešenie pre pracovný deň' }
 ]
 
-// Duration options - format for USelect with items
-const durationOptions = [
-  { label: '4 týždne (5 dní v týždni pon-pia)', value: '5' },
-  { label: '4 týždne (6 dní v týždni pon – sob)', value: '6' }
-]
+// Duration options - dynamic based on package
+const durationOptions = computed(() => {
+  // OFFICE package only allows 5 days
+  if (formData.value.step1.package === 'OFFICE') {
+    return [
+      { label: '4 týždne (5 dní v týždni pon-pia)', value: '5' }
+    ]
+  }
+
+  // All other packages allow both 5 and 6 days
+  return [
+    { label: '4 týždne (5 dní v týždni pon-pia)', value: '5' },
+    { label: '4 týždne (6 dní v týždni pon – sob)', value: '6' }
+  ]
+})
 
 // Delivery type options
 const deliveryTypeOptions = [
@@ -151,16 +162,31 @@ const stressLevelOptions = [
   { label: 'Vysoký', value: 'vysoký' }
 ]
 
-// Pricing (in cents for Stripe)
+// Pricing (in cents for Stripe) - Dynamic pricing based on duration
 const packagePrices = {
-  EKONOMY: 29000,  // 290€ in cents
-  ŠTANDARD: 35000, // 350€ in cents
-  PREMIUM: 40000   // 400€ in cents
+  EKONOMY: {
+    '5': 29900,  // 299€ for 5 days
+    '6': 33900   // 339€ for 6 days
+  },
+  ŠTANDARD: {
+    '5': 35900,  // 359€ for 5 days
+    '6': 39900   // 399€ for 6 days
+  },
+  PREMIUM: {
+    '5': 41900,  // 419€ for 5 days
+    '6': 45900   // 459€ for 6 days
+  },
+  OFFICE: {
+    '5': 24900,  // 249€ for 5 days (only option)
+    '6': 24900   // 249€ for 6 days (not available, but keeping for consistency)
+  }
 }
 
 const totalPrice = computed(() => {
-  if (!formData.value.step1.package) return 0
-  return packagePrices[formData.value.step1.package] || 0
+  if (!formData.value.step1.package || !formData.value.step1.duration) return 0
+  const packageType = formData.value.step1.package as keyof typeof packagePrices
+  const duration = formData.value.step1.duration as '5' | '6'
+  return packagePrices[packageType]?.[duration] || 0
 })
 
 const totalPriceFormatted = computed(() => {
@@ -399,10 +425,11 @@ const suggestedDeliveryDate = computed(() => {
 const route = useRoute()
 
 // Map lowercase English package names from URL to internal values
-const packageMap: Record<string, 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM'> = {
+const packageMap: Record<string, 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | 'OFFICE'> = {
   economy: 'EKONOMY',
   standard: 'ŠTANDARD',
-  premium: 'PREMIUM'
+  premium: 'PREMIUM',
+  office: 'OFFICE'
 }
 
 // Initialize delivery date with suggested date and pre-fill from query params
@@ -444,6 +471,11 @@ onMounted(() => {
 watch(() => formData.value.step1.package, (newPackage) => {
   if (newPackage === 'EKONOMY') {
     formData.value.step3.deliveryType = 'prevádzka'
+  }
+
+  // OFFICE package only allows 5 days
+  if (newPackage === 'OFFICE' && formData.value.step1.duration === '6') {
+    formData.value.step1.duration = '5'
   }
 })
 

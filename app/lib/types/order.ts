@@ -4,7 +4,7 @@ import type { Timestamp } from 'firebase/firestore'
 /**
  * Order Package Types
  */
-export type PackageType = 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM'
+export type PackageType = 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | 'OFFICE'
 export type DurationType = '5' | '6'
 export type DeliveryType = 'prevádzka' | 'domov'
 export type PaymentStatus = 'pending' | 'succeeded' | 'failed'
@@ -140,7 +140,7 @@ export interface CreateOrderInput {
  */
 export const createOrderSchema = z.object({
   // Package
-  package: z.enum(['EKONOMY', 'ŠTANDARD', 'PREMIUM'], {
+  package: z.enum(['EKONOMY', 'ŠTANDARD', 'PREMIUM', 'OFFICE'], {
     message: 'Balíček je povinný',
   }),
   duration: z.enum(['5', '6'], {
@@ -205,12 +205,25 @@ export const createOrderSchema = z.object({
 export type CreateOrderSchemaType = z.infer<typeof createOrderSchema>
 
 /**
- * Package Pricing (in cents)
+ * Package Pricing (in cents) - Dynamic pricing based on duration
  */
-export const PACKAGE_PRICES: Record<PackageType, number> = {
-  EKONOMY: 29000,   // 290€
-  ŠTANDARD: 35000,  // 350€
-  PREMIUM: 40000,   // 400€
+export const PACKAGE_PRICES: Record<PackageType, Record<DurationType, number>> = {
+  EKONOMY: {
+    '5': 29900,  // 299€ for 5 days
+    '6': 33900   // 339€ for 6 days
+  },
+  ŠTANDARD: {
+    '5': 35900,  // 359€ for 5 days
+    '6': 39900   // 399€ for 6 days
+  },
+  PREMIUM: {
+    '5': 41900,  // 419€ for 5 days
+    '6': 45900   // 459€ for 6 days
+  },
+  OFFICE: {
+    '5': 24900,  // 249€ for 5 days (only option)
+    '6': 24900   // 249€ for 6 days (not available, but keeping for type consistency)
+  }
 }
 
 /**
@@ -220,7 +233,7 @@ export function calculateOrderPrice(packageType: PackageType, duration: Duration
   daysCount: number
   totalPrice: number
 } {
-  const totalPrice = PACKAGE_PRICES[packageType]
+  const totalPrice = PACKAGE_PRICES[packageType][duration]
   const daysCount = duration === '5' ? 20 : 24
 
   return {

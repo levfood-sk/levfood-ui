@@ -32,23 +32,70 @@ const daysOptions = [
   { label: '6 dní', value: '6' }
 ]
 
+// Days options for OFFICE (only 5 days)
+const officeDaysOptions = [
+  { label: '5 dní', value: '5' }
+]
+
 // Selected days for each package
 const economyDays = ref('')
 const standardDays = ref('')
 const premiumDays = ref('')
+const officeDays = ref('5') // Default to 5 days for OFFICE
+
+// Package pricing structure
+const packagePricing = {
+  EKONOMY: {
+    '5': 299,
+    '6': 339
+  },
+  ŠTANDARD: {
+    '5': 359,
+    '6': 399
+  },
+  PREMIUM: {
+    '5': 419,
+    '6': 459
+  },
+  OFFICE: {
+    '5': 249,
+    '6': 249 // Not used, but keeping for consistency
+  }
+}
+
+// Computed prices for each package
+const economyPrice = computed(() => {
+  const days = economyDays.value || '5'
+  return packagePricing.EKONOMY[days as '5' | '6']
+})
+
+const standardPrice = computed(() => {
+  const days = standardDays.value || '5'
+  return packagePricing.ŠTANDARD[days as '5' | '6']
+})
+
+const premiumPrice = computed(() => {
+  const days = premiumDays.value || '5'
+  return packagePricing.PREMIUM[days as '5' | '6']
+})
+
+const officePrice = computed(() => {
+  return packagePricing.OFFICE['5'] // Always 5 days for OFFICE
+})
 
 // Map internal package names to lowercase English URL params
-const packageUrlMap: Record<'EKONOMY' | 'ŠTANDARD' | 'PREMIUM', string> = {
+const packageUrlMap: Record<'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | 'OFFICE', string> = {
   EKONOMY: 'economy',
   ŠTANDARD: 'standard',
-  PREMIUM: 'premium'
+  PREMIUM: 'premium',
+  OFFICE: 'office'
 }
 
 // Handle order button click
-function handleOrderClick(packageType: 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM', selectedDays: string) {
+function handleOrderClick(packageType: 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | 'OFFICE', selectedDays: string) {
   // Default to 5 days if no selection
   const duration = selectedDays || '5'
-  
+
   navigateTo({
     path: '/objednavka',
     query: {
@@ -60,10 +107,22 @@ function handleOrderClick(packageType: 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM', sele
 
 // Features list
 const features = [
-  'Sleduj svoj plán stravovania prehľadne v kalendári',
-  'Výber si jedlá podľa chuti alebo preferencií',
-  'Lokálne suroviny, eko balenie, férový prístup',
-  'Uprav si doručenie, pozastav objednávku'
+  {
+    title: 'Prehľadný kalendár',
+    description: 'sledujte svoj plán stravovania jednoducho a prehľadne každý deň.'
+  },
+  {
+    title: 'Jedlá podľa teba',
+    description: 'vyberte si z viacerých alternatív podľa chuti alebo svojich preferencií.'
+  },
+  {
+    title: 'Čerstvosť a udržateľnosť',
+    description: '100% čerstvé, lokálne suroviny, ekologické balenie, férový prístup.'
+  },
+  {
+    title: 'Flexibilné doručenie',
+    description: 'upravte si miesto doručenia alebo pozastavte objednávku podľa potreby.'
+  }
 ]
 
 // Team members
@@ -84,16 +143,30 @@ const teamMembers = [
   },
   {
     id: 3,
-    name: 'XY',
-    role: 'Pomocná sila v kuchyni',
-    description: 'Každý deň začínam s vôňou čerstvých surovín. Môjou úlohou je, aby v kuchyni všetko klapalo do posledného detailu.',
+    name: 'Mgr. Filip Dvořáček',
+    role: 'Nutričný špecialista',
+    description: 'Zdravé stravovanie nie je o obmedzovaní – je o rovnováhe. Každé jedlo navrhujem tak, aby podporovalo tvoje ciele a chuťové bunky.',
     icon: 'i-lucide-user'
   },
   {
     id: 4,
-    name: 'Mgr. Filip Dvořáček',
-    role: 'Nutričný špecialista',
-    description: 'Zdravé stravovanie nie je o obmedzovaní – je o rovnováhe. Každé jedlo navrhujem tak, aby podporovalo tvoje ciele a chuťové bunky.',
+    name: 'Vanda Petrášová',
+    role: 'Obchodný zástupca',
+    description: 'Buduje a rozvíja obchodné partnerstvá.',
+    icon: 'i-lucide-user'
+  },
+  {
+    id: 5,
+    name: 'Ivana',
+    role: 'Manažment prevádzky',
+    description: 'Má pod kontrolou každý detail chodu kuchyne aj logistiky, aby všetko fungovalo presne podľa plánu.',
+    icon: 'i-lucide-user'
+  },
+  {
+    id: 6,
+    name: 'MUDr. Peter Birčák',
+    role: 'InBody váženie',
+    description: 'Pomáha klientom lepšie porozumieť svojmu telu a posúva ich k zdravším výsledkom.',
     icon: 'i-lucide-user'
   }
 ]
@@ -167,7 +240,7 @@ onMounted(() => {
 
             <!-- Description -->
             <p class="mt-6 mx-auto text-[18px] leading-[150%] text-beige">
-              LevFood prináša chutné a vyvážené jedlá priamo k tvojim dverám v Leviciach a okolí. Zdravé stravovanie nemusí byť zložité – stačí si vybrať balíček, ktorý ti sedí a o zvyšok sa postaráme my.
+              LevFood prináša krabičkovú stravu formou chutných a vyvážených jedál priamo k Vaším dverám v Leviciach a okolí. Ušetrite čas strávený nákupmi, varením či umývaním riadu – my sa postaráme, vy si len vychutnáte.
             </p>
 
             <!-- CTA Buttons -->
@@ -198,14 +271,14 @@ onMounted(() => {
           <div class="flex flex-col items-center">
             <!-- Features List -->
             <ul class="space-y-[2.875em] mb-8 flex flex-col items-start">
-              <li v-for="feature in features" :key="feature" class="flex items-center gap-4 max-w-2xl">
-                <img 
-                  :src="lionBulletIcon" 
-                  alt="Bullet" 
+              <li v-for="feature in features" :key="feature.title" class="flex items-center gap-4 max-w-2xl">
+                <img
+                  :src="lionBulletIcon"
+                  alt="Bullet"
                   class="w-[2.25em] h-[2.25em] flex-shrink-0"
                 />
-                <span class="text-beige text-[1.75rem] md:text-[2rem] font-bold text-left tracking-tight font-condensed">
-                  {{ feature }}
+                <span class="text-beige text-[1.75rem] md:text-[2rem] text-left tracking-tight font-condensed">
+                  <strong class="font-bold">{{ feature.title }}</strong> – {{ feature.description }}
                 </span>
               </li>
             </ul>
@@ -259,7 +332,7 @@ onMounted(() => {
           <!-- Step 1 -->
           <div class="flex flex-col items-center">
             <img :src="packagesIcon" alt="Packages" class="w-20 h-20 sm:w-24 sm:h-24 text-[var(--color-dark-green)]" />
-            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Vyber si svoj plán</span>
+            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Vyberte si svoj plán</span>
           </div>
           
           <UIcon name="i-lucide-move-down" class="w-8 h-8 sm:w-10 sm:h-10 text-[var(--color-dark-green)]" />
@@ -267,7 +340,7 @@ onMounted(() => {
           <!-- Step 2 -->
           <div class="flex flex-col items-center">
             <img :src="mobileIcon" alt="Mobile" class="w-20 h-20 sm:w-24 sm:h-24 text-[var(--color-dark-green)]" />
-            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Stiahni si App</span>
+            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Stiahnite si aplikáciu</span>
           </div>
           
           <UIcon name="i-lucide-move-down" class="w-8 h-8 sm:w-10 sm:h-10 text-[var(--color-dark-green)]" />
@@ -275,7 +348,7 @@ onMounted(() => {
           <!-- Step 3 -->
           <div class="flex flex-col items-center">
             <img :src="numbersIcon" alt="Numbers" class="w-20 h-20 sm:w-24 sm:h-24 text-[var(--color-dark-green)]" />
-            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Zadaj kód</span>
+            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Zadajte kód</span>
           </div>
           
           <UIcon name="i-lucide-move-down" class="w-8 h-8 sm:w-10 sm:h-10 text-[var(--color-dark-green)]" />
@@ -291,7 +364,7 @@ onMounted(() => {
           <!-- Step 5 -->
           <div class="flex flex-col items-center">
             <img :src="lionFaceIcon" alt="Lion Face" class="w-20 h-20 sm:w-24 sm:h-24 text-[var(--color-dark-green)]" />
-            <span class="text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Ty si len vychutnaj</span>
+            <span class="mt-4 text-[var(--color-dark-green)] font-bold text-lg sm:text-xl text-center">Vy si len vychutnajte</span>
           </div>
         </div>
 
@@ -301,7 +374,7 @@ onMounted(() => {
           <div class="flex items-center justify-center gap-8 mb-8">
             <!-- Step 1 -->
             <div class="flex flex-row items-center">
-              <span class="mr-4 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">Vyber si svoj plán</span>
+              <span class="mr-4 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">Vyberte si svoj plán</span>
               <img :src="packagesIcon" alt="Packages" class="h-[60px] text-[var(--color-dark-green)]" />
             </div>
             
@@ -309,7 +382,7 @@ onMounted(() => {
 
             <!-- Step 2 -->
             <div class="flex flex-row items-center">
-              <span class="mr-4 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">Stiahni si App</span>
+              <span class="mr-4 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">Stiahnite si aplikáciu</span>
               <img :src="mobileIcon" alt="Mobile" class="h-[60px] text-[var(--color-dark-green)]" />
             </div>
             
@@ -317,7 +390,7 @@ onMounted(() => {
 
             <!-- Step 3 -->
             <div class="flex flex-row items-center">
-              <span class="mr-4 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">Zadaj kód</span>
+              <span class="mr-4 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">Zadajte kód</span>
               <img :src="numbersIcon" alt="Numbers" class="h-[60px] text-[var(--color-dark-green)]" />
             </div>
             
@@ -339,7 +412,7 @@ onMounted(() => {
           <div class="flex justify-center">
             <div class="flex flex-col items-center">
               <img :src="lionFaceIcon" alt="Lion Face" class="h-[60px] text-[var(--color-dark-green)]" />
-              <span class="mt-4 text-[var(--color-dark-green)] font-bold text-xl text-center max-w-[150px]">Ty si len vychutnaj</span>
+              <span class="mt-5 text-[var(--color-dark-green)] font-bold text-[24px] leading-[120%] text-center">Vy si len vychutnajte</span>
              
             </div>
           </div>
@@ -371,27 +444,24 @@ onMounted(() => {
             </p>
             
             <!-- Feature List -->
-            <ul class="sm:space-y-1 space-y-3 mt-[40px]">
+            <ul class="sm:space-y-4 space-y-5 mt-[40px]">
               <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
-                Varíme čerstvo každý deň priamo v Leviciach
+                <strong class="font-bold">Kvalitné suroviny</strong> – denne čerstvo pripravené jedlá
               </li>
               <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
-                Vyvážené porcie podľa moderných výživových zásad
+                <strong class="font-bold">Vyvážené porcie</strong> – nutrične vyvážené a odborne zostavené jedlá podľa moderných výživových princípov
               </li>
               <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
-                Sezónne chute
+                <strong class="font-bold">Sezónne chute</strong> – pochutnajte si na pestrých kombináciách jedál v sezónnych chutiach
               </li>
               <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
-                Šetríme tvoj čas aj energiu
+                <strong class="font-bold">Ušetríme ti čas a energiu</strong> – prinášame Vám chutné jedlá priamo k Vaším dverám (domov alebo do práce)
               </li>
               <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
-                Transparentné zloženie a presné makrá
+                <strong class="font-bold">Transparentné zloženie</strong> – viete, čo prijímate, jedálniček zostavený nutričným špecialistom
               </li>
               <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
-                Doručenie priamo k tvojim dverám v Leviciach a okolí
-              </li>
-              <li class="text-[var(--color-beige)] text-[22px] sm:text-[32px] leading-[120%]">
-                Vyzdvihnutie kedykoľvek 24/7
+                <strong class="font-bold">Doručenie v Leviciach a okolí alebo vyzdvihnutie na výdajnom mieste 24/7</strong>
               </li>
             </ul>
           </div>
@@ -413,12 +483,12 @@ onMounted(() => {
         </div>
         <div class="text-center mb-8 px-4">
           <p class="md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-dark-green)]">
-            Vyber si plán, ktorý sedí tvojmu životnému štýlu
+            Začni dnes – vyber si svoj balíček
           </p>
         </div>
 
         <!-- Pricing Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 md:gap-6 gap-8 p-4 lg:p-0">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 md:gap-6 gap-8 p-4 lg:p-0">
           <!-- Economy Card -->
           <div class="pricing-card bg-[var(--color-beige)] border-2 border-[var(--color-dark-green)] rounded-[32px] p-6 flex flex-col h-fit relative lg:top-[30px] top-0">
             <h3 class="text-2xl font-bold text-[var(--color-dark-green)] mb-2">
@@ -429,19 +499,19 @@ onMounted(() => {
             </p>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
-              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">290€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
+              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ economyPrice }}€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>
             <div class="mb-6">
               <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>
-              <USelect 
+              <USelect
                 v-model="economyDays"
-                :items="daysOptions" 
+                :items="daysOptions"
                 placeholder="Vyber počet dní"
                 class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
 
               />
             </div>
-            <UButton 
+            <UButton
               class="pricing-button bg-[var(--color-dark-green)] text-beige mb-6 h-14 text-lg font-bold"
               block
               @click="handleOrderClick('EKONOMY', economyDays)"
@@ -449,24 +519,24 @@ onMounted(() => {
               Objednať EKONOMY
             </UButton>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
-            <ul class="space-y-1">
-              <li class="flex items-center gap-3">
+            <ul class="space-y-3">
+              <li class="flex items-start gap-3">
                 <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
                 <span class="text-[var(--color-dark-green)]">Vyvážené denné menu</span>
               </li>
-              <li class="flex items-center gap-3">
+              <li class="flex items-start gap-3">
                 <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
                 <span class="text-[var(--color-dark-green)]">4 jedlá denne (raňajky + obed s polievkou + večera)</span>
               </li>
-              <li class="flex items-center gap-3">
+              <li class="flex items-start gap-3">
                 <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
-                <span class="text-[var(--color-dark-green)]">Výdaj na prevádzke Nám. Šoltésovej 12 v Leviciach</span>
+                <span class="text-[var(--color-dark-green)]">Vyzdvihnutie len na výdajnom mieste – Kalvínske námestie 126/2, Levice</span>
               </li>
             </ul>
           </div>
@@ -481,18 +551,18 @@ onMounted(() => {
             </p>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
-              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">350€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
+              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ standardPrice }}€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>
             <div class="mb-6">
               <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>
-              <USelect 
+              <USelect
                 v-model="standardDays"
-                :items="daysOptions" 
+                :items="daysOptions"
                 placeholder="Vyber počet dní"
                 class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-dark-green)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-orange)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-dark-green)] data-[state=closed]:ring-[var(--color-dark-green)]"
               />
             </div>
-            <UButton 
+            <UButton
               class="pricing-button hover-beige bg-[var(--color-dark-green)] text-beige mb-6 h-14 text-lg font-bold"
               block
               @click="handleOrderClick('ŠTANDARD', standardDays)"
@@ -511,7 +581,7 @@ onMounted(() => {
                 <div class="bg-[var(--color-orange)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
-                <span class="text-[var(--color-dark-green)]">Doručenie na adresu alebo výdaj jedla na prevádzke 24/7</span>
+                <span class="text-[var(--color-dark-green)]">Doručenie na adresu alebo výdajné miesto</span>
               </li>
             </ul>
           </div>
@@ -526,7 +596,7 @@ onMounted(() => {
             </p>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
-              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">400€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
+              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ premiumPrice }}€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>
             <div class="mb-6">
               <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>
@@ -556,13 +626,7 @@ onMounted(() => {
                 <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
-                <span class="text-[var(--color-dark-green)]">variácie s dôrazom na nutričnú rovnováhu</span>
-              </li>
-              <li class="flex items-start gap-3">
-                <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
-                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
-                </div>
-                <span class="text-[var(--color-dark-green)]">Prispôsobenie kalórií a makrotnutrientov tvojim potrebám (Mgr. Filip Dvořáček)</span>
+                <span class="text-[var(--color-dark-green)]">Prispôsobenie kalórií a makronutrientov tvojim potrebám (Nutričný špecialista Mgr. Filip Dvořáček)</span>
               </li>
               <li class="flex items-start gap-3">
                 <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
@@ -574,7 +638,59 @@ onMounted(() => {
                 <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
-                <span class="text-[var(--color-dark-green)]">InBody váženie - kompletná analýza tela (MUDr. Peter Birčák)</span>
+                <span class="text-[var(--color-dark-green)]">InBody váženie – kompletná analýza zloženia tela (MUDr. Peter Birčák)</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Office Card - Highlighted with Orange -->
+          <div class="pricing-card bg-[var(--color-orange)] border-[var(--color-dark-green)] rounded-[32px] p-6 flex flex-col h-fit">
+            <h3 class="text-2xl font-bold text-[var(--color-dark-green)] mb-2">
+              Balíček OFFICE
+            </h3>
+            <p class="text-[var(--color-dark-green)] mb-6">
+              Kompletné riešenie pre pracovný deň.
+            </p>
+            <div class="border-t border-[var(--color-dark-green)] my-4"></div>
+            <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
+              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ officePrice }}€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
+            </div>
+            <div class="mb-6">
+              <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>
+              <USelect
+                v-model="officeDays"
+                :items="officeDaysOptions"
+                disabled
+                class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-dark-green)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-orange)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-dark-green)] data-[state=closed]:ring-[var(--color-dark-green)] disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <span class="text-xs text-[var(--color-dark-green)]/70 mt-2 block">Len 5 dní v týždni</span>
+            </div>
+            <UButton
+              class="pricing-button hover-beige bg-[var(--color-dark-green)] text-beige mb-6 h-14 text-lg font-bold"
+              block
+              @click="handleOrderClick('OFFICE', officeDays)"
+            >
+              Objednať OFFICE
+            </UButton>
+            <div class="border-t border-[var(--color-dark-green)] my-4"></div>
+            <ul class="space-y-3">
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-orange)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">Kompletné riešenie pre pracovný deň</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-orange)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">4 jedlá denne (raňajky + obed s polievkou + večera)</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-orange)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">Doručenie na adresu alebo výdaj jedla na prevádzke 24/7</span>
               </li>
             </ul>
           </div>
@@ -687,7 +803,7 @@ onMounted(() => {
                 <MapPinIcon class="w-8 h-8 flex-shrink-0 text-[var(--color-beige)]" />
                 <div>
                   <h4 class="font-condensed text-2xl font-bold text-[var(--color-beige)] mb-2">Adresa</h4>
-                  <p class="text-lg text-[var(--color-beige)]">Nám. sv. Michala 5<br/>934 01 Levice</p>
+                  <p class="text-lg text-[var(--color-beige)]">Kalvínske námestie 126/2<br/>934 01 Levice</p>
                 </div>
               </div>
               
