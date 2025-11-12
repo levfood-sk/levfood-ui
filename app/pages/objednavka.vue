@@ -127,11 +127,22 @@ const durationOptions = computed(() => {
   ]
 })
 
-// Delivery type options
-const deliveryTypeOptions = [
-  { label: 'Prevádzka', value: 'prevádzka' },
-  { label: 'Domov', value: 'domov' }
-]
+// Delivery type options - dynamic based on package
+const deliveryTypeOptions = computed(() => {
+  // For OFFICE package, show "Do práce" instead of "Domov"
+  if (formData.value.step1.package === 'OFFICE') {
+    return [
+      { label: 'Prevádzka', value: 'prevádzka' },
+      { label: 'Do práce', value: 'domov' }
+    ]
+  }
+
+  // For all other packages, show "Domov"
+  return [
+    { label: 'Prevádzka', value: 'prevádzka' },
+    { label: 'Domov', value: 'domov' }
+  ]
+})
 
 // Dietary requirement options
 const dietaryOptions = [
@@ -218,7 +229,8 @@ function validateField(field: 'fullName' | 'phone' | 'email' | 'address') {
   // Mark field as touched
   touched.value[field] = true
 
-  const fieldSchema = step3Schema.value.shape[field]
+  const shape = step3Schema.value.shape as Record<string, z.ZodTypeAny>
+  const fieldSchema = shape[field]
   if (!fieldSchema) return true // Field not in current schema
 
   const result = fieldSchema.safeParse(formData.value.step3[field])
@@ -675,7 +687,7 @@ async function saveOrder(stripePaymentIntentId: string) {
       title: 'Objednávka úspešná!',
       description: `Tvoja objednávka #${response.orderId} bola prijatá. Ďakujeme!`,
       color: 'success',
-      timeout: 8000,
+      duration: 8000,
     })
 
     // Show success state
@@ -689,7 +701,7 @@ async function saveOrder(stripePaymentIntentId: string) {
       title: 'Chyba',
       description: 'Platba bola úspešná, ale objednávka nebola uložená. Kontaktujte nás.',
       color: 'error',
-      timeout: 10000,
+      duration: 10000,
     })
   } finally {
     stripeProcessing.value = false

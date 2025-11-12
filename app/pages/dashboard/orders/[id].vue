@@ -138,6 +138,21 @@ function calculateAge(birthDate?: string): number | null {
   return age
 }
 
+// Get delivery type label
+const deliveryTypeLabel = computed(() => {
+  if (!order.value) return '-'
+
+  if (order.value.deliveryType === 'prevádzka') {
+    return 'Prevádzka'
+  }
+
+  if (order.value.deliveryType === 'domov') {
+    return order.value.package === 'OFFICE' ? 'Do práce' : 'Domov'
+  }
+
+  return '-'
+})
+
 onMounted(() => {
   loadOrder()
 })
@@ -232,6 +247,11 @@ onMounted(() => {
             </div>
 
             <div>
+              <p class="text-sm text-slate-600">Typ doručenia</p>
+              <p class="text-base font-medium text-slate-900">{{ deliveryTypeLabel }}</p>
+            </div>
+
+            <div v-if="order.deliveryType === 'domov' && order.deliveryAddress">
               <p class="text-sm text-slate-600">Dodacia adresa</p>
               <p class="text-base font-medium text-slate-900">{{ order.deliveryAddress }}</p>
             </div>
