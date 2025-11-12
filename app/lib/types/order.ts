@@ -6,6 +6,7 @@ import type { Timestamp } from 'firebase/firestore'
  */
 export type PackageType = 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM'
 export type DurationType = '5' | '6'
+export type DeliveryType = 'prevádzka' | 'domov'
 export type PaymentStatus = 'pending' | 'succeeded' | 'failed'
 export type OrderStatus = 'pending' | 'approved' | 'cancelled'
 
@@ -64,8 +65,9 @@ export interface Order {
   firestoreId: string          // Firestore document ID
   clientId: string             // Reference to Client document
 
-  // Delivery address (order-specific)
-  deliveryAddress: string
+  // Delivery information
+  deliveryType: DeliveryType   // prevádzka or domov
+  deliveryAddress: string      // Only populated when deliveryType is 'domov'
 
   // Package details
   package: PackageType
@@ -120,6 +122,7 @@ export interface CreateOrderInput {
   goal?: string
 
   // Step 3: Delivery info
+  deliveryType: DeliveryType
   fullName: string
   phone: string
   email: string
@@ -173,6 +176,9 @@ export const createOrderSchema = z.object({
     .default(''),
 
   // Customer info
+  deliveryType: z.enum(['prevádzka', 'domov'], {
+    message: 'Typ doručenia je povinný',
+  }),
   fullName: z.string()
     .min(2, 'Meno musí obsahovať aspoň 2 znaky')
     .max(100, 'Meno je príliš dlhé'),
@@ -183,8 +189,8 @@ export const createOrderSchema = z.object({
     .email('Neplatná emailová adresa')
     .toLowerCase(),
   address: z.string()
-    .min(5, 'Adresa musí obsahovať aspoň 5 znakov')
-    .max(200, 'Adresa je príliš dlhá'),
+    .max(200, 'Adresa je príliš dlhá')
+    .default(''),
   courierNotes: z.string().max(500, 'Poznámka je príliš dlhá').default(''),
 
   // Payment

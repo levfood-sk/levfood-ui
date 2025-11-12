@@ -38,6 +38,7 @@ const formData = ref({
     goal: ''
   },
   step3: {
+    deliveryType: '' as 'prevádzka' | 'domov' | '',
     fullName: '',
     phone: '',
     email: '',
@@ -66,14 +67,33 @@ const touched = ref({
   address: false
 })
 
-// Zod schemas
-const step3Schema = z.object({
-  fullName: z.string().min(2, 'Meno musí obsahovať aspoň 2 znaky'),
-  phone: z.string()
-    .min(1, 'Telefónne číslo je povinné')
-    .regex(/^(\+421|0)?[0-9]{9,10}$/, 'Neplatné telefónne číslo. Použite formát +421000000000)'),
-  email: z.email('Neplatná emailová adresa'),
-  address: z.string().min(5, 'Adresa musí obsahovať aspoň 5 znakov')
+// Computed flags for delivery logic
+const isEkonomy = computed(() => formData.value.step1.package === 'EKONOMY')
+const showAddressField = computed(() => formData.value.step3.deliveryType === 'domov')
+const isDeliveryTypeDisabled = computed(() => isEkonomy.value)
+
+// Zod schemas - dynamic based on delivery type
+const step3Schema = computed(() => {
+  const baseSchema = {
+    deliveryType: z.enum(['prevádzka', 'domov'] as const, {
+      required_error: 'Typ doručenia je povinný'
+    }),
+    fullName: z.string().min(2, 'Meno musí obsahovať aspoň 2 znaky'),
+    phone: z.string()
+      .min(1, 'Telefónne číslo je povinné')
+      .regex(/^(\+421|0)?[0-9]{9,10}$/, 'Neplatné telefónne číslo. Použite formát +421000000000)'),
+    email: z.string().email('Neplatná emailová adresa'),
+  }
+
+  // Only require address if delivery type is 'domov'
+  if (formData.value.step3.deliveryType === 'domov') {
+    return z.object({
+      ...baseSchema,
+      address: z.string().min(5, 'Adresa musí obsahovať aspoň 5 znakov')
+    })
+  }
+
+  return z.object(baseSchema)
 })
 
 const steps = computed(() => [
@@ -94,6 +114,12 @@ const packageOptions = [
 const durationOptions = [
   { label: '4 týždne (5 dní v týždni pon-pia)', value: '5' },
   { label: '4 týždne (6 dní v týždni pon – sob)', value: '6' }
+]
+
+// Delivery type options
+const deliveryTypeOptions = [
+  { label: 'Prevádzka', value: 'prevádzka' },
+  { label: 'Domov', value: 'domov' }
 ]
 
 // Dietary requirement options
@@ -165,10 +191,12 @@ const isStep1Valid = computed(() => {
 function validateField(field: 'fullName' | 'phone' | 'email' | 'address') {
   // Mark field as touched
   touched.value[field] = true
-  
-  const fieldSchema = step3Schema.shape[field]
+
+  const fieldSchema = step3Schema.value.shape[field]
+  if (!fieldSchema) return true // Field not in current schema
+
   const result = fieldSchema.safeParse(formData.value.step3[field])
-  
+
   if (!result.success) {
     errors.value[field] = result.error.issues[0]?.message || ''
     return false
@@ -196,8 +224,8 @@ function validateFieldOnInput(field: 'fullName' | 'phone' | 'email' | 'address')
 
 // Validate all step 3 fields
 function validateStep3() {
-  const result = step3Schema.safeParse(formData.value.step3)
-  
+  const result = step3Schema.value.safeParse(formData.value.step3)
+
   if (!result.success) {
     result.error.issues.forEach((err: z.ZodIssue) => {
       const field = err.path[0] as 'fullName' | 'phone' | 'email' | 'address'
@@ -216,7 +244,7 @@ function validateStep3() {
 }
 
 const isStep3Valid = computed(() => {
-  const result = step3Schema.safeParse(formData.value.step3)
+  const result = step3Schema.value.safeParse(formData.value.step3)
   return result.success
 })
 
@@ -382,7 +410,7 @@ onMounted(() => {
   // Pre-fill from query parameters if present
   const packageParam = route.query.package as string
   const durationParam = route.query.duration as string
-  
+
   // Validate and set package (accept lowercase English names)
   if (packageParam) {
     const mappedPackage = packageMap[packageParam.toLowerCase()]
@@ -390,20 +418,43 @@ onMounted(() => {
       formData.value.step1.package = mappedPackage
     }
   }
-  
+
   // Validate and set duration
   if (durationParam && ['5', '6'].includes(durationParam)) {
     formData.value.step1.duration = durationParam as '5' | '6'
   }
-  
+
   // Ensure we're on step 1 when coming from pricing cards
   if (packageParam || durationParam) {
     currentStep.value = 1
   }
-  
+
   // Initialize delivery date with suggested date
   if (!formData.value.step4.deliveryStartDate && suggestedDeliveryDate.value) {
     formData.value.step4.deliveryStartDate = suggestedDeliveryDate.value
+  }
+
+  // Set delivery type to 'prevádzka' if EKONOMY is pre-selected
+  if (formData.value.step1.package === 'EKONOMY') {
+    formData.value.step3.deliveryType = 'prevádzka'
+  }
+})
+
+// Watch for package changes to update delivery type for EKONOMY
+watch(() => formData.value.step1.package, (newPackage) => {
+  if (newPackage === 'EKONOMY') {
+    formData.value.step3.deliveryType = 'prevádzka'
+  }
+})
+
+// Watch for delivery type changes to clear address when switching to 'prevádzka'
+watch(() => formData.value.step3.deliveryType, (newType) => {
+  if (newType === 'prevádzka') {
+    formData.value.step3.address = ''
+    formData.value.step3.courierNotes = ''
+    // Clear address validation errors
+    errors.value.address = ''
+    touched.value.address = false
   }
 })
 
@@ -565,11 +616,12 @@ async function saveOrder(stripePaymentIntentId: string) {
       goal: formData.value.step2.goal,
 
       // Step 3
+      deliveryType: formData.value.step3.deliveryType as any,
       fullName: formData.value.step3.fullName,
       phone: formData.value.step3.phone,
       email: formData.value.step3.email,
-      address: formData.value.step3.address,
-      courierNotes: formData.value.step3.courierNotes || '',
+      address: formData.value.step3.deliveryType === 'domov' ? formData.value.step3.address : '',
+      courierNotes: formData.value.step3.deliveryType === 'domov' ? formData.value.step3.courierNotes || '' : '',
 
       // Step 4
       deliveryStartDate: formData.value.step4.deliveryStartDate,
@@ -852,10 +904,24 @@ watch(() => currentStep.value, (newStep) => {
         <div v-if="currentStep === 3" class="space-y-8">
           <div class="text-center">
             <h2 class="text-2xl font-bold text-[var(--color-dark-green)] mb-3 font-condensed">Kam ti máme jedlo doručiť?</h2>
-            <p class="text-sm text-[var(--color-dark-green)]">Zabezpečíme doručenie priamo k tvojim dverám v čase od 11:00 do 15:00.</p>
+            <p v-if="!isEkonomy && showAddressField" class="text-sm text-[var(--color-dark-green)]">Zabezpečíme doručenie priamo k tvojim dverám v čase od 11:00 do 15:00.</p>
           </div>
 
           <div class="space-y-6">
+            <!-- Delivery Type Select -->
+            <UFormField label="Doručenie" required class="w-full">
+              <USelect
+                v-model="formData.step3.deliveryType"
+                :items="deliveryTypeOptions"
+                placeholder="Vyber spôsob doručenia"
+                size="lg"
+                :disabled="isDeliveryTypeDisabled"
+                class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)] disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <template v-if="isEkonomy" #hint>
+                <span class="text-xs text-[var(--color-dark-green)]/70">EKONOMY balíček je dostupný iba s doručením do prevádzky</span>
+              </template>
+            </UFormField>
             <UFormField 
               label="Meno a priezvisko" 
               required 
@@ -897,17 +963,17 @@ watch(() => currentStep.value, (newStep) => {
               />
             </UFormField>
 
-            <UFormField 
-              label="Email" 
-              required 
-              class="w-full" 
+            <UFormField
+              label="Email"
+              required
+              class="w-full"
               :error="touched.email ? errors.email : ''"
               eager-validation
             >
-              <UInput 
-                v-model="formData.step3.email" 
-                type="email" 
-                size="lg" 
+              <UInput
+                v-model="formData.step3.email"
+                type="email"
+                size="lg"
                 placeholder="email@levfood.sk"
                 icon="i-lucide-mail"
                 class="w-full"
@@ -919,16 +985,18 @@ watch(() => currentStep.value, (newStep) => {
               />
             </UFormField>
 
-            <UFormField 
-              label="Adresa doručenia" 
-              required 
-              class="w-full" 
+            <!-- Address field - only show when delivery type is 'domov' -->
+            <UFormField
+              v-if="showAddressField"
+              label="Adresa doručenia"
+              required
+              class="w-full"
               :error="touched.address ? errors.address : ''"
               eager-validation
             >
-              <UInput 
-                v-model="formData.step3.address" 
-                size="lg" 
+              <UInput
+                v-model="formData.step3.address"
+                size="lg"
                 placeholder="Ulica, číslo, mesto"
                 class="w-full"
                 :highlight="!!(touched.address && errors.address)"
@@ -939,9 +1007,10 @@ watch(() => currentStep.value, (newStep) => {
               />
             </UFormField>
 
-            <UFormField label="Poznámka pre kuriéra" class="w-full">
-              <UTextarea 
-                v-model="formData.step3.courierNotes" 
+            <!-- Courier notes - only show when delivery type is 'domov' -->
+            <UFormField v-if="showAddressField" label="Poznámka pre kuriéra" class="w-full">
+              <UTextarea
+                v-model="formData.step3.courierNotes"
                 size="lg"
                 placeholder="Napríklad: žltý dom, 4. naľavo…"
                 :rows="3"
@@ -1017,7 +1086,11 @@ watch(() => currentStep.value, (newStep) => {
                   <span class="font-semibold">{{ totalPriceFormatted }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span>Doručenie:</span>
+                  <span>Typ doručenia:</span>
+                  <span class="font-semibold">{{ formData.step3.deliveryType === 'prevádzka' ? 'Prevádzka' : 'Domov' }}</span>
+                </div>
+                <div v-if="formData.step3.deliveryType === 'domov'" class="flex justify-between">
+                  <span>Adresa:</span>
                   <span class="font-semibold">{{ summaryData.address || '-' }}</span>
                 </div>
               </div>
