@@ -285,31 +285,66 @@ onMounted(() => {
 
             <!-- App Download Buttons -->
             <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
-              <a 
-                href="#" 
-                target="_blank" 
+              <a
+                href="#"
+                target="_blank"
                 rel="noopener noreferrer"
                 class="inline-block"
               >
-                <img 
-                  :src="appleBadgeIcon" 
-                  alt="Download on the App Store" 
+                <img
+                  :src="appleBadgeIcon"
+                  alt="Download on the App Store"
                   class="h-12 md:h-14 w-auto object-contain"
                 />
               </a>
-              <a 
-                href="#" 
-                target="_blank" 
+              <a
+                href="#"
+                target="_blank"
                 rel="noopener noreferrer"
                 class="inline-block"
               >
-                <img 
-                  :src="playBadgeIcon" 
-                  alt="Get it on Google Play" 
+                <img
+                  :src="playBadgeIcon"
+                  alt="Get it on Google Play"
                   class="h-12 md:h-14 w-auto object-contain"
                 />
               </a>
             </div>
+           
+
+            <!-- Custom Orange App Download Buttons -->
+            <!-- <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+              <a
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="group bg-orange hover:bg-dark-green transition-colors duration-300 rounded-xl px-6 py-3 flex items-center gap-3 min-w-[200px] shadow-lg"
+              >
+                <UIcon
+                  name="i-lucide-apple"
+                  class="w-8 h-8 text-dark-green group-hover:text-orange transition-colors duration-300"
+                />
+                <div class="flex flex-col items-start">
+                  <span class="text-xs text-dark-green group-hover:text-orange transition-colors duration-300">Stiahnuť z</span>
+                  <span class="text-base font-bold text-dark-green group-hover:text-orange transition-colors duration-300">App Store</span>
+                </div>
+              </a>
+              <a
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="group bg-orange hover:bg-dark-green transition-colors duration-300 rounded-xl px-6 py-3 flex items-center gap-3 min-w-[200px] shadow-lg"
+              >
+                <UIcon
+                  name="i-lucide-smartphone"
+                  class="w-8 h-8 text-dark-green group-hover:text-orange transition-colors duration-300"
+                />
+                <div class="flex flex-col items-start">
+                  <span class="text-xs text-dark-green group-hover:text-orange transition-colors duration-300">Získajte na</span>
+                  <span class="text-base font-bold text-dark-green group-hover:text-orange transition-colors duration-300">Google Play</span>
+                </div>
+              </a>
+            </div> -->
           </div>
         </div>
       </div>
