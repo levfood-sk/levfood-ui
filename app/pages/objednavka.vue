@@ -180,12 +180,12 @@ const packagePrices = {
     '6': 33900   // 339€ for 6 days
   },
   ŠTANDARD: {
-    '5': 35900,  // 359€ for 5 days
-    '6': 39900   // 399€ for 6 days
+    '5': 32300,  // 323€ for 5 days (10% off from 359€)
+    '6': 35900   // 359€ for 6 days (10% off from 399€)
   },
   PREMIUM: {
-    '5': 41900,  // 419€ for 5 days
-    '6': 45900   // 459€ for 6 days
+    '5': 37700,  // 377€ for 5 days (10% off from 419€)
+    '6': 41300   // 413€ for 6 days (10% off from 459€)
   },
   OFFICE: {
     '5': 24900,  // 249€ for 5 days (only option)

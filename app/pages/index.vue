@@ -50,16 +50,28 @@ const packagePricing = {
     '6': 339
   },
   ŠTANDARD: {
+    '5': 323, // 10% off from 359€
+    '6': 359  // 10% off from 399€
+  },
+  PREMIUM: {
+    '5': 377, // 10% off from 419€
+    '6': 413  // 10% off from 459€
+  },
+  OFFICE: {
+    '5': 249,
+    '6': 249 // Not used, but keeping for consistency
+  }
+}
+
+// Original prices (before discount) for Standard and Premium
+const originalPricing = {
+  ŠTANDARD: {
     '5': 359,
     '6': 399
   },
   PREMIUM: {
     '5': 419,
     '6': 459
-  },
-  OFFICE: {
-    '5': 249,
-    '6': 249 // Not used, but keeping for consistency
   }
 }
 
@@ -81,6 +93,17 @@ const premiumPrice = computed(() => {
 
 const officePrice = computed(() => {
   return packagePricing.OFFICE['5'] // Always 5 days for OFFICE
+})
+
+// Original prices (before discount) for Standard and Premium
+const standardOriginalPrice = computed(() => {
+  const days = standardDays.value || '5'
+  return originalPricing.ŠTANDARD[days as '5' | '6']
+})
+
+const premiumOriginalPrice = computed(() => {
+  const days = premiumDays.value || '5'
+  return originalPricing.PREMIUM[days as '5' | '6']
 })
 
 // Map internal package names to lowercase English URL params
@@ -516,9 +539,12 @@ onMounted(() => {
             Cenník
           </h2>
         </div>
-        <div class="text-center mb-8 px-4">
+        <div class="text-center md:mb-12 mb-8  px-4">
           <p class="md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-dark-green)]">
             Začni dnes – vyber si svoj balíček
+          </p>
+          <p class="font-bold md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-dark-green)]">
+            Zľava 10% DO KONCA ROKA pre balíky ŠTANDARD a PREMIUM
           </p>
         </div>
 
@@ -586,7 +612,7 @@ onMounted(() => {
             </p>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
-              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ standardPrice }}€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
+              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ standardPrice }}€</span> <span class="text-[2rem] font-bold text-[#868882] line-through">{{ standardOriginalPrice }}€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>
             <div class="mb-6">
               <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>
@@ -631,7 +657,7 @@ onMounted(() => {
             </p>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
-              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ premiumPrice }}€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
+              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ premiumPrice }}€</span> <span class="text-[2rem] font-bold text-[#868882] line-through">{{ premiumOriginalPrice }}€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>
             <div class="mb-6">
               <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>
