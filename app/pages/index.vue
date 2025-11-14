@@ -546,7 +546,7 @@ onMounted(() => {
             Začni dnes – vyber si svoj balíček
           </p>
           <p class="font-bold md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-dark-green)]">
-            Zľava 10% DO KONCA ROKA pre balíky ŠTANDARD a PREMIUM
+            Zľava 10% na všetky predobjednávky DO KONCA ROKA pre balíky ŠTANDARD a PREMIUM
           </p>
         </div>
 
