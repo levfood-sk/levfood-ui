@@ -770,15 +770,12 @@ onMounted(() => {
 
 
     <!-- Gallery Section -->
-    <div class="bg-[var(--color-beige)] relative">
-      <!-- Desktop Layout -->
+    <!-- <div class="bg-[var(--color-beige)] relative">
       <div class="hidden lg:flex lg:flex-row">
         <div class="container mx-auto px-4 lg:py-28  py-10">
 
           <div class="grid grid-cols-12 gap-4 items-center">
-            <!-- Left Text Content -->
             <div class="col-span-12 lg:col-span-6 flex flex-col relative lg:py-20 py-6">
-              <!-- Gallery Title -->
               <h2 class="text-[4rem] lg:text-[6rem] font-condensed font-bold text-[var(--color-dark-green)] mb-4 relative z-10 text-center lg:text-left">
                 Galéria
               </h2>
@@ -792,13 +789,10 @@ onMounted(() => {
             </div>
           </div>
         </div>
-        <!-- Right Gallery Content - Overflow design -->
         <div class="w-1/2 absolute right-0">
           <ProductGallery />
         </div>
       </div>
-
-      <!-- Mobile Layout -->
       <div class="lg:hidden py-10">
         <div class="block lg:hidden grid md:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-4 mb-4">
           <div class="flex flex-col items-center justify-center">
@@ -823,7 +817,7 @@ onMounted(() => {
         </div>
         <ProductGallery />
       </div>
-    </div>
+    </div> -->
 
     <!-- Team Section -->
     <div class="overflow-hidden bg-[var(--color-beige)] py-20">
