@@ -307,7 +307,7 @@ onMounted(() => {
             </ul>
 
             <!-- App Download Buttons -->
-            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+            <!-- <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
               <a
                 href="#"
                 target="_blank"
@@ -332,42 +332,44 @@ onMounted(() => {
                   class="h-12 md:h-14 w-auto object-contain"
                 />
               </a>
-            </div>
+            </div> -->
            
 
             <!-- Custom Orange App Download Buttons -->
-            <!-- <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
-              <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="group bg-orange hover:bg-dark-green transition-colors duration-300 rounded-xl px-6 py-3 flex items-center gap-3 min-w-[200px] shadow-lg"
+             <div class="flex flex-col items-center justify-center">
+              <h3 class="mt-[100px] text-orange text-[1.75rem] md:text-[2rem] text-center tracking-tight font-condensed">Aplikácia bude už čoskoro dostupná. <br>Hneď, ako bude pripravená, pošleme vám e-mail.</h3>
+
+             </div>
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+              <button
+                disabled
+                aria-disabled="true"
+                class="group bg-orange cursor-not-allowed hover:bg-beige transition-colors duration-300 rounded-xl px-6 py-3 flex items-center gap-3 min-w-[200px] shadow-lg"
               >
                 <UIcon
                   name="i-lucide-apple"
-                  class="w-8 h-8 text-dark-green group-hover:text-orange transition-colors duration-300"
+                  class="w-8 h-8 text-dark-green group-hover:text-dark-green transition-colors duration-300"
                 />
                 <div class="flex flex-col items-start">
-                  <span class="text-xs text-dark-green group-hover:text-orange transition-colors duration-300">Stiahnuť z</span>
-                  <span class="text-base font-bold text-dark-green group-hover:text-orange transition-colors duration-300">App Store</span>
+                  <span class="text-xs text-dark-green group-hover:text-dark-green transition-colors duration-300">Stiahnuť z</span>
+                  <span class="text-base font-bold text-dark-green group-hover:text-dark-green transition-colors duration-300">App Store</span>
                 </div>
-              </a>
-              <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="group bg-orange hover:bg-dark-green transition-colors duration-300 rounded-xl px-6 py-3 flex items-center gap-3 min-w-[200px] shadow-lg"
+              </button>
+              <button
+                disabled
+                aria-disabled="true"
+                class="group bg-orange cursor-not-allowed hover:bg-beige transition-colors duration-300 rounded-xl px-6 py-3 flex items-center gap-3 min-w-[200px] shadow-lg"
               >
                 <UIcon
                   name="i-lucide-smartphone"
-                  class="w-8 h-8 text-dark-green group-hover:text-orange transition-colors duration-300"
+                  class="w-8 h-8 text-dark-green group-hover:text-dark-green transition-colors duration-300"
                 />
                 <div class="flex flex-col items-start">
-                  <span class="text-xs text-dark-green group-hover:text-orange transition-colors duration-300">Získajte na</span>
-                  <span class="text-base font-bold text-dark-green group-hover:text-orange transition-colors duration-300">Google Play</span>
+                  <span class="text-xs text-dark-green group-hover:text-dark-green transition-colors duration-300">Získajte na</span>
+                  <span class="text-base font-bold text-dark-green group-hover:text-dark-green transition-colors duration-300">Google Play</span>
                 </div>
-              </a>
-            </div> -->
+              </button>
+            </div>
           </div>
         </div>
       </div>
