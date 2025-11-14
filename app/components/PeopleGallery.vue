@@ -88,8 +88,8 @@ onUnmounted(() => {
         class="flex-shrink-0 w-full lg:w-auto max-lg:snap-center"
       >
         <div class="h-full w-full lg:w-[400px] bg-[var(--color-beige)] rounded-none overflow-hidden">
-          <div class="h-[250px] lg:h-[350px] bg-gray-200 flex items-center justify-center">
-            <UIcon :name="item.icon" class="w-24 h-24 text-gray-400" />
+          <div class="h-[250px] lg:h-[350px] bg-orange flex items-center justify-center">
+            <UIcon :name="item.icon" class="w-24 h-24 text-beige" />
           </div>
           <div class="p-6 flex flex-col bg-[var(--color-beige)]">
             <h3 v-if="item.name" class="text-2xl font-bold text-[var(--color-dark-green)] mb-1 font-condensed">{{ item.name }}</h3>
@@ -97,7 +97,7 @@ onUnmounted(() => {
             <p class="text-[var(--color-dark-green)] text-base leading-relaxed flex-grow mb-6">{{ item.description }}</p>
             
             <!-- Social Links (only show if name exists, indicating a team member) -->
-            <div v-if="item.name" class="flex gap-3">
+            <!-- <div v-if="item.name" class="flex gap-3">
               <button class="w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity">
                 <UIcon name="i-fa7-brands:square-linkedin" class="w-6 h-6 text-[var(--color-dark-green)]" />
               </button>
@@ -107,7 +107,7 @@ onUnmounted(() => {
               <button class="w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity">
                 <UIcon name="i-fa7-brands:dribbble" class="w-6 h-6 text-[var(--color-dark-green)]" />
               </button>
-            </div>
+            </div> -->
           </div>
         </div>
       </div>
