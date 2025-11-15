@@ -27,7 +27,6 @@ const formData = ref({
   },
   step2: {
     dietaryRequirement: [] as string[],
-    notes: '',
     // Personal info (Niečo o tebe)
     birthDate: '',
     height: null as number | null,
@@ -40,7 +39,7 @@ const formData = ref({
   step3: {
     deliveryType: '' as 'prevádzka' | 'domov' | '',
     fullName: '',
-    phone: '',
+    phone: '+421',
     email: '',
     address: '',
     courierNotes: ''
@@ -50,6 +49,9 @@ const formData = ref({
     termsAccepted: false
   }
 })
+
+// Date auto-correction flag
+const dateWasAutoCorrected = ref(false)
 
 // Validation errors
 const errors = ref({
@@ -71,6 +73,9 @@ const touched = ref({
 const isEkonomy = computed(() => formData.value.step1.package === 'EKONOMY')
 const showAddressField = computed(() => formData.value.step3.deliveryType === 'domov')
 const isDeliveryTypeDisabled = computed(() => isEkonomy.value)
+const showDietaryRequirements = computed(() =>
+  formData.value.step1.package === 'ŠTANDARD' || formData.value.step1.package === 'PREMIUM'
+)
 
 // Zod schemas - dynamic based on delivery type
 const step3Schema = computed(() => {
@@ -149,8 +154,6 @@ const dietaryOptions = [
   { value: 'bezlaktózová', label: 'Bezlaktózová' },
   { value: 'vegetariánska', label: 'Vegetariánska' },
   { value: 'bezlepková', label: 'Bezlepková' },
-  { value: 'bez-rýb', label: 'Bez rýb' },
-  { value: 'bez-orechov', label: 'Bez orechov' },
   { value: 'žiadne', label: 'Nemám špeciálne požiadavky' }
 ]
 
@@ -246,6 +249,7 @@ function validateField(field: 'fullName' | 'phone' | 'email' | 'address') {
 
 // Debounced validation for input events
 let validationTimer: NodeJS.Timeout | null = null
+let deliveryDateTimer: NodeJS.Timeout | null = null
 
 function validateFieldOnInput(field: 'fullName' | 'phone' | 'email' | 'address') {
   // Only validate if field has been touched
@@ -335,39 +339,32 @@ const deliverySchedule = [
 function getDeliveryInfo() {
   const today = new Date()
   const dayOfWeek = today.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6 // 0 = Sunday, 1 = Monday, etc.
-  
-  const infoMap: Record<0 | 1 | 2 | 3 | 4 | 5 | 6, { delivery: string; prepared: string }> = {
+
+  const infoMap: Record<0 | 1 | 2 | 3 | 4 | 5 | 6, { delivery: string }> = {
     2: { // Tuesday
-      prepared: 'sobota/pondelok ráno',
       delivery: 'piatok/sobota na obed'
     },
     3: { // Wednesday
-      prepared: 'pondelok ráno',
-      delivery: 'sobota na obed'
+      delivery: 'soboty na obed'
     },
     4: { // Thursday
-      prepared: 'utorok ráno',
-      delivery: 'pondelok na obed'
+      delivery: 'pondelka na obed'
     },
     5: { // Friday
-      prepared: 'streda ráno',
-      delivery: 'utorok na obed'
+      delivery: 'utoroka na obed'
     },
     6: { // Saturday
-      prepared: 'štvrtok ráno',
-      delivery: 'streda na obed'
+      delivery: 'stredy na obed'
     },
     0: { // Sunday
-      prepared: 'štvrtok ráno',
-      delivery: 'streda na obed'
+      delivery: 'stredy na obed'
     },
     1: { // Monday
-      prepared: 'piatok ráno',
-      delivery: 'štvrtok na obed'
+      delivery: 'štvrtka na obed'
     }
   }
-  
-  return infoMap[dayOfWeek] || { delivery: '', prepared: '' }
+
+  return infoMap[dayOfWeek] || { delivery: '' }
 }
 
 const deliveryInfo = computed(() => {
@@ -468,9 +465,9 @@ onMounted(() => {
     currentStep.value = 1
   }
 
-  // Initialize delivery date with suggested date
-  if (!formData.value.step4.deliveryStartDate && suggestedDeliveryDate.value) {
-    formData.value.step4.deliveryStartDate = suggestedDeliveryDate.value
+  // Initialize delivery date with default date
+  if (!formData.value.step4.deliveryStartDate) {
+    formData.value.step4.deliveryStartDate = '13.01.2026'
   }
 
   // Set delivery type to 'prevádzka' if EKONOMY is pre-selected
@@ -489,6 +486,11 @@ watch(() => formData.value.step1.package, (newPackage) => {
   if (newPackage === 'OFFICE' && formData.value.step1.duration === '6') {
     formData.value.step1.duration = '5'
   }
+
+  // Clear dietary requirements for EKONOMY and OFFICE packages
+  if (newPackage === 'EKONOMY' || newPackage === 'OFFICE') {
+    formData.value.step2.dietaryRequirement = []
+  }
 })
 
 // Watch for delivery type changes to clear address when switching to 'prevádzka'
@@ -500,6 +502,43 @@ watch(() => formData.value.step3.deliveryType, (newType) => {
     errors.value.address = ''
     touched.value.address = false
   }
+})
+
+// Watch for delivery start date changes to enforce minimum date (debounced 5 seconds)
+watch(() => formData.value.step4.deliveryStartDate, (newDate) => {
+  // Clear the auto-correction message only if user is manually changing the date (not when it's auto-corrected to 13.01.2026)
+  if (newDate !== '13.01.2026' || !dateWasAutoCorrected.value) {
+    dateWasAutoCorrected.value = false
+  }
+
+  // Clear previous timer
+  if (deliveryDateTimer) {
+    clearTimeout(deliveryDateTimer)
+  }
+
+  // Wait 5 seconds before validating
+  deliveryDateTimer = setTimeout(() => {
+    // Parse the date in DD.MM.RRRR format
+    if (newDate && newDate !== '13.01.2026') {
+      const parts = newDate.split('.')
+      if (parts.length === 3) {
+        const day = parseInt(parts[0] || '')
+        const month = parseInt(parts[1] || '')
+        const year = parseInt(parts[2] || '')
+
+        // Check if date is valid and before 13.01.2026
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+          const enteredDate = new Date(year, month - 1, day)
+          const minDate = new Date(2026, 0, 13) // January 13, 2026
+
+          if (enteredDate < minDate) {
+            formData.value.step4.deliveryStartDate = '13.01.2026'
+            dateWasAutoCorrected.value = true
+          }
+        }
+      }
+    }
+  }, 5000) // 5 second delay
 })
 
 function nextStep() {
@@ -648,15 +687,15 @@ async function saveOrder(stripePaymentIntentId: string) {
 
       // Step 2
       dietaryRequirements: formData.value.step2.dietaryRequirement,
-      notes: formData.value.step2.notes || '',
+      notes: '',
 
       // Step 2b - Personal info
       birthDate: formData.value.step2.birthDate,
       height: Number(formData.value.step2.height),
       weight: Number(formData.value.step2.weight),
-      physicalActivity: formData.value.step2.physicalActivity as any,
-      workActivity: formData.value.step2.workActivity as any,
-      stressLevel: formData.value.step2.stressLevel as any,
+      physicalActivity: formData.value.step2.physicalActivity || null,
+      workActivity: formData.value.step2.workActivity || null,
+      stressLevel: formData.value.step2.stressLevel || null,
       goal: formData.value.step2.goal,
 
       // Step 3
@@ -809,12 +848,12 @@ watch(() => currentStep.value, (newStep) => {
 
         <!-- Step 2 - Preferences -->
         <div v-if="currentStep === 2" class="space-y-8">
-          <div class="text-center">
+          <div v-if="showDietaryRequirements" class="text-center">
             <h2 class="text-2xl font-bold text-[var(--color-dark-green)] mb-3 font-condensed">Uprav si balíček podľa seba</h2>
             <p class="text-sm text-[var(--color-dark-green)]">Jedlo ti prispôsobíme tak, aby si si ho naozaj vychutnal/a.</p>
           </div>
 
-          <div class="space-y-6">
+          <div v-if="showDietaryRequirements" class="space-y-6">
             <UFormField label="Máš nejaké špecifické požiadavky na stravu?">
               <UCheckboxGroup
                 v-model="formData.step2.dietaryRequirement"
@@ -826,24 +865,12 @@ watch(() => currentStep.value, (newStep) => {
                 :ui="{ fieldset: 'flex flex-wrap gap-2', label: 'text-[var(--color-dark-green)]', icon: 'text-[var(--color-dark-green)]' }"
               />
             </UFormField>
-
-            <UFormField label="Iné poznámky alebo alergie" class="w-full">
-              <UTextarea
-                v-model="formData.step2.notes"
-                size="lg"
-                placeholder="Napríklad: nemám rád huby, prosím menej pikantné jedlá…"
-                :rows="4"
-                class="w-full"
-                :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
-
-              />
-            </UFormField>
           </div>
 
           <!-- Niečo o tebe section -->
           <div class="">
             <div class="text-center mb-4">
-              <h3 class="text-xl font-bold text-[var(--color-dark-green)] font-condensed">Niečo o tebe</h3>
+              <h3 :class="showDietaryRequirements ? 'text-xl' : 'text-2xl mb-3'" class="font-bold text-[var(--color-dark-green)] font-condensed">Niečo o tebe</h3>
               <p class="text-sm text-[var(--color-dark-green)] mt-1">Pomôžu nám lepšie nastaviť tvoj plán</p>
             </div>
 
@@ -851,11 +878,12 @@ watch(() => currentStep.value, (newStep) => {
               <UFormField label="Dátum narodenia" class="w-full">
                 <UInput
                   v-model="formData.step2.birthDate"
-                  type="date"
+                  type="text"
+                  inputmode="numeric"
                   size="lg"
+                  placeholder="DD.MM.RRRR"
                   class="w-full"
                   :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
-
                 />
               </UFormField>
 
@@ -919,7 +947,7 @@ watch(() => currentStep.value, (newStep) => {
               <UTextarea
                 v-model="formData.step2.goal"
                 size="lg"
-                placeholder="Napríklad: chcem schudnúť 5 kg, chcem nabrať svalovú hmotu, chhem sa cítiť lepšie..."
+                placeholder="Napríklad: chcem schudnúť 5 kg, chcem nabrať svalovú hmotu, chcem sa cítiť lepšie..."
                 :rows="3"
                 class="w-full"
                 :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
@@ -1141,22 +1169,34 @@ watch(() => currentStep.value, (newStep) => {
             </div>
 
             <div class="space-y-6">
-              <UFormField label="Začiatok dodávky" class="w-full">
+              <UFormField label="Začiatok vášho balíčka" class="w-full">
                 <div class="flex flex-col items-start gap-2">
                   <UInput
                     v-model="formData.step4.deliveryStartDate"
-                    type="date"
+                    type="text"
+                    inputmode="numeric"
                     size="lg"
-                    icon="i-lucide-calendar"
-                    placeholder="dd/mm/rrrr"
+                    placeholder="DD.MM.RRRR"
                     class="flex-1"
+                    :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
                   />
-                  <span
-                    class="p-2 text-[var(--color-dark-green)] hover:text-[var(--color-orange)] transition-colors font-condensed text-[16px]"
+                  <div v-if="dateWasAutoCorrected" class="flex items-start gap-2 p-3 bg-orange/20 border border-[var(--color-orange)] rounded-lg">
+                    <UIcon name="i-lucide-info" class="w-5 h-5 text-[var(--color-orange)] flex-shrink-0 mt-0.5" />
+                    <p class="text-sm text-[var(--color-dark-green)]">
+                      Dátum bol automaticky upravený na 13.01.2026, pred týmto dátumom neodosielame.
+                    </p>
+                  </div>
+                  <p class="text-sm text-[var(--color-dark-green)] mt-3">
+                    Ak si jedlo neprevezmete pri rozvoze, svoj balík budete mať na výdajnom mieste.
+                  </p>
+                  <UButton
+                    type="button"
+                    icon="i-lucide-info"
+                    class="mt-4 hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     @click="showDeliveryInfoModal = true"
                   >
-                  Kedy dostanem objednávku?
-                </span>
+                    Kedy dostanem objednávku?
+                  </UButton>
                 </div>
               </UFormField>
 
@@ -1191,7 +1231,7 @@ watch(() => currentStep.value, (newStep) => {
                       color="orange"
                     />
                     <label class="text-sm text-[var(--color-dark-green)]">
-                      Súhlasím s <a href="#" class="underline hover:text-[var(--color-orange)]">obchodnými podmienkami</a>, <a href="#" class="underline hover:text-[var(--color-orange)]">zásadami ochrany údajov</a> a spracovaním osobných údajov pre účely objednávky.
+                      Súhlasím s <a href="/zasady-ochrany" target="_blank" class="underline hover:text-[var(--color-orange)]">obchodnými podmienkami, zásadami ochrany údajov</a> a spracovaním osobných údajov pre účely objednávky.
                     </label>
                   </div>
                 </UFormField>
@@ -1225,9 +1265,11 @@ watch(() => currentStep.value, (newStep) => {
     </div>
 
     <!-- Delivery Info Modal -->
-    <UModal v-model:open="showDeliveryInfoModal" :ui="{ content: 'sm:max-w-3xl' }">
+    <UModal v-model:open="showDeliveryInfoModal" :ui="{ content: 'sm:max-w-3xl' }" closable>
       <template #header>
-        <h3 class="text-xl font-bold text-[var(--color-dark-green)] font-condensed">Kedy dostanem svoje jedlo?</h3>
+        <div class="flex items-center justify-between w-full">
+          <h3 class="text-xl font-bold text-[var(--color-dark-green)] font-condensed">Kedy dostanem svoje jedlo?</h3>
+        </div>
       </template>
       <template #body>
         <div class="space-y-6">
@@ -1241,13 +1283,12 @@ watch(() => currentStep.value, (newStep) => {
               <thead>
                 <tr class="bg-[var(--color-dark-green)] text-[var(--color-beige)]">
                   <th class="px-4 py-3 text-left font-semibold font-condensed">Ak objednáš v</th>
-                  <th class="px-4 py-3 text-left font-semibold font-condensed">Pripravené od</th>
-                  <th class="px-4 py-3 text-left font-semibold font-condensed">Doručujeme od</th>
+                  <th class="px-4 py-3 text-left font-semibold font-condensed">Doručujeme</th>
                 </tr>
               </thead>
               <tbody>
-                <tr 
-                  v-for="(schedule, index) in deliverySchedule" 
+                <tr
+                  v-for="(schedule, index) in deliverySchedule"
                   :key="index"
                   class="border-t border-[var(--color-dark-green)]/10 hover:bg-[var(--color-beige)]/50 transition-colors"
                   :class="{ 'bg-[var(--color-orange)]/10': isTodaySchedule(schedule.orderDay) }"
@@ -1256,10 +1297,7 @@ watch(() => currentStep.value, (newStep) => {
                     {{ schedule.orderDay }}
                     <span v-if="isTodaySchedule(schedule.orderDay)" class="ml-2 text-xs bg-[var(--color-orange)] text-white px-2 py-0.5 rounded-full">Dnes</span>
                   </td>
-                  <td class="px-4 py-3 text-[var(--color-dark-green)] font-semibold capitalize">
-                    {{ schedule.preparedDay }}
-                  </td>
-                  <td class="px-4 py-3 text-[var(--color-dark-green)] capitalize">
+                  <td class="px-4 py-3 text-[var(--color-dark-green)]">
                     {{ schedule.deliveryDay }}
                   </td>
                 </tr>
@@ -1273,10 +1311,7 @@ watch(() => currentStep.value, (newStep) => {
               <UIcon name="i-lucide-calendar-check" class="w-5 h-5 text-[var(--color-orange)] mt-0.5 flex-shrink-0" />
               <div>
                 <p class="text-[var(--color-dark-green)] font-semibold mb-1">
-                  Tvoja objednávka dnes
-                </p>
-                <p class="text-[var(--color-dark-green)] text-sm">
-                  Jedlo máš pripravené od <strong>{{ deliveryInfo.prepared }}</strong> (doručujeme od <strong>{{ deliveryInfo.delivery }}</strong>)
+                  Jedlo máš doručené od <strong>{{ deliveryInfo.delivery }}</strong>
                 </p>
               </div>
             </div>

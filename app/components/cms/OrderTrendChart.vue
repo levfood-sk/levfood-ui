@@ -49,19 +49,21 @@ const chartData = computed(() => {
   }
 
   // Ensure packages are in consistent order
-  const packageOrder: Array<'EKONOMY' | 'ŠTANDARD' | 'PREMIUM'> = ['EKONOMY', 'ŠTANDARD', 'PREMIUM']
+  const packageOrder: Array<'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | 'OFFICE'> = ['EKONOMY', 'ŠTANDARD', 'PREMIUM', 'OFFICE']
   const dataMap = new Map(props.data.map(d => [d.package, d.count]))
-  
+
   const labels = packageOrder
   const colors = {
     EKONOMY: '#F28E7A',
     ŠTANDARD: '#0E2825',
     PREMIUM: '#FCEFE6',
+    OFFICE: '#F28E7A',
   }
   const borderColors = {
     EKONOMY: '#F28E7A',
     ŠTANDARD: '#0E2825',
-    PREMIUM: '#0E2825',
+    PREMIUM: '#FCEFE6',
+    OFFICE: '#F28E7A',
   }
 
   const dataValues = labels.map(pkg => dataMap.get(pkg) || 0)

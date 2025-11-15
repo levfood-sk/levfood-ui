@@ -14,6 +14,34 @@ const orders = ref<OrderWithClient[]>([])
 const loading = ref(true)
 const searchQuery = ref('')
 const selectedStatus = ref<OrderStatus | 'all'>('all')
+const dateFrom = ref('')
+const dateTo = ref('')
+const showAdvancedFilters = ref(false)
+
+// Column visibility
+interface ColumnConfig {
+  key: string
+  label: string
+}
+
+const allColumns: ColumnConfig[] = [
+  { key: 'orderId', label: 'ID objednávky' },
+  { key: 'fullName', label: 'Meno' },
+  { key: 'email', label: 'Email' },
+  { key: 'package', label: 'Balíček' },
+  { key: 'totalPrice', label: 'Cena' },
+  { key: 'discountCode', label: 'Zľavový kód' },
+  { key: 'discountedPrice', label: 'Cena po zľave' },
+  { key: 'orderStatus', label: 'Stav' },
+  { key: 'paymentStatus', label: 'Platba' },
+  { key: 'createdAt', label: 'Vytvorené' },
+]
+
+const selectedColumns = ref<ColumnConfig[]>(
+  allColumns.filter(col => col.key !== 'discountCode' && col.key !== 'discountedPrice')
+)
+
+const isColumnVisible = (key: string) => selectedColumns.value.some(col => col.key === key)
 
 // Real-time Firestore listener
 let unsubscribe: Unsubscribe | null = null
@@ -89,6 +117,27 @@ onMounted(() => {
 const filteredOrders = computed(() => {
   let result = orders.value
 
+  // Filter by date range
+  if (dateFrom.value || dateTo.value) {
+    result = result.filter(order => {
+      if (!order.createdAt) return false
+
+      const orderDate = order.createdAt.toDate ? order.createdAt.toDate() : new Date(order.createdAt)
+      const fromDate = dateFrom.value ? new Date(dateFrom.value) : null
+      const toDate = dateTo.value ? new Date(dateTo.value) : null
+
+      // Set toDate to end of day (23:59:59)
+      if (toDate) {
+        toDate.setHours(23, 59, 59, 999)
+      }
+
+      if (fromDate && orderDate < fromDate) return false
+      if (toDate && orderDate > toDate) return false
+
+      return true
+    })
+  }
+
   // Filter by search query
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
@@ -135,14 +184,20 @@ function viewOrderDetails(order: OrderWithClient) {
   navigateTo(`/dashboard/orders/${order.orderId}`)
 }
 
-// Statistics
+// Statistics (based on filtered orders)
 const stats = computed(() => ({
-  total: orders.value.length,
-  pending: orders.value.filter(o => o.orderStatus === 'pending').length,
-  approved: orders.value.filter(o => o.orderStatus === 'approved').length,
-  cancelled: orders.value.filter(o => o.orderStatus === 'cancelled').length,
-  totalRevenue: orders.value.reduce((sum, o) => sum + o.totalPrice, 0),
+  total: filteredOrders.value.length,
+  pending: filteredOrders.value.filter(o => o.orderStatus === 'pending').length,
+  approved: filteredOrders.value.filter(o => o.orderStatus === 'approved').length,
+  cancelled: filteredOrders.value.filter(o => o.orderStatus === 'cancelled').length,
+  totalRevenue: filteredOrders.value.reduce((sum, o) => sum + o.totalPrice, 0),
 }))
+
+// Clear date filters
+const clearDateFilters = () => {
+  dateFrom.value = ''
+  dateTo.value = ''
+}
 
 // PDF Export
 const exportingPdf = ref(false)
@@ -164,27 +219,66 @@ const exportOrdersToPdf = async () => {
     const dateStr = now.toISOString().split('T')[0]
     const filename = `objednavky-${dateStr}.pdf`
 
-    const columns = [
-      { header: 'ID objednávky', dataKey: 'orderId' },
-      { header: 'Meno', dataKey: 'fullName' },
-      { header: 'Email', dataKey: 'email' },
-      { header: 'Balíček', dataKey: 'package' },
-      { header: 'Cena', dataKey: 'totalPrice' },
-      { header: 'Stav', dataKey: 'orderStatus' },
-      { header: 'Platba', dataKey: 'paymentStatus' },
-      { header: 'Vytvorené', dataKey: 'createdAt' },
-    ]
+    // All possible columns with their mapping
+    const allPossibleColumns: Record<string, { header: string; dataKey: string }> = {
+      orderId: { header: 'ID objednávky', dataKey: 'orderId' },
+      fullName: { header: 'Meno', dataKey: 'fullName' },
+      email: { header: 'Email', dataKey: 'email' },
+      package: { header: 'Balíček', dataKey: 'package' },
+      totalPrice: { header: 'Cena', dataKey: 'totalPrice' },
+      discountCode: { header: 'Zľavový kód', dataKey: 'discountCode' },
+      discountedPrice: { header: 'Cena po zľave', dataKey: 'discountedPrice' },
+      orderStatus: { header: 'Stav', dataKey: 'orderStatus' },
+      paymentStatus: { header: 'Platba', dataKey: 'paymentStatus' },
+      createdAt: { header: 'Vytvorené', dataKey: 'createdAt' },
+    }
 
-    const rows = filteredOrders.value.map(order => ({
-      orderId: `#${order.orderId}`,
-      fullName: order.client?.fullName || '-',
-      email: order.client?.email || '-',
-      package: order.package,
-      totalPrice: formatPrice(order.totalPrice),
-      orderStatus: ORDER_STATUS_LABELS[order.orderStatus],
-      paymentStatus: order.paymentStatus === 'succeeded' ? 'Úspešná' : order.paymentStatus === 'pending' ? 'Čaká' : 'Neúspešná',
-      createdAt: order.createdAt,
-    }))
+    // Filter columns based on selected columns
+    const columns = selectedColumns.value
+      .map(col => allPossibleColumns[col.key])
+      .filter((col): col is { header: string; dataKey: string } => col !== undefined)
+
+    // Build rows with only selected columns
+    const rows = filteredOrders.value.map(order => {
+      const row: Record<string, any> = {}
+
+      selectedColumns.value.forEach(col => {
+        switch (col.key) {
+          case 'orderId':
+            row.orderId = `#${order.orderId}`
+            break
+          case 'fullName':
+            row.fullName = order.client?.fullName || '-'
+            break
+          case 'email':
+            row.email = order.client?.email || '-'
+            break
+          case 'package':
+            row.package = order.package
+            break
+          case 'totalPrice':
+            row.totalPrice = formatPrice(order.totalPrice)
+            break
+          case 'discountCode':
+            row.discountCode = '-' // TODO: Add discount code field when implemented
+            break
+          case 'discountedPrice':
+            row.discountedPrice = '-' // TODO: Add discounted price when implemented
+            break
+          case 'orderStatus':
+            row.orderStatus = ORDER_STATUS_LABELS[order.orderStatus]
+            break
+          case 'paymentStatus':
+            row.paymentStatus = order.paymentStatus === 'succeeded' ? 'Úspešná' : order.paymentStatus === 'pending' ? 'Čaká' : 'Neúspešná'
+            break
+          case 'createdAt':
+            row.createdAt = order.createdAt
+            break
+        }
+      })
+
+      return row
+    })
 
     await exportToPdf({
       title: 'Zoznam objednávok',
@@ -278,6 +372,18 @@ const exportOrdersToPdf = async () => {
           />
         </div>
 
+        <!-- Filter Toggle Button -->
+        <UButton
+          icon="i-lucide-sliders-horizontal"
+          class="w-full md:w-auto flex items-center justify-center gap-2 h-[3.5rem] md:h-[3.5rem] md:w-[3.5rem] text-dark-green hover:bg-orange hover:text-dark-green cursor-pointer"
+          :class="showAdvancedFilters ? 'bg-orange' : 'bg-beige'"
+          color="neutral"
+          size="lg"
+          @click="showAdvancedFilters = !showAdvancedFilters"
+        >
+          <span class="md:hidden">{{ showAdvancedFilters ? 'Skryť filtre' : 'Zobraziť filtre' }}</span>
+        </UButton>
+
         <!-- Export Button -->
         <UButton
           :disabled="exportingPdf || filteredOrders.length === 0"
@@ -290,6 +396,68 @@ const exportOrdersToPdf = async () => {
         >
           <span class="md:hidden">Exportovať do PDF</span>
         </UButton>
+      </div>
+    </UCard>
+
+    <!-- Advanced Filters -->
+    <UCard v-if="showAdvancedFilters" class="mb-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Date Range Filter -->
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <UFormField label="Časové obdobie - Od">
+              <UInput
+                v-model="dateFrom"
+                type="date"
+                size="md"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="Časové obdobie - Do">
+              <UInput
+                v-model="dateTo"
+                type="date"
+                size="md"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+          <UButton
+            v-if="dateFrom || dateTo"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            @click="clearDateFilters"
+            class="cursor-pointer text-dark-green hover:text-beige hover:bg-dark-green"
+          >
+            Vymazať
+          </UButton>
+        </div>
+
+        <!-- Column Visibility -->
+        <div class="space-y-3">
+          <UFormField label="Zobrazené stĺpce">
+            <USelectMenu
+            label="Zobrazené stĺpce"
+            v-model="selectedColumns"
+            :items="allColumns"
+            multiple
+            value-attribute="key"
+            option-attribute="label"
+            size="md"
+            class="w-full h-[3.5rem]"
+            :search-input="{
+              placeholder: 'Vyber stĺpce...',
+              icon: 'i-lucide-search',
+              class: 'h-10'
+            }"
+          >
+            <template #empty>
+              <p class="text-slate-500">Žiadne stĺpce</p>
+            </template>
+          </USelectMenu>
+            </UFormField>
+        </div>
       </div>
     </UCard>
 
@@ -308,14 +476,16 @@ const exportOrdersToPdf = async () => {
         <table class="w-full">
           <thead>
             <tr class="border-b border-slate-200">
-              <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">ID objednávky</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Meno</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Email</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Balíček</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Cena</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Stav</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Platba</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Vytvorené</th>
+              <th v-if="isColumnVisible('orderId')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">ID objednávky</th>
+              <th v-if="isColumnVisible('fullName')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Meno</th>
+              <th v-if="isColumnVisible('email')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Email</th>
+              <th v-if="isColumnVisible('package')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Balíček</th>
+              <th v-if="isColumnVisible('totalPrice')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Cena</th>
+              <th v-if="isColumnVisible('discountCode')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Zľavový kód</th>
+              <th v-if="isColumnVisible('discountedPrice')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Cena po zľave</th>
+              <th v-if="isColumnVisible('orderStatus')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Stav</th>
+              <th v-if="isColumnVisible('paymentStatus')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Platba</th>
+              <th v-if="isColumnVisible('createdAt')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Vytvorené</th>
             </tr>
           </thead>
           <tbody>
@@ -326,22 +496,22 @@ const exportOrdersToPdf = async () => {
               @click="viewOrderDetails(order)"
             >
               <!-- Order ID -->
-              <td class="px-4 py-3">
+              <td v-if="isColumnVisible('orderId')" class="px-4 py-3">
                 <span class="font-mono font-semibold text-slate-900">#{{ order.orderId }}</span>
               </td>
 
               <!-- Full Name -->
-              <td class="px-4 py-3">
+              <td v-if="isColumnVisible('fullName')" class="px-4 py-3">
                 <span class="text-slate-900">{{ order.client?.fullName || '-' }}</span>
               </td>
 
               <!-- Email -->
-              <td class="px-4 py-3">
+              <td v-if="isColumnVisible('email')" class="px-4 py-3">
                 <span class="text-slate-600 text-sm">{{ order.client?.email || '-' }}</span>
               </td>
 
               <!-- Package -->
-              <td class="px-4 py-3">
+              <td v-if="isColumnVisible('package')" class="px-4 py-3">
                 <span
                   class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium text-white"
                   :style="{ backgroundColor: 'var(--color-dark-green)' }"
@@ -351,12 +521,22 @@ const exportOrdersToPdf = async () => {
               </td>
 
               <!-- Price -->
-              <td class="px-4 py-3">
+              <td v-if="isColumnVisible('totalPrice')" class="px-4 py-3">
                 <span class="font-semibold text-slate-900">{{ formatPrice(order.totalPrice) }}</span>
               </td>
 
+              <!-- Discount Code -->
+              <td v-if="isColumnVisible('discountCode')" class="px-4 py-3">
+                <span class="text-slate-600 text-sm">-</span>
+              </td>
+
+              <!-- Discounted Price -->
+              <td v-if="isColumnVisible('discountedPrice')" class="px-4 py-3">
+                <span class="text-slate-600 text-sm">-</span>
+              </td>
+
               <!-- Order Status -->
-              <td class="px-4 py-3">
+              <td v-if="isColumnVisible('orderStatus')" class="px-4 py-3">
                 <span
                   class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium"
                   :class="{
@@ -370,7 +550,7 @@ const exportOrdersToPdf = async () => {
               </td>
 
               <!-- Payment Status -->
-              <td class="px-4 py-3">
+              <td v-if="isColumnVisible('paymentStatus')" class="px-4 py-3">
                 <span
                   class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium"
                   :class="{
@@ -388,7 +568,7 @@ const exportOrdersToPdf = async () => {
               </td>
 
               <!-- Created At -->
-              <td class="px-4 py-3">
+              <td v-if="isColumnVisible('createdAt')" class="px-4 py-3">
                 <span class="text-slate-600 text-sm">{{ formatDate(order.createdAt) }}</span>
               </td>
             </tr>

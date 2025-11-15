@@ -54,6 +54,7 @@ export default defineEventHandler(async (event) => {
         EKONOMY: 0,
         ŠTANDARD: 0,
         PREMIUM: 0,
+        OFFICE: 0,
       }
     }
 
@@ -69,6 +70,7 @@ export default defineEventHandler(async (event) => {
           EKONOMY: 0,
           ŠTANDARD: 0,
           PREMIUM: 0,
+          OFFICE: 0,
         }
       }
     }
@@ -79,7 +81,7 @@ export default defineEventHandler(async (event) => {
     ordersSnapshot.forEach(doc => {
       const orderData = doc.data()
       const packageType = orderData.package as PackageType
-      if (!packageType || !['EKONOMY', 'ŠTANDARD', 'PREMIUM'].includes(packageType)) return
+      if (!packageType || !['EKONOMY', 'ŠTANDARD', 'PREMIUM', 'OFFICE'].includes(packageType)) return
 
       const createdAt = orderData.createdAt as Timestamp
       const date = createdAt.toDate()
@@ -104,6 +106,7 @@ export default defineEventHandler(async (event) => {
           EKONOMY: 0,
           ŠTANDARD: 0,
           PREMIUM: 0,
+          OFFICE: 0,
         }
       }
       allYears[yearKey][packageType]++
@@ -129,11 +132,13 @@ export default defineEventHandler(async (event) => {
         EKONOMY: 0,
         ŠTANDARD: 0,
         PREMIUM: 0,
+        OFFICE: 0,
       }
       Object.values(packageCounts).forEach(periodCounts => {
         aggregated.EKONOMY += periodCounts.EKONOMY
         aggregated.ŠTANDARD += periodCounts.ŠTANDARD
         aggregated.PREMIUM += periodCounts.PREMIUM
+        aggregated.OFFICE += periodCounts.OFFICE
       })
       return aggregated
     }

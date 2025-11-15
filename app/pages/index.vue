@@ -641,6 +641,12 @@ onMounted(() => {
                 <div class="bg-[var(--color-orange)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
+                <span class="text-[var(--color-dark-green)]">V balíčku je možnosť výberu špeciálneho menu: bezlaktózové, bezlepkové alebo vegetariánske.</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-orange)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
                 <span class="text-[var(--color-dark-green)]">5 jedál denne (raňajky + obed s polievkou + olovrant + večera)</span>
               </li>
               <li class="flex items-start gap-3">
@@ -685,6 +691,12 @@ onMounted(() => {
             </UButton>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <ul class="space-y-3">
+              <li class="flex items-start gap-3">
+                <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
+                  <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
+                </div>
+                <span class="text-[var(--color-dark-green)]">V balíčku je možnosť výberu špeciálneho menu: bezlaktózové, bezlepkové alebo vegetariánske.</span>
+              </li>
               <li class="flex items-start gap-3">
                 <div class="bg-[var(--color-beige)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />

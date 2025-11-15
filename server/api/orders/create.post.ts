@@ -33,6 +33,19 @@ export default defineEventHandler(async (event) => {
 
     const orderData = validationResult.data
 
+    // Helper function to parse DD.MM.YYYY format to Date
+    const parseDeliveryDate = (dateStr: string): Date => {
+      const parts = dateStr.split('.')
+      if (parts.length === 3) {
+        const day = parseInt(parts[0] || '', 10)
+        const month = parseInt(parts[1] || '', 10) - 1 // JavaScript months are 0-indexed
+        const year = parseInt(parts[2] || '', 10)
+        return new Date(year, month, day)
+      }
+      // Fallback to standard parsing if format is different
+      return new Date(dateStr)
+    }
+
     // Initialize Firebase Admin
     const { app } = getFirebaseAdmin()
     const db = getFirestore(app)
@@ -61,7 +74,7 @@ export default defineEventHandler(async (event) => {
     if (clientQuery.empty) {
       // Create new client
       // Calculate subscription end date (start date + duration in weeks * 7 days)
-      const startDate = new Date(orderData.deliveryStartDate)
+      const startDate = parseDeliveryDate(orderData.deliveryStartDate)
       const durationWeeks = 4 // 4 weeks for both plans
       const subscriptionEndDate = new Date(startDate)
       subscriptionEndDate.setDate(subscriptionEndDate.getDate() + (durationWeeks * 7))
@@ -112,7 +125,7 @@ export default defineEventHandler(async (event) => {
       clientId = clientDoc.id
 
       // Calculate new subscription end date
-      const startDate = new Date(orderData.deliveryStartDate)
+      const startDate = parseDeliveryDate(orderData.deliveryStartDate)
       const durationWeeks = 4
       const subscriptionEndDate = new Date(startDate)
       subscriptionEndDate.setDate(subscriptionEndDate.getDate() + (durationWeeks * 7))
