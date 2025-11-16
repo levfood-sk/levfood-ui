@@ -19,11 +19,11 @@ const socials = [
     <div class="container mx-auto px-4">
       <div class="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-0">
         <img :src="logoSmallIcon" alt="LevFood Logo" class="w-12 lg:w-16 h-auto" />
-        <div class="flex gap-6 items-center">
+        <!-- <div class="flex gap-6 items-center">
           <NuxtLink v-for="s in socials" :key="s.icon" :to="s.to" aria-label="social" class="text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors flex items-center justify-center">
             <UIcon :name="s.icon" class="w-6 h-6" />
           </NuxtLink>
-        </div>
+        </div> -->
       </div>
 
 
