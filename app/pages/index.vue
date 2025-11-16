@@ -1,4 +1,14 @@
 <script setup lang="ts">
+// SEO Meta Tags
+useSeoMeta({
+  title: 'LevFood | Krabičková strava Levice – čerstvé a poctivé jedlá denne',
+  description: 'Krabičková strava LevFood v Leviciach. Čerstvé, chutné a poctivo pripravené denné menu doručené až k vám. Jednoduché objednanie, kvalitné jedlo každý deň.',
+  keywords: 'krabičková strava Levice, denné menu Levice, zdravé jedlo Levice, dovoz jedla Levice, LevFood, rozvoz jedla Levice, jedlo na celý deň',
+  ogTitle: 'LevFood | Krabičková strava Levice – čerstvé a poctivé jedlá denne',
+  ogDescription: 'Krabičková strava LevFood v Leviciach. Čerstvé, chutné a poctivo pripravené denné menu doručené až k vám. Jednoduché objednanie, kvalitné jedlo každý deň.',
+  ogType: 'website',
+})
+
 const { user } = useAuth()
 const { scrollToSection } = useScrollTo()
 

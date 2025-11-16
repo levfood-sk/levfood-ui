@@ -38,7 +38,10 @@ const emailLoading = ref(false)
 const emailResult = ref<any>(null)
 const emailError = ref<string | null>(null)
 const emailRecipient = ref('')
+const emailType = ref<'smtp' | 'client'>('smtp')
 const includeAttachment = ref(false)
+const clientEmailName = ref('')
+const clientEmailOrderId = ref('')
 
 // Full integration test state
 const fullIntegrationLoading = ref(false)
@@ -225,8 +228,20 @@ async function testSuperfaktura() {
 // Test Email
 async function testEmail() {
   if (!emailRecipient.value) {
-    emailError.value = 'Please enter recipient email'
+    emailError.value = 'Prosím zadajte email príjemcu'
     return
+  }
+
+  // Validate client email fields
+  if (emailType.value === 'client') {
+    if (!clientEmailName.value) {
+      emailError.value = 'Prosím zadajte meno klienta'
+      return
+    }
+    if (!clientEmailOrderId.value) {
+      emailError.value = 'Prosím zadajte číslo objednávky'
+      return
+    }
   }
 
   emailLoading.value = true
@@ -234,20 +249,39 @@ async function testEmail() {
   emailResult.value = null
 
   try {
-    const response = await $fetch('/api/test/email-production', {
-      method: 'POST',
-      body: {
-        to: emailRecipient.value,
-        includeAttachment: includeAttachment.value,
-        pdfBase64: includeAttachment.value && superfakturaResult.value?.invoicePdf
-          ? superfakturaResult.value.invoicePdf
-          : undefined,
-      },
-    })
+    let response
+
+    if (emailType.value === 'client') {
+      // Send client order confirmation email
+      response = await $fetch('/api/test/client-email-production', {
+        method: 'POST',
+        body: {
+          to: emailRecipient.value,
+          clientName: clientEmailName.value,
+          orderId: clientEmailOrderId.value,
+          includeInvoice: includeAttachment.value,
+          invoicePdfBase64: includeAttachment.value && superfakturaResult.value?.invoicePdf
+            ? superfakturaResult.value.invoicePdf
+            : undefined,
+        },
+      })
+    } else {
+      // Send generic SMTP test email
+      response = await $fetch('/api/test/email-production', {
+        method: 'POST',
+        body: {
+          to: emailRecipient.value,
+          includeAttachment: includeAttachment.value,
+          pdfBase64: includeAttachment.value && superfakturaResult.value?.invoicePdf
+            ? superfakturaResult.value.invoicePdf
+            : undefined,
+        },
+      })
+    }
 
     emailResult.value = response
   } catch (e: any) {
-    emailError.value = e.data?.message || e.message || 'Failed to send email'
+    emailError.value = e.data?.message || e.message || 'Nepodarilo sa odoslať email'
   } finally {
     emailLoading.value = false
   }
@@ -601,8 +635,20 @@ async function completeFullIntegration() {
 
             <div class="space-y-4">
               <p class="text-sm text-gray-600">
-                Odošlite testovací email pomocou produkčného SMTP s voliteľnou PDF prílohou
+                Odošlite testovací email pomocou produkčného SMTP
               </p>
+
+              <UFormField label="Typ emailu">
+                <URadioGroup
+                  v-model="emailType"
+                  :items="[
+                    { value: 'smtp', label: 'Generic SMTP Test', description: 'Jednoduchý testovací email' },
+                    { value: 'client', label: 'Klientský email', description: 'Email s potvrdením objednávky (ako dostane klient)' },
+                  ]"
+                  variant="table"
+                  color="orange"
+                />
+              </UFormField>
 
               <UFormField label="Email príjemcu" required>
                 <UInput
@@ -613,10 +659,31 @@ async function completeFullIntegration() {
                 />
               </UFormField>
 
+              <!-- Client email specific fields -->
+              <div v-if="emailType === 'client'" class="space-y-4 p-4 bg-orange/10 rounded-lg border border-orange/20">
+                <UFormField label="Meno klienta" required>
+                  <UInput
+                    v-model="clientEmailName"
+                    type="text"
+                    placeholder="Ján Novák"
+                    size="lg"
+                  />
+                </UFormField>
+
+                <UFormField label="Číslo objednávky" required>
+                  <UInput
+                    v-model="clientEmailOrderId"
+                    type="text"
+                    placeholder="123456"
+                    size="lg"
+                  />
+                </UFormField>
+              </div>
+
               <UFormField>
                 <UCheckbox
                   v-model="includeAttachment"
-                  label="Priložiť PDF (vyžaduje najprv Superfaktura test)"
+                  :label="emailType === 'client' ? 'Priložiť faktúru PDF (vyžaduje najprv Superfaktura test)' : 'Priložiť PDF (vyžaduje najprv Superfaktura test)'"
                   :disabled="!superfakturaResult?.invoicePdf"
                 />
               </UFormField>
@@ -624,12 +691,12 @@ async function completeFullIntegration() {
               <UButton
                 @click="testEmail"
                 :loading="emailLoading"
-                :disabled="!emailRecipient"
+                :disabled="!emailRecipient || (emailType === 'client' && (!clientEmailName || !clientEmailOrderId))"
                 size="lg"
                 color="primary"
                 block
               >
-                Odoslať testovací email
+                {{ emailType === 'client' ? 'Odoslať email klientovi' : 'Odoslať testovací email' }}
               </UButton>
 
               <!-- Error -->
@@ -664,6 +731,104 @@ async function completeFullIntegration() {
                     <div><strong>Komu:</strong> {{ emailResult.to }}</div>
                     <div v-if="emailResult.messageId"><strong>ID správy:</strong> {{ emailResult.messageId }}</div>
                     <div><strong>S prílohou:</strong> {{ emailResult.hasAttachment ? 'Áno ✅' : 'Nie ❌' }}</div>
+                  </div>
+                </UCard>
+              </div>
+            </div>
+          </UCard>
+        </div>
+
+        <!-- Client Email Tab -->
+        <div v-else-if="item.label === 'Email (Klient)'" class="pt-4 space-y-4">
+          <UCard>
+            <template #header>
+              <h3 class="text-lg font-semibold">Test emailu pre klienta</h3>
+            </template>
+
+            <div class="space-y-4">
+              <p class="text-sm text-gray-600">
+                Odošlite testovací email s potvrdením objednávky (ten istý email, ktorý dostáva klient po objednávke)
+              </p>
+
+              <UFormField label="Email príjemcu" required>
+                <UInput
+                  v-model="clientEmailRecipient"
+                  type="email"
+                  placeholder="vas-email@example.com"
+                  size="lg"
+                />
+              </UFormField>
+
+              <UFormField label="Meno klienta" required>
+                <UInput
+                  v-model="clientEmailName"
+                  type="text"
+                  placeholder="Ján Novák"
+                  size="lg"
+                />
+              </UFormField>
+
+              <UFormField label="Číslo objednávky" required>
+                <UInput
+                  v-model="clientEmailOrderId"
+                  type="text"
+                  placeholder="123456"
+                  size="lg"
+                />
+              </UFormField>
+
+              <UFormField>
+                <UCheckbox
+                  v-model="clientEmailIncludeInvoice"
+                  label="Priložiť faktúru PDF (vyžaduje najprv Superfaktura test)"
+                  :disabled="!superfakturaResult?.invoicePdf"
+                />
+              </UFormField>
+
+              <UButton
+                @click="testClientEmail"
+                :loading="clientEmailLoading"
+                :disabled="!clientEmailRecipient || !clientEmailName || !clientEmailOrderId"
+                size="lg"
+                color="primary"
+                block
+              >
+                Odoslať email klientovi
+              </UButton>
+
+              <!-- Error -->
+              <UAlert
+                v-if="clientEmailError"
+                icon="i-lucide-x-circle"
+                color="error"
+                variant="soft"
+                :title="clientEmailError"
+              />
+
+              <!-- Results -->
+              <div v-if="clientEmailResult" class="space-y-4">
+                <UAlert
+                  v-if="clientEmailResult.success"
+                  icon="i-lucide-check-circle"
+                  color="success"
+                  variant="soft"
+                  title="Email úspešne odoslaný klientovi!"
+                />
+                <UAlert
+                  v-else
+                  icon="i-lucide-x-circle"
+                  color="error"
+                  variant="soft"
+                  title="Email zlyhal"
+                  :description="clientEmailResult.error"
+                />
+
+                <UCard v-if="clientEmailResult.success">
+                  <div class="space-y-2 text-sm">
+                    <div><strong>Komu:</strong> {{ clientEmailResult.to }}</div>
+                    <div><strong>Číslo objednávky:</strong> {{ clientEmailResult.orderId }}</div>
+                    <div v-if="clientEmailResult.messageId"><strong>ID správy:</strong> {{ clientEmailResult.messageId }}</div>
+                    <div><strong>S faktúrou:</strong> {{ clientEmailResult.hasInvoice ? 'Áno ✅' : 'Nie ❌' }}</div>
                   </div>
                 </UCard>
               </div>
