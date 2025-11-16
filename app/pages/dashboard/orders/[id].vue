@@ -15,6 +15,7 @@ const orderId = route.params.id as string
 const order = ref<OrderWithClient | null>(null)
 const loading = ref(true)
 const updating = ref(false)
+const downloadingInvoice = ref(false)
 
 // Load order and client data
 const loadOrder = async () => {
@@ -152,6 +153,52 @@ const deliveryTypeLabel = computed(() => {
 
   return '-'
 })
+
+// Download invoice PDF
+async function downloadInvoice() {
+  if (!order.value) return
+
+  downloadingInvoice.value = true
+
+  try {
+    const response = await fetch(`/api/orders/${orderId}/invoice`)
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Nepodarilo sa stiahnuť faktúru')
+    }
+
+    // Get PDF blob
+    const blob = await response.blob()
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `faktura-${orderId}.pdf`
+    document.body.appendChild(link)
+    link.click()
+
+    // Cleanup
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    useToast().add({
+      title: 'Úspech',
+      description: 'Faktúra bola stiahnutá',
+      color: 'success',
+    })
+  } catch (error: any) {
+    console.error('Error downloading invoice:', error)
+    useToast().add({
+      title: 'Chyba',
+      description: error.message || 'Nepodarilo sa stiahnuť faktúru',
+      color: 'error',
+    })
+  } finally {
+    downloadingInvoice.value = false
+  }
+}
 
 onMounted(() => {
   loadOrder()
@@ -386,7 +433,20 @@ onMounted(() => {
         <!-- Payment Information -->
         <UCard>
           <template #header>
-            <h3 class="text-xl font-bold text-slate-900">Platobné informácie</h3>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-bold text-slate-900">Platobné informácie</h3>
+              <UButton
+                v-if="order.superfakturaInvoiceId"
+                icon="i-heroicons-arrow-down-tray"
+                color="orange"
+                variant="soft"
+                class="cursor-pointer bg-orange text-white"
+                :loading="downloadingInvoice"
+                @click="downloadInvoice"
+              >
+                Stiahnuť faktúru
+              </UButton>
+            </div>
           </template>
 
           <div class="space-y-4">
@@ -421,6 +481,11 @@ onMounted(() => {
             <div v-if="order.paidAt">
               <p class="text-sm text-slate-600">Dátum platby</p>
               <p class="text-base font-medium text-slate-900">{{ formatDate(order.paidAt) }}</p>
+            </div>
+
+            <div v-if="order.superfakturaInvoiceNumber">
+              <p class="text-sm text-slate-600">Číslo faktúry</p>
+              <p class="text-base font-medium text-slate-900">{{ order.superfakturaInvoiceNumber }}</p>
             </div>
 
             <div>

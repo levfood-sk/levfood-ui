@@ -93,6 +93,10 @@ export interface Order {
   // Order management
   orderStatus: OrderStatus
 
+  // Invoice information (optional, added after webhook processing)
+  superfakturaInvoiceId?: number
+  superfakturaInvoiceNumber?: string
+
   // Timestamps
   createdAt: Timestamp
   updatedAt: Timestamp

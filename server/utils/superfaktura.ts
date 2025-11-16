@@ -140,6 +140,60 @@ export async function createInvoice(
 }
 
 /**
+ * Send invoice via email
+ */
+export async function sendInvoiceEmail(
+  invoiceId: number,
+  email: string,
+  config: SuperfakturaConfig,
+  options?: {
+    cc?: string
+    bcc?: string
+  }
+): Promise<SuperfakturaResponse> {
+  const data = {
+    invoice_id: invoiceId,
+    email,
+    ...(options?.cc && { cc: options.cc }),
+    ...(options?.bcc && { bcc: options.bcc }),
+  }
+
+  return makeSuperfakturaRequest('/invoices/send', data, config)
+}
+
+/**
+ * Download invoice PDF from Superfaktura
+ */
+export async function downloadInvoicePDF(
+  invoiceId: number,
+  config: SuperfakturaConfig
+): Promise<Buffer | null> {
+  const baseUrl = getSuperfakturaBaseUrl(config.isSandbox)
+  const url = `${baseUrl}/invoices/pdf/${invoiceId}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': generateAuthHeader(config),
+      },
+    })
+
+    if (!response.ok) {
+      console.error('Failed to download invoice PDF:', response.status, response.statusText)
+      return null
+    }
+
+    // Get the PDF as array buffer and convert to Buffer
+    const arrayBuffer = await response.arrayBuffer()
+    return Buffer.from(arrayBuffer)
+  } catch (error: any) {
+    console.error('Error downloading invoice PDF:', error)
+    return null
+  }
+}
+
+/**
  * Create invoice from Stripe payment data
  */
 export function createInvoiceFromStripePayment(

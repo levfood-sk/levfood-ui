@@ -389,13 +389,44 @@ function isTodaySchedule(orderDay: string) {
   return dayMap[dayOfWeek] === orderDay.toLowerCase()
 }
 
+// Format birth date as DD.MM.YYYY
+function formatBirthDate(value: string): string {
+  // Remove all non-digits
+  const digits = value.replace(/\D/g, '')
+
+  // Limit to 8 digits (DDMMYYYY)
+  const limited = digits.slice(0, 8)
+
+  // Format as DD.MM.YYYY
+  let formatted = ''
+  if (limited.length >= 1) {
+    formatted = limited.slice(0, 2) // DD (max 2 digits)
+  }
+  if (limited.length >= 3) {
+    formatted += '.' + limited.slice(2, 4) // MM (max 2 digits)
+  }
+  if (limited.length >= 5) {
+    formatted += '.' + limited.slice(4, 8) // YYYY (max 4 digits)
+  }
+
+  return formatted
+}
+
+// Watch birth date changes and format
+watch(() => formData.value.step2.birthDate, (newValue) => {
+  const formatted = formatBirthDate(newValue)
+  if (formatted !== newValue) {
+    formData.value.step2.birthDate = formatted
+  }
+})
+
 // Calculate suggested delivery start date based on current day
 function calculateDeliveryStartDate() {
   const today = new Date()
   const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, etc.
-  
+
   let daysToAdd = 0
-  
+
   switch (dayOfWeek) {
     case 2: // Tuesday
       daysToAdd = 3 // Saturday
@@ -419,10 +450,10 @@ function calculateDeliveryStartDate() {
       daysToAdd = 4 // Friday
       break
   }
-  
+
   const deliveryDate = new Date(today)
   deliveryDate.setDate(today.getDate() + daysToAdd)
-  
+
   return deliveryDate.toISOString().split('T')[0]
 }
 

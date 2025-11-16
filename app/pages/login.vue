@@ -53,7 +53,7 @@ const handleEmailLogin = async () => {
 
         <!-- Email Login Form -->
         <form @submit.prevent="handleEmailLogin" class="flex flex-col gap-4">
-          <UFormGroup label="Email" required class="w-full">
+          <UFormField label="Email" required class="w-full">
             <UInput
               v-model="email"
               type="email"
@@ -69,9 +69,9 @@ const handleEmailLogin = async () => {
                 <Icon name="lucide:mail" class="w-5 h-5" />
               </template>
             </UInput>
-          </UFormGroup>
-
-          <UFormGroup label="Heslo" required class="w-full">
+          </UFormField>
+          <div class="flex flex-col gap-1">
+            <UFormField label="Heslo" required class="w-full">
             <UInput
               v-model="password"
               type="password"
@@ -87,7 +87,18 @@ const handleEmailLogin = async () => {
                 <Icon name="lucide:lock" class="w-5 h-5" />
               </template>
             </UInput>
-          </UFormGroup>
+            
+          </UFormField>
+          <ULink
+              tabindex="-1"
+              to="/zabudnute-heslo"
+              class="text-sm text-[var(--color-dark-green)] hover:text-[var(--color-orange)] transition-colors mt-1"
+            >
+              Zabudli ste heslo?
+            </ULink>
+          </div>
+
+          
 
           <UButton
             type="submit"

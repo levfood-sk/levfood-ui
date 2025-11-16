@@ -13,6 +13,7 @@ import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
 import { generateUniqueOrderId } from '~~/server/utils/generateOrderId'
 import { createOrderSchema, calculateOrderPrice } from '~~/app/lib/types/order'
 import type { Order, CreateOrderInput, Client } from '~~/app/lib/types/order'
+import { sendOrderNotification, sendClientOrderConfirmation } from '~~/server/utils/email'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -217,6 +218,51 @@ export default defineEventHandler(async (event) => {
       package: order.package,
       totalPrice: order.totalPrice,
     })
+
+    // Send order notification email to admin (fire-and-forget)
+    try {
+      const config = useRuntimeConfig()
+
+      // Calculate end date from start date and days count
+      const startDate = new Date(body.deliveryStartDate.split('.').reverse().join('-'))
+      const endDate = new Date(startDate)
+      endDate.setDate(startDate.getDate() + order.daysCount - 1)
+
+      // Format dates as DD.MM.YYYY
+      const formatDate = (date: Date) => {
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const year = date.getFullYear()
+        return `${day}.${month}.${year}`
+      }
+
+      const dateRange = `${formatDate(startDate)} - ${formatDate(endDate)}`
+
+      // Format price from cents to euros
+      const priceInEuros = (order.totalPrice / 100).toFixed(0)
+
+      await sendOrderNotification(
+        config.adminNotificationEmail,
+        {
+          orderId: String(orderId),
+          clientName: orderData.fullName.toUpperCase(),
+          package: order.package,
+          dateRange,
+          totalPrice: priceInEuros,
+          email: orderData.email,
+          phone: orderData.phone,
+        }
+      )
+
+      console.log('Order notification email sent to admin')
+    } catch (emailError) {
+      // Log error but don't fail the order creation
+      console.error('Failed to send order notification email:', emailError)
+    }
+
+    // Note: Client order confirmation email is now sent by the Stripe webhook
+    // after invoice generation, so the invoice PDF can be attached.
+    // See: server/api/stripe/webhook.post.ts
 
     // Return order details
     return {

@@ -73,5 +73,6 @@ export default defineNuxtConfig({
     smtpFromEmail: process.env.SMTP_FROM_EMAIL,
     smtpFromName: process.env.SMTP_FROM_NAME || 'LevFood',
     smtpSecure: process.env.SMTP_SECURE || 'false',
+    adminNotificationEmail: process.env.ADMIN_NOTIFICATION_EMAIL || 'kocisek.martin@gmail.com',
   }
 })
