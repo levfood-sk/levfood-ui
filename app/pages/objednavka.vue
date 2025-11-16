@@ -1192,7 +1192,7 @@ watch(() => currentStep.value, (newStep) => {
                   <UButton
                     type="button"
                     icon="i-lucide-info"
-                    class="mt-4 hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    class="mt-4 hero-button border-2 border-transparent bg-[var(--color-orange)] hover:text-[var(--color-dark-green)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:bg-[var(--color-dark-green)] hover:text-[var(--color-beige)]"
                     @click="showDeliveryInfoModal = true"
                   >
                     Kedy dostanem objednávku?

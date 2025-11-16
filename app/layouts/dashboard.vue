@@ -83,11 +83,6 @@ const navItems = [
   //   to: '/dashboard/notifications',
   // },
   // {
-  //   label: 'GoPay Test',
-  //   icon: 'i-heroicons-credit-card',
-  //   to: '/dashboard/gopay-test',
-  // },
-  // {
   //   label: 'Stripe Test',
   //   icon: 'i-heroicons-banknotes',
   //   to: '/dashboard/stripe-test',
