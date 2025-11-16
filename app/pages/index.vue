@@ -887,7 +887,7 @@ onMounted(() => {
                 <PhoneIcon class="w-8 h-8 flex-shrink-0 text-[var(--color-beige)]" />
                 <div>
                   <h4 class="font-condensed text-2xl font-bold text-[var(--color-beige)] mb-2">Telefón</h4>
-                  <a href="tel:+421905000000" class="text-lg text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors">+421 905 000 000</a>
+                  <a href="tel:+421911395933" class="text-lg text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors">+421 911 395 933</a>
                 </div>
               </div>
               

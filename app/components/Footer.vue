@@ -4,7 +4,6 @@ import logoSmallIcon from '@/assets/icons/logo-small.svg'
 const currentYear = new Date().getFullYear()
 const legalLinks = [
   { label: 'Zásady ochrany osobných údajov', to: '/zasady-ochrany' },
-  { label: 'Cookie Settings', to: '#' }
 ]
 const socials = [
   { icon: 'i-fa7-brands:facebook-f', to: '#' },
