@@ -17,6 +17,7 @@ const selectedStatus = ref<OrderStatus | 'all'>('all')
 const dateFrom = ref('')
 const dateTo = ref('')
 const showAdvancedFilters = ref(false)
+const selectedRevenueMonth = ref<number | null>(null) // null = all time, 0-11 = month index
 
 // Column visibility
 interface ColumnConfig {
@@ -166,6 +167,33 @@ const statusOptions = [
   { label: 'Zrušené', value: 'cancelled' },
 ]
 
+// Slovak month names
+const slovakMonths = [
+  'Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún',
+  'Júl', 'August', 'September', 'Október', 'November', 'December'
+]
+
+// Get current month index (0-11)
+const currentMonth = new Date().getMonth()
+const currentYear = new Date().getFullYear()
+
+// Month options for revenue filter (only past months in current year)
+const revenueMonthOptions = computed(() => {
+  const options: Array<{ label: string; value: number | null; disabled: boolean }> = [
+    { label: 'Celý rok', value: null, disabled: false }
+  ]
+
+  slovakMonths.forEach((month, index) => {
+    options.push({
+      label: month,
+      value: index as number,
+      disabled: index > currentMonth // Disable future months
+    })
+  })
+
+  return options
+})
+
 // Format date
 function formatDate(timestamp: any): string {
   if (!timestamp) return '-'
@@ -192,6 +220,33 @@ const stats = computed(() => ({
   cancelled: filteredOrders.value.filter(o => o.orderStatus === 'cancelled').length,
   totalRevenue: filteredOrders.value.reduce((sum, o) => sum + o.totalPrice, 0),
 }))
+
+// Monthly filtered revenue
+const monthlyRevenue = computed(() => {
+  if (selectedRevenueMonth.value === null) {
+    // Show all orders from current year
+    return orders.value
+      .filter(order => {
+        if (!order.createdAt) return false
+        const orderDate = typeof order.createdAt.toDate === 'function'
+          ? order.createdAt.toDate()
+          : new Date(order.createdAt as any)
+        return orderDate.getFullYear() === currentYear
+      })
+      .reduce((sum, o) => sum + o.totalPrice, 0)
+  } else {
+    // Filter by selected month in current year
+    return orders.value
+      .filter(order => {
+        if (!order.createdAt) return false
+        const orderDate = typeof order.createdAt.toDate === 'function'
+          ? order.createdAt.toDate()
+          : new Date(order.createdAt as any)
+        return orderDate.getMonth() === selectedRevenueMonth.value && orderDate.getFullYear() === currentYear
+      })
+      .reduce((sum, o) => sum + o.totalPrice, 0)
+  }
+})
 
 // Clear date filters
 const clearDateFilters = () => {
@@ -340,9 +395,17 @@ const exportOrdersToPdf = async () => {
         </div>
       </UCard>
       <UCard>
-        <div class="space-y-1">
-          <p class="text-sm text-slate-500">Celkové tržby</p>
-          <p class="text-2xl font-bold text-slate-900">{{ formatPrice(stats.totalRevenue) }}</p>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-sm text-slate-500">Tržby</p>
+            <USelect
+              v-model="selectedRevenueMonth"
+              :items="revenueMonthOptions"
+              size="xs"
+              class="w-32 h-[2.5rem]"
+            />
+          </div>
+          <p class="text-2xl font-bold text-slate-900">{{ formatPrice(monthlyRevenue) }}</p>
         </div>
       </UCard>
     </div>
