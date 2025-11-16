@@ -17,7 +17,7 @@ const selectedStatus = ref<OrderStatus | 'all'>('all')
 const dateFrom = ref('')
 const dateTo = ref('')
 const showAdvancedFilters = ref(false)
-const selectedRevenueMonth = ref<number | null>(null) // null = all time, 0-11 = month index
+const selectedRevenueMonth = ref<number | null>(new Date().getMonth()) // null = all time, 0-11 = month index
 
 // Column visibility
 interface ColumnConfig {

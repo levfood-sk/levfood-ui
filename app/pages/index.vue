@@ -572,7 +572,10 @@ onMounted(() => {
             </p>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
-              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ economyPrice }}€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
+              <div>
+                <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ economyPrice }}€</span>
+              </div>
+              <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>
             <div class="mb-6">
               <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>
@@ -744,7 +747,10 @@ onMounted(() => {
             </p>
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
-              <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ officePrice }}€</span> <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
+              <div>
+                <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ officePrice }}€</span>
+              </div>
+              <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>
             <div class="mb-6">
               <label class="block text-[var(--color-dark-green)] mb-2">Počet dní v týždni</label>

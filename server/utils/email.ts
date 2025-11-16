@@ -525,6 +525,10 @@ function generateClientOrderConfirmationEmail(props: ClientOrderConfirmationEmai
                 Toto číslo bude zároveň vašim identifikačným údajom v aplikácií LevFood.
               </p>
 
+              <p style="font-family: 'Sofia Sans Condensed', Arial, sans-serif; color: #F28E7A; font-size: 16px; font-weight: 400; line-height: 160%; margin: 0 0 24px 0;">
+                Aplikácia bude už čoskoro dostupná. Hneď, ako bude pripravená, pošleme vám e-mail.
+              </p>
+
               <p style="font-family: 'Sofia Sans Condensed', Arial, sans-serif; color: #0E2825; font-size: 16px; font-weight: 400; line-height: 160%; margin: 0 0 24px 0;">
                 Nájdete v nej všetky aktuálne informácie o vašom predplatnom, možnosť vybrať si z alternatívnych jedál a mnoho ďalších funkcií.
               </p>
@@ -533,8 +537,6 @@ function generateClientOrderConfirmationEmail(props: ClientOrderConfirmationEmai
                 Tešíme sa, že môžeme byť súčasťou Vašich dní plných energie a dobrého jedla.
               </p>
 
-              <p style="font-family: 'Sofia Sans Condensed', Arial, sans-serif; color: #F28E7A; font-size: 16px; font-weight: 400; line-height: 160%; margin: 0 0 24px 0;">Aplikácia bude už čoskoro dostupná. Hneď, ako bude pripravená, pošleme vám e-mail.
-              </p>
               <p style="font-family: 'Sofia Sans Condensed', Arial, sans-serif; color: #F28E7A; font-size: 16px; font-weight: 400; line-height: 100%; margin-top: 70px;">
                 Tím LevFood.
               </p>
@@ -559,11 +561,12 @@ Dobrý deň ${props.clientName},
 
 Toto číslo bude zároveň vašim identifikačným údajom v aplikácií LevFood.
 
+Aplikácia bude už čoskoro dostupná. Hneď, ako bude pripravená, pošleme vám e-mail.
+
 Nájdete v nej všetky aktuálne informácie o vašom predplatnom, možnosť vybrať si z alternatívnych jedál a mnoho ďalších funkcií.
 
 Tešíme sa, že môžeme byť súčasťou Vašich dní plných energie a dobrého jedla.
 
-Aplikácia bude už čoskoro dostupná. Hneď, ako bude pripravená, pošleme vám e-mail.
 ---
 LevFood - Jedlo s láskou doručené
   `
