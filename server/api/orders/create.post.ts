@@ -175,7 +175,7 @@ export default defineEventHandler(async (event) => {
 
       // Delivery information
       deliveryType: orderData.deliveryType,
-      deliveryAddress: orderData.address,
+      deliveryAddress: orderData.address, // Always saved for billing purposes
 
       // Package details
       package: orderData.package,

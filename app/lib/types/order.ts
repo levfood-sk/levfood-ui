@@ -67,7 +67,7 @@ export interface Order {
 
   // Delivery information
   deliveryType: DeliveryType   // prevádzka or domov
-  deliveryAddress: string      // Only populated when deliveryType is 'domov'
+  deliveryAddress: string      // Billing address (required) / Delivery address when deliveryType is 'domov'
 
   // Package details
   package: PackageType
@@ -193,8 +193,8 @@ export const createOrderSchema = z.object({
     .email('Neplatná emailová adresa')
     .toLowerCase(),
   address: z.string()
-    .max(200, 'Adresa je príliš dlhá')
-    .default(''),
+    .min(5, 'Adresa musí obsahovať aspoň 5 znakov')
+    .max(500, 'Adresa je príliš dlhá'),
   courierNotes: z.string().max(500, 'Poznámka je príliš dlhá').default(''),
 
   // Payment

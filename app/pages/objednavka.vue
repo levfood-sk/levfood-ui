@@ -71,15 +71,15 @@ const touched = ref({
 
 // Computed flags for delivery logic
 const isEkonomy = computed(() => formData.value.step1.package === 'EKONOMY')
-const showAddressField = computed(() => formData.value.step3.deliveryType === 'domov')
+const showCourierNotes = computed(() => formData.value.step3.deliveryType === 'domov')
 const isDeliveryTypeDisabled = computed(() => isEkonomy.value)
 const showDietaryRequirements = computed(() =>
   formData.value.step1.package === 'ŠTANDARD' || formData.value.step1.package === 'PREMIUM'
 )
 
-// Zod schemas - dynamic based on delivery type
+// Zod schemas - address is always required (for billing purposes)
 const step3Schema = computed(() => {
-  const baseSchema = {
+  return z.object({
     deliveryType: z.enum(['prevádzka', 'domov'] as const, {
       required_error: 'Typ doručenia je povinný'
     }),
@@ -88,17 +88,8 @@ const step3Schema = computed(() => {
       .min(1, 'Telefónne číslo je povinné')
       .regex(/^(\+421|0)?[0-9]{9,10}$/, 'Neplatné telefónne číslo. Použite formát +421000000000)'),
     email: z.string().email('Neplatná emailová adresa'),
-  }
-
-  // Only require address if delivery type is 'domov'
-  if (formData.value.step3.deliveryType === 'domov') {
-    return z.object({
-      ...baseSchema,
-      address: z.string().min(5, 'Adresa musí obsahovať aspoň 5 znakov')
-    })
-  }
-
-  return z.object(baseSchema)
+    address: z.string().min(5, 'Adresa musí obsahovať aspoň 5 znakov')
+  })
 })
 
 const steps = computed(() => [
@@ -524,14 +515,10 @@ watch(() => formData.value.step1.package, (newPackage) => {
   }
 })
 
-// Watch for delivery type changes to clear address when switching to 'prevádzka'
+// Watch for delivery type changes to clear courier notes when switching to 'prevádzka'
 watch(() => formData.value.step3.deliveryType, (newType) => {
   if (newType === 'prevádzka') {
-    formData.value.step3.address = ''
     formData.value.step3.courierNotes = ''
-    // Clear address validation errors
-    errors.value.address = ''
-    touched.value.address = false
   }
 })
 
@@ -734,7 +721,7 @@ async function saveOrder(stripePaymentIntentId: string) {
       fullName: formData.value.step3.fullName,
       phone: formData.value.step3.phone,
       email: formData.value.step3.email,
-      address: formData.value.step3.deliveryType === 'domov' ? formData.value.step3.address : '',
+      address: formData.value.step3.address, // Always required for billing
       courierNotes: formData.value.step3.deliveryType === 'domov' ? formData.value.step3.courierNotes || '' : '',
 
       // Step 4
@@ -1007,7 +994,7 @@ watch(() => currentStep.value, (newStep) => {
         <div v-if="currentStep === 3" class="space-y-8">
           <div class="text-center">
             <h2 class="text-2xl font-bold text-[var(--color-dark-green)] mb-3 font-condensed">Kam ti máme jedlo doručiť?</h2>
-            <p v-if="!isEkonomy && showAddressField" class="text-sm text-[var(--color-dark-green)]">Zabezpečíme doručenie priamo k tvojim dverám v čase od 11:00 do 15:00.</p>
+            <p v-if="!isEkonomy && showCourierNotes" class="text-sm text-[var(--color-dark-green)]">Zabezpečíme doručenie priamo k tvojim dverám v čase od 11:00 do 15:00.</p>
           </div>
 
           <div class="space-y-6">
@@ -1088,19 +1075,23 @@ watch(() => currentStep.value, (newStep) => {
               />
             </UFormField>
 
-            <!-- Address field - only show when delivery type is 'domov' -->
+            <!-- Address field - always required for billing -->
             <UFormField
-              v-if="showAddressField"
-              label="Adresa doručenia"
+              label="Fakturačná adresa / Adresa doručenia"
               required
               class="w-full"
               :error="touched.address ? errors.address : ''"
               eager-validation
             >
+              <template #hint>
+                <span class="text-xs text-[var(--color-dark-green)]/70">
+                  Potrebujeme pre vystavenie faktúry{{ formData.step3.deliveryType === 'domov' ? ' a doručenie' : '' }}
+                </span>
+              </template>
               <UInput
                 v-model="formData.step3.address"
                 size="lg"
-                placeholder="Ulica, číslo, mesto"
+                placeholder="Ulica, číslo, mesto, PSČ"
                 class="w-full"
                 :highlight="!!(touched.address && errors.address)"
                 @blur="validateField('address')"
@@ -1111,7 +1102,7 @@ watch(() => currentStep.value, (newStep) => {
             </UFormField>
 
             <!-- Courier notes - only show when delivery type is 'domov' -->
-            <UFormField v-if="showAddressField" label="Poznámka pre kuriéra" class="w-full">
+            <UFormField v-if="showCourierNotes" label="Poznámka pre kuriéra" class="w-full">
               <UTextarea
                 v-model="formData.step3.courierNotes"
                 size="lg"
