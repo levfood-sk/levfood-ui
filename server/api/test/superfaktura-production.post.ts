@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
       email: config.superfakturaEmail,
       apiKey: config.superfakturaApiKey,
       companyId: config.superfakturaCompanyId,
-      isSandbox: config.superfakturaIsSandbox === 'true',
+      isSandbox: config.superfakturaIsSandbox === 'false',
     }
 
     console.log('📋 Superfaktura production test configuration:', {
