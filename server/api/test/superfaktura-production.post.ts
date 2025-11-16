@@ -29,10 +29,12 @@ export default defineEventHandler(async (event) => {
     }
 
     console.log('📋 Superfaktura production test configuration:', {
-      hasEmail: !!superfakturaConfig.email,
-      hasApiKey: !!superfakturaConfig.apiKey,
+      email: superfakturaConfig.email,
+      apiKeyLength: superfakturaConfig.apiKey?.length,
+      apiKeyPreview: superfakturaConfig.apiKey?.substring(0, 5) + '...',
       companyId: superfakturaConfig.companyId,
       isSandbox: superfakturaConfig.isSandbox,
+      rawEnvValue: config.superfakturaIsSandbox,
     })
 
     // Build test invoice client data

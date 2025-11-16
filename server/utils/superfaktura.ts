@@ -94,6 +94,13 @@ export async function makeSuperfakturaRequest(
 ): Promise<SuperfakturaResponse> {
   const baseUrl = getSuperfakturaBaseUrl(config.isSandbox)
   const url = `${baseUrl}${endpoint}`
+  const authHeader = generateAuthHeader(config)
+
+  console.log('🔐 Superfaktura API Request:', {
+    url,
+    isSandbox: config.isSandbox,
+    authHeaderPreview: authHeader.substring(0, 30) + '...',
+  })
 
   const body = new URLSearchParams()
   body.append('data', JSON.stringify(data))
@@ -102,7 +109,7 @@ export async function makeSuperfakturaRequest(
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': generateAuthHeader(config),
+        'Authorization': authHeader,
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
       body: body.toString(),
