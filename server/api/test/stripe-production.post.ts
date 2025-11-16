@@ -3,7 +3,7 @@
  *
  * POST /api/test/stripe-production
  *
- * Creates a 1 cent payment intent for testing production Stripe integration
+ * Creates a €0.50 payment intent for testing production Stripe integration
  */
 
 import { useServerStripe } from '#stripe/server'
@@ -12,11 +12,11 @@ export default defineEventHandler(async (event) => {
   try {
     const stripe = await useServerStripe(event)
 
-    // Create payment intent for 1 cent (100 cents = 1 euro, so 1 cent)
+    // Create payment intent for €0.50 (Stripe minimum for EUR)
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 1, // 1 cent
+      amount: 50, // 50 cents = €0.50
       currency: 'eur',
-      description: 'Production Test Payment - €0.01',
+      description: 'Production Test Payment - €0.50',
       metadata: {
         test: 'production',
         purpose: 'integration_testing',

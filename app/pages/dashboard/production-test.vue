@@ -251,7 +251,7 @@ async function testFullIntegration() {
       color="warning"
       variant="soft"
       title="Production Testing"
-      description="These tests use PRODUCTION credentials. Stripe tests charge 1 cent (€0.01). Superfaktura creates real invoices."
+      description="These tests use PRODUCTION credentials. Stripe tests charge €0.50 (minimum). Superfaktura creates real invoices."
     />
 
     <!-- Tabs -->
@@ -269,7 +269,7 @@ async function testFullIntegration() {
 
             <div class="space-y-4">
               <p class="text-sm text-gray-600">
-                Tests complete production workflow: Stripe payment (€0.01) → Superfaktura invoice → Email with PDF attachment
+                Tests complete production workflow: Stripe payment (€0.50) → Superfaktura invoice → Email with PDF attachment
               </p>
 
               <UFormField label="Recipient Email" required>
@@ -384,7 +384,7 @@ async function testFullIntegration() {
             <template #header>
               <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold">Stripe Payment Test</h3>
-                <UBadge color="primary" variant="soft">€0.01</UBadge>
+                <UBadge color="primary" variant="soft">€0.50</UBadge>
               </div>
             </template>
 
@@ -434,7 +434,7 @@ async function testFullIntegration() {
                   color="primary"
                   block
                 >
-                  Complete Payment (€0.01)
+                  Complete Payment (€0.50)
                 </UButton>
 
                 <UAlert
@@ -459,7 +459,7 @@ async function testFullIntegration() {
 
             <div class="space-y-4">
               <p class="text-sm text-gray-600">
-                Create a test invoice (€0.01) in production Superfaktura and download PDF
+                Create a test invoice (€0.50) in production Superfaktura and download PDF
               </p>
 
               <UButton

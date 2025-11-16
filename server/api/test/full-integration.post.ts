@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
     logs.push(`[2] 📧 Recipient email: ${recipientEmail}`)
 
     // ============================================================================
-    // STEP 1: Create Stripe Payment Intent (1 cent)
+    // STEP 1: Create Stripe Payment Intent (€0.50 - Stripe minimum)
     // ============================================================================
     logs.push('[3] 💳 STEP 1: Creating Stripe payment intent...')
 
@@ -49,9 +49,9 @@ export default defineEventHandler(async (event) => {
       const stripe = await useServerStripe(event)
 
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: 1, // 1 cent
+        amount: 50, // 50 cents = €0.50 (Stripe minimum for EUR)
         currency: 'eur',
-        description: 'Full Integration Test Payment - €0.01',
+        description: 'Full Integration Test Payment - €0.50',
         automatic_payment_methods: {
           enabled: true,
         },
@@ -111,10 +111,10 @@ export default defineEventHandler(async (event) => {
 
       const invoiceItem: InvoiceItem = {
         name: 'Full Integration Test',
-        description: `Payment ID: ${results.stripe.paymentIntentId}\nTest amount: €0.01`,
+        description: `Payment ID: ${results.stripe.paymentIntentId}\nTest amount: €0.50`,
         quantity: 1,
         unit: 'ks',
-        unit_price: 0.01,
+        unit_price: 0.50,
         tax: 0,
       }
 
@@ -125,7 +125,7 @@ export default defineEventHandler(async (event) => {
         name: `Integration Test - ${now.toLocaleString('sk-SK')}`,
         currency: 'EUR',
         variable: results.stripe.paymentIntentId,
-        comment: 'Full integration test invoice\nPayment: €0.01 via Stripe',
+        comment: 'Full integration test invoice\nPayment: €0.50 via Stripe',
         delivery: invoiceDate,
         due: invoiceDate,
       }
@@ -212,7 +212,7 @@ export default defineEventHandler(async (event) => {
               <div style="background-color: #fff; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <p style="margin: 0 0 12px 0;"><strong>💳 Stripe Payment:</strong> ${results.stripe.paymentIntentId}</p>
                 <p style="margin: 0 0 12px 0;"><strong>📄 Invoice Number:</strong> ${results.superfaktura.invoiceNumber}</p>
-                <p style="margin: 0 0 12px 0;"><strong>💰 Amount:</strong> €0.01</p>
+                <p style="margin: 0 0 12px 0;"><strong>💰 Amount:</strong> €0.50</p>
                 <p style="margin: 0;"><strong>📎 Attachment:</strong> Invoice PDF (${Math.round(results.superfaktura.pdfSize / 1024)}KB)</p>
               </div>
 
@@ -235,7 +235,7 @@ export default defineEventHandler(async (event) => {
         to: recipientEmail,
         subject: `✅ Full Integration Test Complete - ${new Date().toLocaleString('sk-SK')}`,
         html,
-        text: `Full Integration Test Complete!\n\nStripe: ${results.stripe.paymentIntentId}\nInvoice: ${results.superfaktura.invoiceNumber}\nAmount: €0.01\n\nTest completed at: ${new Date().toLocaleString('sk-SK')}`,
+        text: `Full Integration Test Complete!\n\nStripe: ${results.stripe.paymentIntentId}\nInvoice: ${results.superfaktura.invoiceNumber}\nAmount: €0.50\n\nTest completed at: ${new Date().toLocaleString('sk-SK')}`,
         attachments: [{
           filename: `Invoice-${results.superfaktura.invoiceNumber}.pdf`,
           content: results.invoicePdf,

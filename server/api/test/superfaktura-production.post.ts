@@ -43,13 +43,13 @@ export default defineEventHandler(async (event) => {
       address: 'Test Street 123, Bratislava, 12345',
     }
 
-    // Build test invoice item (1 cent)
+    // Build test invoice item (€0.50 - Stripe minimum)
     const invoiceItem: InvoiceItem = {
       name: 'Test Product',
-      description: 'Production integration test - €0.01',
+      description: 'Production integration test - €0.50',
       quantity: 1,
       unit: 'ks',
-      unit_price: 0.01, // 1 cent
+      unit_price: 0.50, // €0.50 (Stripe minimum for EUR)
       tax: 0, // No tax for test
     }
 
@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
       name: `Production Test Invoice - ${now.toLocaleString('sk-SK')}`,
       currency: 'EUR',
       variable: `TEST${Date.now()}`, // Unique variable symbol
-      comment: 'This is a production integration test invoice for €0.01',
+      comment: 'This is a production integration test invoice for €0.50',
       delivery: invoiceDate,
       due: invoiceDate,
     }
