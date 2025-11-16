@@ -6,7 +6,7 @@ definePageMeta({
 const activeTab = ref(0)
 
 const tabs = [{
-  label: 'Full Integration',
+  label: 'Kompletný test',
   icon: 'i-lucide-workflow',
 }, {
   label: 'Stripe',
@@ -45,8 +45,11 @@ const fullIntegrationLoading = ref(false)
 const fullIntegrationResult = ref<any>(null)
 const fullIntegrationError = ref<string | null>(null)
 const fullIntegrationEmail = ref('')
+const fullIntegrationClientSecret = ref<string | null>(null)
+const fullIntegrationElements = ref<any>(null)
+const fullIntegrationPaymentElement = ref<any>(null)
 
-// Initialize Stripe payment element when client secret is available
+// Initialize Stripe payment element when client secret is available (Stripe tab)
 watch([stripe, stripeClientSecret], async () => {
   if (stripe.value && stripeClientSecret.value && !stripePaymentElement.value) {
     try {
@@ -71,12 +74,55 @@ watch([stripe, stripeClientSecret], async () => {
 
       stripePaymentElement.value = stripeElements.value.create('payment', {
         layout: 'tabs',
+        wallets: {
+          applePay: 'auto',
+          googlePay: 'auto',
+        },
       })
 
       stripePaymentElement.value.mount('#stripe-payment-element')
     } catch (e: any) {
       console.error('Stripe Elements error:', e)
       stripeError.value = 'Failed to load payment form'
+    }
+  }
+})
+
+// Initialize Stripe payment element for Full Integration tab
+watch([stripe, fullIntegrationClientSecret], async () => {
+  if (stripe.value && fullIntegrationClientSecret.value && !fullIntegrationPaymentElement.value) {
+    try {
+      await nextTick()
+
+      const container = document.getElementById('full-integration-payment-element')
+      if (!container) {
+        console.error('Full integration payment element container not found')
+        return
+      }
+
+      fullIntegrationElements.value = stripe.value.elements({
+        clientSecret: fullIntegrationClientSecret.value,
+        appearance: {
+          theme: 'stripe',
+          variables: {
+            colorPrimary: '#f97316',
+            borderRadius: '8px',
+          },
+        },
+      })
+
+      fullIntegrationPaymentElement.value = fullIntegrationElements.value.create('payment', {
+        layout: 'tabs',
+        wallets: {
+          applePay: 'auto',
+          googlePay: 'auto',
+        },
+      })
+
+      fullIntegrationPaymentElement.value.mount('#full-integration-payment-element')
+    } catch (e: any) {
+      console.error('Full integration Stripe Elements error:', e)
+      fullIntegrationError.value = 'Nepodarilo sa načítať platobný formulár'
     }
   }
 })
@@ -207,10 +253,10 @@ async function testEmail() {
   }
 }
 
-// Test Full Integration
-async function testFullIntegration() {
+// Initialize Full Integration (create payment intent)
+async function initializeFullIntegration() {
   if (!fullIntegrationEmail.value) {
-    fullIntegrationError.value = 'Please enter email address'
+    fullIntegrationError.value = 'Prosím zadajte emailovú adresu'
     return
   }
 
@@ -219,6 +265,41 @@ async function testFullIntegration() {
   fullIntegrationResult.value = null
 
   try {
+    // Create Stripe payment intent first
+    const response = await $fetch('/api/test/stripe-production', {
+      method: 'POST',
+    })
+
+    fullIntegrationClientSecret.value = response.clientSecret
+  } catch (e: any) {
+    fullIntegrationError.value = e.data?.message || e.message || 'Nepodarilo sa inicializovať platbu'
+  } finally {
+    fullIntegrationLoading.value = false
+  }
+}
+
+// Complete Full Integration Test (after payment)
+async function completeFullIntegration() {
+  if (!fullIntegrationElements.value || !fullIntegrationEmail.value) {
+    fullIntegrationError.value = 'Prosím zadajte emailovú adresu a dokončite platbu'
+    return
+  }
+
+  fullIntegrationLoading.value = true
+  fullIntegrationError.value = null
+
+  try {
+    // Confirm payment
+    const { error: stripeError } = await stripe.value!.confirmPayment({
+      elements: fullIntegrationElements.value,
+      redirect: 'if_required',
+    })
+
+    if (stripeError) {
+      throw new Error(stripeError.message || 'Platba zlyhala')
+    }
+
+    // Run full integration test
     const response = await $fetch('/api/test/full-integration', {
       method: 'POST',
       body: {
@@ -228,7 +309,7 @@ async function testFullIntegration() {
 
     fullIntegrationResult.value = response
   } catch (e: any) {
-    fullIntegrationError.value = e.data?.message || e.message || 'Integration test failed'
+    fullIntegrationError.value = e.data?.message || e.message || 'Integračný test zlyhal'
   } finally {
     fullIntegrationLoading.value = false
   }
@@ -240,57 +321,65 @@ async function testFullIntegration() {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Production Integration Testing</h1>
-        <p class="text-sm text-gray-600 mt-1">Test Stripe, Superfaktura, and Email integrations with production credentials</p>
+        <h1 class="text-2xl font-bold text-gray-900">Testovanie produkčných integrácií</h1>
+        <p class="text-sm text-gray-600 mt-1">Testujte Stripe, Superfaktura a Email integrácie s produkčnými prihlasovacími údajmi</p>
       </div>
     </div>
-
-    <!-- Warning Banner -->
-    <UAlert
-      icon="i-lucide-alert-triangle"
-      color="warning"
-      variant="soft"
-      title="Production Testing"
-      description="These tests use PRODUCTION credentials. Stripe tests charge €0.50 (minimum). Superfaktura creates real invoices."
-    />
 
     <!-- Tabs -->
     <UTabs v-model="activeTab" :items="tabs" class="w-full">
       <!-- Full Integration Tab -->
       <template #content="{ item }">
-        <div v-if="item.label === 'Full Integration'" class="pt-4 space-y-4">
+        <div v-if="item.label === 'Kompletný test'" class="pt-4 space-y-4">
           <UCard>
             <template #header>
               <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold">Full Integration Test</h3>
-                <UBadge color="primary" variant="soft">Complete Workflow</UBadge>
+                <h3 class="text-lg font-semibold">Kompletný integračný test</h3>
+                <UBadge color="primary" variant="soft">Celý workflow</UBadge>
               </div>
             </template>
 
             <div class="space-y-4">
               <p class="text-sm text-gray-600">
-                Tests complete production workflow: Stripe payment (€0.50) → Superfaktura invoice → Email with PDF attachment
+                Testuje kompletný produkčný workflow: Stripe platba (€0.50) → Superfaktura faktúra → Email s PDF prílohou
               </p>
 
-              <UFormField label="Recipient Email" required>
+              <UFormField label="Email príjemcu" required>
                 <UInput
                   v-model="fullIntegrationEmail"
                   type="email"
-                  placeholder="your-email@example.com"
+                  placeholder="vas-email@example.com"
                   size="lg"
                 />
               </UFormField>
 
+              <!-- Step 1: Initialize Payment -->
               <UButton
-                @click="testFullIntegration"
+                v-if="!fullIntegrationClientSecret"
+                @click="initializeFullIntegration"
                 :loading="fullIntegrationLoading"
                 :disabled="!fullIntegrationEmail"
                 size="lg"
                 color="primary"
                 block
               >
-                Run Full Integration Test
+                Inicializovať test
               </UButton>
+
+              <!-- Step 2: Show payment form and complete button -->
+              <div v-if="fullIntegrationClientSecret && !fullIntegrationResult" class="space-y-4">
+                <div id="full-integration-payment-element" class="p-4 border border-gray-200 rounded-lg"></div>
+
+                <UButton
+                  @click="completeFullIntegration"
+                  :loading="fullIntegrationLoading"
+                  size="lg"
+                  color="primary"
+                  block
+                >
+                  Dokončiť platbu a spustiť test
+                </UButton>
+              </div>
 
               <!-- Error -->
               <UAlert
@@ -308,22 +397,22 @@ async function testFullIntegration() {
                   icon="i-lucide-check-circle"
                   color="success"
                   variant="soft"
-                  title="All tests passed!"
-                  description="Full integration test completed successfully"
+                  title="Všetky testy úspešné!"
+                  description="Kompletný integračný test bol úspešne dokončený"
                 />
                 <UAlert
                   v-else
                   icon="i-lucide-x-circle"
                   color="error"
                   variant="soft"
-                  title="Test failed"
+                  title="Test zlyhal"
                   :description="fullIntegrationResult.error"
                 />
 
                 <!-- Logs -->
                 <UCard>
                   <template #header>
-                    <h4 class="font-semibold">Test Logs</h4>
+                    <h4 class="font-semibold">Logy testovania</h4>
                   </template>
                   <div class="space-y-1 font-mono text-xs max-h-96 overflow-y-auto">
                     <div v-for="(log, index) in fullIntegrationResult.logs" :key="index" class="text-gray-700">
@@ -383,14 +472,14 @@ async function testFullIntegration() {
           <UCard>
             <template #header>
               <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold">Stripe Payment Test</h3>
+                <h3 class="text-lg font-semibold">Test Stripe platby</h3>
                 <UBadge color="primary" variant="soft">€0.50</UBadge>
               </div>
             </template>
 
             <div class="space-y-4">
               <p class="text-sm text-gray-600">
-                Create and complete a 1 cent payment using production Stripe credentials
+                Vytvorte a dokončite platbu €0.50 pomocou produkčných Stripe prihlasovacích údajov
               </p>
 
               <UButton
@@ -401,7 +490,7 @@ async function testFullIntegration() {
                 color="primary"
                 block
               >
-                Create Payment Intent
+                Vytvoriť platobnú požiadavku
               </UButton>
 
               <!-- Error -->
@@ -419,7 +508,7 @@ async function testFullIntegration() {
                   icon="i-lucide-check-circle"
                   color="success"
                   variant="soft"
-                  title="Payment intent created"
+                  title="Platobná požiadavka vytvorená"
                   :description="`ID: ${stripeResult?.paymentIntentId}`"
                 />
 
@@ -434,7 +523,7 @@ async function testFullIntegration() {
                   color="primary"
                   block
                 >
-                  Complete Payment (€0.50)
+                  Dokončiť platbu (€0.50)
                 </UButton>
 
                 <UAlert
@@ -442,8 +531,8 @@ async function testFullIntegration() {
                   icon="i-lucide-check-circle"
                   color="success"
                   variant="soft"
-                  title="Payment successful!"
-                  :description="`Payment ID: ${stripeResult.paymentIntentId}`"
+                  title="Platba úspešná!"
+                  :description="`ID platby: ${stripeResult.paymentIntentId}`"
                 />
               </div>
             </div>
@@ -454,12 +543,12 @@ async function testFullIntegration() {
         <div v-else-if="item.label === 'Superfaktura'" class="pt-4 space-y-4">
           <UCard>
             <template #header>
-              <h3 class="text-lg font-semibold">Superfaktura Invoice Test</h3>
+              <h3 class="text-lg font-semibold">Test Superfaktura faktúry</h3>
             </template>
 
             <div class="space-y-4">
               <p class="text-sm text-gray-600">
-                Create a test invoice (€0.50) in production Superfaktura and download PDF
+                Vytvorte testovaciu faktúru (€0.50) v produkčnej Superfaktúre a stiahnite PDF
               </p>
 
               <UButton
@@ -469,7 +558,7 @@ async function testFullIntegration() {
                 color="primary"
                 block
               >
-                Create Test Invoice
+                Vytvoriť testovaciu faktúru
               </UButton>
 
               <!-- Error -->
@@ -487,15 +576,15 @@ async function testFullIntegration() {
                   icon="i-lucide-check-circle"
                   color="success"
                   variant="soft"
-                  title="Invoice created successfully!"
+                  title="Faktúra úspešne vytvorená!"
                 />
 
                 <UCard>
                   <div class="space-y-2 text-sm">
-                    <div><strong>Invoice Number:</strong> {{ superfakturaResult.invoiceNumber }}</div>
-                    <div><strong>Invoice ID:</strong> {{ superfakturaResult.invoiceId }}</div>
-                    <div><strong>PDF Size:</strong> {{ Math.round(superfakturaResult.pdfSize / 1024) }}KB</div>
-                    <div><strong>PDF Downloaded:</strong> {{ superfakturaResult.hasPdf ? 'Yes ✅' : 'No ❌' }}</div>
+                    <div><strong>Číslo faktúry:</strong> {{ superfakturaResult.invoiceNumber }}</div>
+                    <div><strong>ID faktúry:</strong> {{ superfakturaResult.invoiceId }}</div>
+                    <div><strong>Veľkosť PDF:</strong> {{ Math.round(superfakturaResult.pdfSize / 1024) }}KB</div>
+                    <div><strong>PDF stiahnuté:</strong> {{ superfakturaResult.hasPdf ? 'Áno ✅' : 'Nie ❌' }}</div>
                   </div>
                 </UCard>
               </div>
@@ -507,19 +596,19 @@ async function testFullIntegration() {
         <div v-else-if="item.label === 'Email'" class="pt-4 space-y-4">
           <UCard>
             <template #header>
-              <h3 class="text-lg font-semibold">Email Test</h3>
+              <h3 class="text-lg font-semibold">Test emailu</h3>
             </template>
 
             <div class="space-y-4">
               <p class="text-sm text-gray-600">
-                Send a test email using production SMTP with optional PDF attachment
+                Odošlite testovací email pomocou produkčného SMTP s voliteľnou PDF prílohou
               </p>
 
-              <UFormField label="Recipient Email" required>
+              <UFormField label="Email príjemcu" required>
                 <UInput
                   v-model="emailRecipient"
                   type="email"
-                  placeholder="your-email@example.com"
+                  placeholder="vas-email@example.com"
                   size="lg"
                 />
               </UFormField>
@@ -527,7 +616,7 @@ async function testFullIntegration() {
               <UFormField>
                 <UCheckbox
                   v-model="includeAttachment"
-                  label="Include PDF attachment (requires Superfaktura test first)"
+                  label="Priložiť PDF (vyžaduje najprv Superfaktura test)"
                   :disabled="!superfakturaResult?.invoicePdf"
                 />
               </UFormField>
@@ -540,7 +629,7 @@ async function testFullIntegration() {
                 color="primary"
                 block
               >
-                Send Test Email
+                Odoslať testovací email
               </UButton>
 
               <!-- Error -->
@@ -559,22 +648,22 @@ async function testFullIntegration() {
                   icon="i-lucide-check-circle"
                   color="success"
                   variant="soft"
-                  title="Email sent successfully!"
+                  title="Email úspešne odoslaný!"
                 />
                 <UAlert
                   v-else
                   icon="i-lucide-x-circle"
                   color="error"
                   variant="soft"
-                  title="Email failed"
+                  title="Email zlyhal"
                   :description="emailResult.error"
                 />
 
                 <UCard v-if="emailResult.success">
                   <div class="space-y-2 text-sm">
-                    <div><strong>To:</strong> {{ emailResult.to }}</div>
-                    <div v-if="emailResult.messageId"><strong>Message ID:</strong> {{ emailResult.messageId }}</div>
-                    <div><strong>Has Attachment:</strong> {{ emailResult.hasAttachment ? 'Yes ✅' : 'No ❌' }}</div>
+                    <div><strong>Komu:</strong> {{ emailResult.to }}</div>
+                    <div v-if="emailResult.messageId"><strong>ID správy:</strong> {{ emailResult.messageId }}</div>
+                    <div><strong>S prílohou:</strong> {{ emailResult.hasAttachment ? 'Áno ✅' : 'Nie ❌' }}</div>
                   </div>
                 </UCard>
               </div>

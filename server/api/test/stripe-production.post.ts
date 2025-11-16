@@ -17,6 +17,10 @@ export default defineEventHandler(async (event) => {
       amount: 50, // 50 cents = €0.50
       currency: 'eur',
       description: 'Production Test Payment - €0.50',
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never', // Prevents redirect-based payment methods
+      },
       metadata: {
         test: 'production',
         purpose: 'integration_testing',

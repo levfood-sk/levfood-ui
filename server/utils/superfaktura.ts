@@ -96,12 +96,6 @@ export async function makeSuperfakturaRequest(
   const url = `${baseUrl}${endpoint}`
   const authHeader = generateAuthHeader(config)
 
-  console.log('🔐 Superfaktura API Request:', {
-    url,
-    isSandbox: config.isSandbox,
-    authHeaderPreview: authHeader.substring(0, 30) + '...',
-  })
-
   const body = new URLSearchParams()
   body.append('data', JSON.stringify(data))
 

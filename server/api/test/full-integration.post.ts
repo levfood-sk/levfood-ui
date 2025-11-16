@@ -54,6 +54,7 @@ export default defineEventHandler(async (event) => {
         description: 'Full Integration Test Payment - €0.50',
         automatic_payment_methods: {
           enabled: true,
+          allow_redirects: 'never', // Prevents redirect-based payment methods
         },
         metadata: {
           test: 'full_integration',

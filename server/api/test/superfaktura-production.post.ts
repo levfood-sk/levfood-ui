@@ -29,12 +29,10 @@ export default defineEventHandler(async (event) => {
     }
 
     console.log('📋 Superfaktura production test configuration:', {
-      email: superfakturaConfig.email,
-      apiKeyLength: superfakturaConfig.apiKey?.length,
-      apiKeyPreview: superfakturaConfig.apiKey?.substring(0, 5) + '...',
+      hasEmail: !!superfakturaConfig.email,
+      hasApiKey: !!superfakturaConfig.apiKey,
       companyId: superfakturaConfig.companyId,
       isSandbox: superfakturaConfig.isSandbox,
-      rawEnvValue: config.superfakturaIsSandbox,
     })
 
     // Build test invoice client data
@@ -110,6 +108,13 @@ export default defineEventHandler(async (event) => {
         invoiceId,
         pdfSize: invoicePdf.length,
       })
+    }
+
+    return {
+      email: config.superfakturaEmail,
+      apiKey: config.superfakturaApiKey,
+      companyId: config.superfakturaCompanyId,
+      isSandbox: config.superfakturaIsSandbox === 'true',
     }
 
     return {
