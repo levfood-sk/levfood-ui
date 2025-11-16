@@ -11,6 +11,15 @@ export default defineNuxtConfig({
     colorMode: false
   },
 
+  // Google Analytics configuration
+  scripts: {
+    registry: {
+      googleAnalytics: {
+        id: process.env.GOOGLE_ANALYTICS_ID || '',
+      }
+    }
+  },
+
   // App metadata
   app: {
     head: {
@@ -49,7 +58,7 @@ export default defineNuxtConfig({
       firebaseAppId: process.env.FIREBASE_APP_ID,
       firebaseVapidKey: process.env.FIREBASE_VAPID_KEY,
       appUrl: process.env.APP_URL || 'http://localhost:3000',
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+      googleAnalyticsId: process.env.GOOGLE_ANALYTICS_ID,
     },
     firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
