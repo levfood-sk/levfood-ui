@@ -114,7 +114,7 @@ export default defineEventHandler(async (event) => {
 
     const invoiceItem: InvoiceItem = {
       name: `LevFood ${order.package} balík`,
-      description: `${order.daysCount} dní - Strava s doručením\nObdobie: ${order.deliveryStartDate}${hasDiscount ? '\n🎉 Akciová zľava 10%' : ''}`,
+      description: `${order.daysCount} dní / Od: ${order.deliveryStartDate}${hasDiscount ? '/ Zľava 10%' : ''}`,
       quantity: 1,
       unit: 'balík',
       unit_price: unitPrice,
