@@ -75,6 +75,6 @@ export default defineNuxtConfig({
     smtpSecure: process.env.SMTP_SECURE || 'false',
     adminNotificationEmails: process.env.ADMIN_NOTIFICATION_EMAIL
       ? process.env.ADMIN_NOTIFICATION_EMAIL.split(',').map(email => email.trim())
-      : ['kocisek.martin@gmail.com'],
+      : ['info@levfood.sk'],
   }
 })
