@@ -95,7 +95,7 @@ export default defineEventHandler(async (event) => {
     // Calculate pricing with discount support
     // Use exact original prices before 10% discount (from objednavka.vue pricing)
     const originalPrices: Record<string, Record<string, number>> = {
-      'EKONOMY': { '5': 50, '6': 50 }, // TEST PRICE
+      'EKONOMY': { '5': 29900, '6': 33900 },
       'ŠTANDARD': { '5': 35900, '6': 39900 }, // 359€ and 399€ before 10% off
       'PREMIUM': { '5': 41900, '6': 45900 },  // 419€ and 459€ before 10% off
       'OFFICE': { '5': 24900, '6': 24900 },
