@@ -242,7 +242,7 @@ export default defineEventHandler(async (event) => {
       const priceInEuros = (order.totalPrice / 100).toFixed(0)
 
       await sendOrderNotification(
-        config.adminNotificationEmail,
+        config.adminNotificationEmails,
         {
           orderId: String(orderId),
           clientName: orderData.fullName.toUpperCase(),
