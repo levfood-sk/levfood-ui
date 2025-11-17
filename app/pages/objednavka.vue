@@ -180,20 +180,20 @@ const stressLevelOptions = [
 // Pricing (in cents for Stripe) - Dynamic pricing based on duration
 const packagePrices = {
   EKONOMY: {
-    '5': 50,  // 0.50€ for 5 days (TESTING)
-    '6': 50   // 0.50€ for 6 days (TESTING)
+    '5': 29900,  // 299€ for 5 days
+    '6': 33900   // 339€ for 6 days
   },
   ŠTANDARD: {
-    '5': 32300,  // 323€ for 5 days (10% off from 359€)
-    '6': 35900   // 359€ for 6 days (10% off from 399€)
+    '5': 32300,  // 323€ for 5 days (10% discount applied from 359€)
+    '6': 35900   // 359€ for 6 days (10% discount applied from 399€)
   },
   PREMIUM: {
-    '5': 37700,  // 377€ for 5 days (10% off from 419€)
-    '6': 41300   // 413€ for 6 days (10% off from 459€)
+    '5': 37700,  // 377€ for 5 days (10% discount applied from 419€)
+    '6': 41300   // 413€ for 6 days (10% discount applied from 459€)
   },
   OFFICE: {
     '5': 24900,  // 249€ for 5 days (only option)
-    '6': 24900   // 249€ for 6 days (not available, but keeping for consistency)
+    '6': 24900   // 249€ for 6 days (not available, but keeping for type consistency)
   }
 }
 
