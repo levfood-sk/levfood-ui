@@ -180,8 +180,8 @@ const stressLevelOptions = [
 // Pricing (in cents for Stripe) - Dynamic pricing based on duration
 const packagePrices = {
   EKONOMY: {
-    '5': 29900,  // 299€ for 5 days
-    '6': 33900   // 339€ for 6 days
+    '5': 50,  // 0.50€ for 5 days (TEST PRICE)
+    '6': 50   // 0.50€ for 6 days (TEST PRICE)
   },
   ŠTANDARD: {
     '5': 32300,  // 323€ for 5 days (10% off from 359€)

@@ -56,8 +56,8 @@ const officeDays = ref('5') // Default to 5 days for OFFICE
 // Package pricing structure
 const packagePricing = {
   EKONOMY: {
-    '5': 299,
-    '6': 339
+    '5': 0.50,  // TEST PRICE
+    '6': 0.50   // TEST PRICE
   },
   ŠTANDARD: {
     '5': 323, // 10% off from 359€
