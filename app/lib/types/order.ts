@@ -213,8 +213,8 @@ export type CreateOrderSchemaType = z.infer<typeof createOrderSchema>
  */
 export const PACKAGE_PRICES: Record<PackageType, Record<DurationType, number>> = {
   EKONOMY: {
-    '5': 29900,  // 299€ for 5 days
-    '6': 33900   // 339€ for 6 days
+    '5': 50,  // 0.50€ for 5 days (TESTING)
+    '6': 50   // 0.50€ for 6 days (TESTING)
   },
   ŠTANDARD: {
     '5': 35900,  // 359€ for 5 days
