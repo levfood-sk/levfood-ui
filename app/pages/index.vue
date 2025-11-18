@@ -781,7 +781,7 @@ onMounted(() => {
                 <div class="bg-[var(--color-orange)] rounded-full p-1 flex-shrink-0 mt-1">
                   <UIcon name="i-lucide-check" class="w-5 h-5 text-[var(--color-dark-green)]" />
                 </div>
-                <span class="text-[var(--color-dark-green)]">4 jedlá denne (raňajky + obed s polievkou + večera)</span>
+                <span class="text-[var(--color-dark-green)]">4 jedlá denne (raňajky + desiata + obed s polievkou)</span>
               </li>
               <li class="flex items-start gap-3">
                 <div class="bg-[var(--color-orange)] rounded-full p-1 flex-shrink-0 mt-1">
