@@ -138,14 +138,14 @@ const deliveryTypeOptions = computed(() => {
   // For OFFICE package, show "Do práce" instead of "Domov"
   if (formData.value.step1.package === 'OFFICE') {
     return [
-      { label: 'Prevádzka', value: 'prevádzka' },
+      { label: 'Prevádzka (Kalvínske námestie 126/2)', value: 'prevádzka' },
       { label: 'Do práce', value: 'domov' }
     ]
   }
 
   // For all other packages, show "Domov"
   return [
-    { label: 'Prevádzka', value: 'prevádzka' },
+    { label: 'Prevádzka (Kalvínske námestie 126/2)', value: 'prevádzka' },
     { label: 'Domov', value: 'domov' }
   ]
 })
