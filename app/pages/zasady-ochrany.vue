@@ -34,7 +34,7 @@ import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
             <section>
               <h2 class="text-2xl md:text-3xl font-condensed font-bold mb-4">1. Úvod</h2>
               <p class="text-lg md:text-xl leading-[150%] mb-4">
-                Tieto zásady upravujú spôsob, akým spoločnosť Krabičkovo s.r.o., so sídlom Ul. M. Monaca 5, 934 01 Levice a prevádzkou Nám. E. M. Šoltésovej 12, 934 01 Levice IČO: 57 238 707, zapísaná v Obchodnom registri SR, spracúva osobné údaje a používa webovú stránku www.levfood.sk (ďalej len „web").               </p>
+                Tieto zásady upravujú spôsob, akým spoločnosť Krabičkovo s.r.o., so sídlom Ul. M. Monaca 5, 934 01 Levice a prevádzkou Kalvínske námestie 126/2, 934 01 Levice IČO: 57 238 707, zapísaná v Obchodnom registri SR, spracúva osobné údaje a používa webovú stránku www.levfood.sk (ďalej len „web").               </p>
               <p class="text-lg md:text-xl leading-[150%]">
                 Používaním tohto webu vyjadrujete súhlas s nižšie uvedenými podmienkami. 
               </p>
@@ -47,9 +47,9 @@ import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
                 <p><strong>Krabičkovo s.r.o.</strong></p>
                 <p>IČO: 57 238 707</p>
                 <p>Sídlo: Ul. M. Monaca 5, 934 01 Levice</p>
-                <p>Prevádzka: Nám. E. M. Šoltésovej 12, 934 01 Levice</p>
+                <p>Prevádzka: Kalvínske námestie 126/2, 934 01 Levice</p>
                 <p>E-mail: <a href="mailto:info@levfood.sk" class="underline hover:text-[var(--color-orange)] transition-colors">info@levfood.sk</a></p>
-                <p>Telefón: <a href="tel:+421905000000" class="underline hover:text-[var(--color-orange)] transition-colors">+421 905 000 000</a></p>
+                <p>Telefón: <a href="tel:+421911395933" class="underline hover:text-[var(--color-orange)] transition-colors">+421 911 395 933</a></p>
               </div>
               <p class="text-lg md:text-xl leading-[150%] mt-4">
                 Prevádzkovateľ zodpovedá za ochranu a spracúvanie osobných údajov v súlade s platnou legislatívou.

@@ -7,7 +7,7 @@ import type { Timestamp } from 'firebase/firestore'
 export type PackageType = 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | 'OFFICE'
 export type DurationType = '5' | '6'
 export type DeliveryType = 'prevádzka' | 'domov'
-export type DeliveryCity = 'Levice' | 'Géňa' | 'Kalinčiakovo' | 'Hronské Klačany' | 'Starý Tekov' | 'Podlužany' | 'Hronské Kosihy' | 'Čajkov' | 'Rybník' | 'Tlmače' | 'Tlmače Lipník' | 'Mochovce' | 'Kalná n. Hronom' | 'Horná Seč'
+export type DeliveryCity = 'Levice' | 'Géňa' | 'Kalinčiakovo' | 'Hronské Klačany' | 'Starý Tekov' | 'Podlužany' | 'Hronské Kosihy' | 'Čajkov' | 'Rybník' | 'Tlmače' | 'Tlmače - Lipník' | 'Mochovce' | 'Kalná n. Hronom' | 'Horná Seč'
 
 /**
  * Delivery City Options Array
@@ -23,7 +23,7 @@ export const DELIVERY_CITIES: DeliveryCity[] = [
   'Čajkov',
   'Rybník',
   'Tlmače',
-  'Tlmače Lipník',
+  'Tlmače - Lipník',
   'Mochovce',
   'Kalná n. Hronom',
   'Horná Seč',
@@ -209,7 +209,7 @@ export const createOrderSchema = z.object({
   deliveryCity: z.enum([
     'Levice', 'Géňa', 'Kalinčiakovo', 'Hronské Klačany', 'Starý Tekov',
     'Podlužany', 'Hronské Kosihy', 'Čajkov', 'Rybník', 'Tlmače',
-    'Tlmače Lipník', 'Mochovce', 'Kalná n. Hronom', 'Horná Seč'
+    'Tlmače - Lipník', 'Mochovce', 'Kalná n. Hronom', 'Horná Seč'
   ], {
     message: 'Mesto/obec je povinné pre doručenie domov',
   }).optional(),

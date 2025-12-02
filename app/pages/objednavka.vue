@@ -182,7 +182,7 @@ const deliveryCityOptions = [
   { label: 'Čajkov', value: 'Čajkov' },
   { label: 'Rybník', value: 'Rybník' },
   { label: 'Tlmače', value: 'Tlmače' },
-  { label: 'Tlmače Lipník', value: 'Tlmače Lipník' },
+  { label: 'Tlmače - Lipník', value: 'Tlmače - Lipník' },
   { label: 'Mochovce', value: 'Mochovce' },
   { label: 'Kalná n. Hronom', value: 'Kalná n. Hronom' },
   { label: 'Horná Seč', value: 'Horná Seč' }
@@ -1041,7 +1041,23 @@ watch(() => currentStep.value, (newStep) => {
 
           <div class="space-y-6">
             <!-- Delivery Type Select -->
-            <UFormField label="Doručenie" required class="w-full">
+            <UFormField class="w-full">
+              <template #label>
+                <div class="flex items-center gap-1.5">
+                  <div>
+                    <span>Doručenie</span>
+                  <span class="text-red-500"> *</span>
+                  </div>
+                  <UPopover v-if="!isEkonomy" mode="hover" arrow>
+                    <UIcon name="i-lucide-info" class="w-4 h-4 text-[var(--color-dark-green)]/70 cursor-pointer hover:text-[var(--color-dark-green)]" />
+                    <template #content>
+                      <div class="p-3 max-w-xs text-sm text-[var(--color-dark-green)]">
+                        Doručenie prebieha v čase približne od 11:00 do 16:00. Ak vás nezastihneme na adrese, jedlo budete mať pripravené od 16:00 do 10:00 ďalšieho dňa na našom výdajnom mieste.
+                      </div>
+                    </template>
+                  </UPopover>
+                </div>
+              </template>
               <USelect
                 v-model="formData.step3.deliveryType"
                 :items="deliveryTypeOptions"
@@ -1053,17 +1069,6 @@ watch(() => currentStep.value, (newStep) => {
               <template v-if="isEkonomy" #hint>
                 <span class="text-xs text-[var(--color-dark-green)]/70">EKONOMY balíček je dostupný iba s doručením do prevádzky</span>
               </template>
-              <template v-else #hint>
-                <UPopover mode="hover" arrow>
-                  <UIcon name="i-lucide-info" class="w-4 h-4 text-[var(--color-dark-green)]/70 cursor-pointer hover:text-[var(--color-dark-green)]" />
-                  <template #content>
-                    <div class="p-3 max-w-xs text-sm text-[var(--color-dark-green)]">
-                      Doručenie prebieha v čase približne od 11:00 do 16:00. Ak vás nezastihneme na adrese, jedlo budete mať pripravené od 16:00 do 10:00 ďalšieho dňa na našom výdajnom mieste.
-                    </div>
-                  </template>
-                </UPopover>
-              </template>
-
             </UFormField>
             <UFormField 
               label="Meno a priezvisko" 
@@ -1163,7 +1168,7 @@ watch(() => currentStep.value, (newStep) => {
               <UInput
                 v-model="formData.step3.address"
                 size="lg"
-                placeholder="Ulica, číslo, mesto, PSČ"
+                placeholder="Ulica, číslo"
                 autocomplete="street-address"
                 class="w-full"
                 :highlight="!!(touched.address && errors.address)"
