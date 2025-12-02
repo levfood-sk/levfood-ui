@@ -1021,6 +1021,17 @@ watch(() => currentStep.value, (newStep) => {
               <template v-if="isEkonomy" #hint>
                 <span class="text-xs text-[var(--color-dark-green)]/70">EKONOMY balíček je dostupný iba s doručením do prevádzky</span>
               </template>
+              <template v-else #hint>
+                <UPopover mode="hover" arrow>
+                  <UIcon name="i-lucide-info" class="w-4 h-4 text-[var(--color-dark-green)]/70 cursor-pointer hover:text-[var(--color-dark-green)]" />
+                  <template #content>
+                    <div class="p-3 max-w-xs text-sm text-[var(--color-dark-green)]">
+                      Doručenie prebieha v čase približne od 11:00 do 16:00. Ak vás nezastihneme na adrese, jedlo budete mať pripravené od 16:00 do 10:00 ďalšieho dňa na našom výdajnom mieste.
+                    </div>
+                  </template>
+                </UPopover>
+              </template>
+
             </UFormField>
             <UFormField 
               label="Meno a priezvisko" 
@@ -1087,7 +1098,7 @@ watch(() => currentStep.value, (newStep) => {
 
             <!-- Address field - always required for billing -->
             <UFormField
-              label="Fakturačná adresa / Adresa doručenia"
+              label="Adresa doručenia"
               required
               class="w-full"
               :error="touched.address ? errors.address : ''"
