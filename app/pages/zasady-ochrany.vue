@@ -210,7 +210,7 @@ import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
                   <a href="mailto:info@levfood.sk" class="underline hover:text-[var(--color-orange)] transition-colors">info@levfood.sk</a>
                 </p>
                 <p>
-                  <a href="tel:+421905000000" class="underline hover:text-[var(--color-orange)] transition-colors">+421 905 000 000</a>
+                  <a href="tel:+421911395933" class="underline hover:text-[var(--color-orange)] transition-colors">+421 911 395 933</a>
                 </p>
               </div>
             </section>
