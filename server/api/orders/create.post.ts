@@ -175,6 +175,7 @@ export default defineEventHandler(async (event) => {
 
       // Delivery information
       deliveryType: orderData.deliveryType,
+      ...(orderData.deliveryCity && { deliveryCity: orderData.deliveryCity }),
       deliveryAddress: orderData.address, // Always saved for billing purposes
 
       // Package details
@@ -216,6 +217,7 @@ export default defineEventHandler(async (event) => {
       clientId,
       isNewClient,
       package: order.package,
+      deliveryCity: order.deliveryCity || null,
       totalPrice: order.totalPrice,
     })
 

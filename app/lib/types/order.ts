@@ -7,6 +7,27 @@ import type { Timestamp } from 'firebase/firestore'
 export type PackageType = 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | 'OFFICE'
 export type DurationType = '5' | '6'
 export type DeliveryType = 'prevádzka' | 'domov'
+export type DeliveryCity = 'Levice' | 'Géňa' | 'Kalinčiakovo' | 'Hronské Klačany' | 'Starý Tekov' | 'Podlužany' | 'Hronské Kosihy' | 'Čajkov' | 'Rybník' | 'Tlmače' | 'Tlmače Lipník' | 'Mochovce' | 'Kalná n. Hronom' | 'Horná Seč'
+
+/**
+ * Delivery City Options Array
+ */
+export const DELIVERY_CITIES: DeliveryCity[] = [
+  'Levice',
+  'Géňa',
+  'Kalinčiakovo',
+  'Hronské Klačany',
+  'Starý Tekov',
+  'Podlužany',
+  'Hronské Kosihy',
+  'Čajkov',
+  'Rybník',
+  'Tlmače',
+  'Tlmače Lipník',
+  'Mochovce',
+  'Kalná n. Hronom',
+  'Horná Seč',
+]
 export type PaymentStatus = 'pending' | 'succeeded' | 'failed'
 export type OrderStatus = 'pending' | 'approved' | 'cancelled'
 
@@ -67,6 +88,7 @@ export interface Order {
 
   // Delivery information
   deliveryType: DeliveryType   // prevádzka or domov
+  deliveryCity?: DeliveryCity  // City for home delivery (only when deliveryType is 'domov')
   deliveryAddress: string      // Billing address (required) / Delivery address when deliveryType is 'domov'
 
   // Package details
@@ -127,6 +149,7 @@ export interface CreateOrderInput {
 
   // Step 3: Delivery info
   deliveryType: DeliveryType
+  deliveryCity?: DeliveryCity  // Required when deliveryType is 'domov'
   fullName: string
   phone: string
   email: string
@@ -183,6 +206,13 @@ export const createOrderSchema = z.object({
   deliveryType: z.enum(['prevádzka', 'domov'], {
     message: 'Typ doručenia je povinný',
   }),
+  deliveryCity: z.enum([
+    'Levice', 'Géňa', 'Kalinčiakovo', 'Hronské Klačany', 'Starý Tekov',
+    'Podlužany', 'Hronské Kosihy', 'Čajkov', 'Rybník', 'Tlmače',
+    'Tlmače Lipník', 'Mochovce', 'Kalná n. Hronom', 'Horná Seč'
+  ], {
+    message: 'Mesto/obec je povinné pre doručenie domov',
+  }).optional(),
   fullName: z.string()
     .min(2, 'Meno musí obsahovať aspoň 2 znaky')
     .max(100, 'Meno je príliš dlhé'),

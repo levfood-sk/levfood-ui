@@ -48,6 +48,7 @@ const formData = ref({
   },
   step3: {
     deliveryType: '' as 'prevádzka' | 'domov' | '',
+    deliveryCity: '' as string,
     fullName: '',
     phone: '+421',
     email: '',
@@ -89,10 +90,11 @@ const showDietaryRequirements = computed(() =>
 
 // Zod schemas - address is always required (for billing purposes)
 const step3Schema = computed(() => {
-  return z.object({
+  const baseSchema = z.object({
     deliveryType: z.enum(['prevádzka', 'domov'] as const, {
       required_error: 'Typ doručenia je povinný'
     }),
+    deliveryCity: z.string().optional(),
     fullName: z.string().min(2, 'Meno musí obsahovať aspoň 2 znaky'),
     phone: z.string()
       .min(1, 'Telefónne číslo je povinné')
@@ -100,6 +102,16 @@ const step3Schema = computed(() => {
     email: z.string().email('Neplatná emailová adresa'),
     address: z.string().min(5, 'Adresa musí obsahovať aspoň 5 znakov')
   })
+
+  // Add deliveryCity requirement when deliveryType is 'domov'
+  if (formData.value.step3.deliveryType === 'domov') {
+    return baseSchema.refine(
+      (data) => data.deliveryCity && data.deliveryCity.length > 0,
+      { message: 'Mesto/obec je povinné', path: ['deliveryCity'] }
+    )
+  }
+
+  return baseSchema
 })
 
 const steps = computed(() => [
@@ -156,6 +168,24 @@ const dietaryOptions = [
   { value: 'vegetariánska', label: 'Vegetariánska' },
   { value: 'bezlepková', label: 'Bezlepková' },
   { value: 'žiadne', label: 'Nemám špeciálne požiadavky' }
+]
+
+// Delivery city options (for home delivery)
+const deliveryCityOptions = [
+  { label: 'Levice', value: 'Levice' },
+  { label: 'Géňa', value: 'Géňa' },
+  { label: 'Kalinčiakovo', value: 'Kalinčiakovo' },
+  { label: 'Hronské Klačany', value: 'Hronské Klačany' },
+  { label: 'Starý Tekov', value: 'Starý Tekov' },
+  { label: 'Podlužany', value: 'Podlužany' },
+  { label: 'Hronské Kosihy', value: 'Hronské Kosihy' },
+  { label: 'Čajkov', value: 'Čajkov' },
+  { label: 'Rybník', value: 'Rybník' },
+  { label: 'Tlmače', value: 'Tlmače' },
+  { label: 'Tlmače Lipník', value: 'Tlmače Lipník' },
+  { label: 'Mochovce', value: 'Mochovce' },
+  { label: 'Kalná n. Hronom', value: 'Kalná n. Hronom' },
+  { label: 'Horná Seč', value: 'Horná Seč' }
 ]
 
 // Personal info options (Niečo o tebe)
@@ -525,10 +555,11 @@ watch(() => formData.value.step1.package, (newPackage) => {
   }
 })
 
-// Watch for delivery type changes to clear courier notes when switching to 'prevádzka'
+// Watch for delivery type changes to clear courier notes and city when switching to 'prevádzka'
 watch(() => formData.value.step3.deliveryType, (newType) => {
   if (newType === 'prevádzka') {
     formData.value.step3.courierNotes = ''
+    formData.value.step3.deliveryCity = ''
   }
 })
 
@@ -728,6 +759,7 @@ async function saveOrder(stripePaymentIntentId: string) {
 
       // Step 3
       deliveryType: formData.value.step3.deliveryType as any,
+      deliveryCity: formData.value.step3.deliveryType === 'domov' ? formData.value.step3.deliveryCity as any : undefined,
       fullName: formData.value.step3.fullName,
       phone: formData.value.step3.phone,
       email: formData.value.step3.email,
@@ -1044,6 +1076,7 @@ watch(() => currentStep.value, (newStep) => {
                 v-model="formData.step3.fullName" 
                 size="lg" 
                 placeholder="Ján Dvořáček"
+                autocomplete="name"
                 class="w-full"
                 :highlight="!!(touched.fullName && errors.fullName)"
                 @blur="validateField('fullName')"
@@ -1065,6 +1098,7 @@ watch(() => currentStep.value, (newStep) => {
                 size="lg" 
                 placeholder="+421 9XX XXX XXX"
                 type="tel"
+                autocomplete="tel"
                 class="w-full"
                 :highlight="!!(touched.phone && errors.phone)"
                 @blur="validateField('phone')"
@@ -1086,6 +1120,7 @@ watch(() => currentStep.value, (newStep) => {
                 type="email"
                 size="lg"
                 placeholder="email@levfood.sk"
+                autocomplete="email"
                 icon="i-lucide-mail"
                 class="w-full"
                 :highlight="!!(touched.email && errors.email)"
@@ -1093,6 +1128,22 @@ watch(() => currentStep.value, (newStep) => {
                 @input="validateFieldOnInput('email')"
                 :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]', icon: 'text-[var(--color-dark-green)]' }"
 
+              />
+            </UFormField>
+
+            <!-- Delivery City Select - only for home delivery -->
+            <UFormField 
+              v-if="formData.step3.deliveryType === 'domov'"
+              label="Mesto/obec" 
+              required 
+              class="w-full"
+            >
+              <USelect
+                v-model="formData.step3.deliveryCity"
+                :items="deliveryCityOptions"
+                placeholder="Vyber mesto alebo obec"
+                size="lg"
+                class="pricing-select w-full bg-transparent h-[3.5rem] data-[state=open]:border-[var(--color-orange)] data-[state=closed]:border-[var(--color-dark-green)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-dark-green)] data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-[var(--color-orange)] data-[state=closed]:ring-[var(--color-dark-green)]"
               />
             </UFormField>
 
@@ -1113,6 +1164,7 @@ watch(() => currentStep.value, (newStep) => {
                 v-model="formData.step3.address"
                 size="lg"
                 placeholder="Ulica, číslo, mesto, PSČ"
+                autocomplete="street-address"
                 class="w-full"
                 :highlight="!!(touched.address && errors.address)"
                 @blur="validateField('address')"

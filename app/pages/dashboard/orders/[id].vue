@@ -298,6 +298,11 @@ onMounted(() => {
               <p class="text-base font-medium text-slate-900">{{ deliveryTypeLabel }}</p>
             </div>
 
+            <div v-if="order.deliveryType === 'domov' && order.deliveryCity">
+              <p class="text-sm text-slate-600">Mesto/obec doručenia</p>
+              <p class="text-base font-medium text-slate-900">{{ order.deliveryCity }}</p>
+            </div>
+
             <div v-if="order.deliveryType === 'domov' && order.deliveryAddress">
               <p class="text-sm text-slate-600">Dodacia adresa</p>
               <p class="text-base font-medium text-slate-900">{{ order.deliveryAddress }}</p>
