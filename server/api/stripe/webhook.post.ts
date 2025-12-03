@@ -205,11 +205,12 @@ export default defineEventHandler(async (event) => {
           }
 
           // Calculate pricing with discount support
-          // Use exact original prices before 10% discount (from objednavka.vue pricing)
+          // Original prices BEFORE 10% discount - Superfaktura applies discount to get final price
+          // ŠTANDARD/PREMIUM: original price → 10% off → final price (rounded)
           const originalPrices: Record<string, Record<string, number>> = {
-            'EKONOMY': { '5': 29900, '6': 33900 }, 
-            'ŠTANDARD': { '5': 32300, '6': 35900 },
-            'PREMIUM': { '5': 37700, '6': 41300 }, 
+            'EKONOMY': { '5': 29900, '6': 33900 },
+            'ŠTANDARD': { '5': 35900, '6': 39900 }, // 359→323, 399→359 after 10%
+            'PREMIUM': { '5': 41900, '6': 45900 },  // 419→377, 459→413 after 10%
             'OFFICE': { '5': 24900, '6': 24900 },
           }
 
@@ -221,33 +222,36 @@ export default defineEventHandler(async (event) => {
             ? (originalPrices[order.package]?.[order.duration] || order.totalPrice)
             : order.totalPrice
 
-          // Convert to euros and round down to whole euros (accountant will handle decimals)
-          const unitPrice = Math.floor(originalPrice / 100)
+          // Convert to euros
+          const originalPriceEuros = originalPrice / 100
+          const finalPriceEuros = order.totalPrice / 100
 
-          // Build invoice item with proper description and discount
+          // Calculate nominal discount amount (e.g., 359 - 323 = 36€)
+          const discountAmount = hasDiscount ? originalPriceEuros - finalPriceEuros : 0
+
+          // Build invoice item - use original price, discount will be on invoice level
           const invoiceItem: InvoiceItem = {
             name: `LevFood ${order.package} balík`,
-            description: `${order.daysCount} dní / Od: ${order.deliveryStartDate} / ${hasDiscount ? '\n Zľava 10%' : ''}`,
+            description: `${order.daysCount} dní / Od: ${order.deliveryStartDate}${hasDiscount ? ' (Zľava 10%)' : ''}`,
             quantity: 1,
             unit: 'balík',
-            unit_price: unitPrice,
+            unit_price: originalPriceEuros, // Original price before discount
             tax: 0,
-            discount: hasDiscount ? 10 : 0, // 10% discount for ŠTANDARD and PREMIUM
           }
 
           console.log('💰 Invoice pricing:', {
             package: order.package,
             hasDiscount,
-            originalPrice: originalPrice / 100,
-            finalPrice: order.totalPrice / 100,
-            discount: hasDiscount ? '10%' : 'none',
+            originalPrice: `${originalPriceEuros}€`,
+            discountAmount: `${discountAmount}€`,
+            finalPrice: `${finalPriceEuros}€`,
           })
 
           // Get current date for invoice
           const now = new Date()
           const invoiceDate = now.toISOString().split('T')[0] // YYYY-MM-DD format
 
-          // Build invoice data - mark as already paid
+          // Build invoice data - mark as already paid, with discount on invoice level
           const invoiceData: InvoiceData = {
             name: `Objednávka #${orderId}`,
             currency: 'EUR',
@@ -255,6 +259,8 @@ export default defineEventHandler(async (event) => {
             comment: `LevFood ${order.package} balík\nDoručenie: ${order.deliveryType}\nPoznámky: ${order.notes || 'Bez poznámok'}`,
             delivery: invoiceDate, // Set delivery date to today
             due: invoiceDate, // Set due date to today (already paid)
+            rounding: 'item_ext',
+            discount_total: discountAmount, // Nominal discount (e.g., 36€) on invoice level
           }
 
           // Create invoice request

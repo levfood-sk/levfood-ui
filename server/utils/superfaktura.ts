@@ -32,7 +32,8 @@ export interface InvoiceItem {
   unit?: string
   unit_price: number
   tax: number // Tax rate in percentage (e.g., 20 for 20%)
-  discount?: number
+  discount?: number // Percentage discount on item
+  discount_description?: string // Discount description
 }
 
 export interface InvoiceData {
@@ -44,6 +45,9 @@ export interface InvoiceData {
   constant?: string // Constant symbol
   delivery?: string // Delivery date
   due?: string // Due date
+  rounding?: string // Rounding mode: 'item', 'item_ext', 'document'
+  discount?: number // Percentage discount on whole invoice
+  discount_total?: number // Nominal discount (fixed €), only used if discount is not set
 }
 
 export interface CreateInvoiceRequest {

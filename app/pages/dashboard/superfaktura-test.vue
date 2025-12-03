@@ -5,6 +5,8 @@
 -->
 
 <script setup lang="ts">
+import type { PackageType, DurationType } from '~/lib/types/order'
+
 definePageMeta({
   layout: 'dashboard',
 })
@@ -13,6 +15,62 @@ definePageMeta({
 const loading = ref(false)
 const result = ref<any>(null)
 const error = ref<string | null>(null)
+
+// Package options for select
+const packageOptions = [
+  { label: 'EKONOMY', value: 'EKONOMY' },
+  { label: 'ŠTANDARD (10% zľava)', value: 'ŠTANDARD' },
+  { label: 'PREMIUM (10% zľava)', value: 'PREMIUM' },
+  { label: 'OFFICE', value: 'OFFICE' },
+]
+
+const durationOptions = [
+  { label: '5 dní (20 dní celkom)', value: '5' },
+  { label: '6 dní (24 dní celkom)', value: '6' },
+]
+
+// Original prices BEFORE 10% discount (matching webhook.post.ts)
+// Superfaktura applies the discount to get the final price
+const ORIGINAL_PRICES: Record<PackageType, Record<DurationType, number>> = {
+  'EKONOMY': { '5': 29900, '6': 33900 },
+  'ŠTANDARD': { '5': 35900, '6': 39900 }, // 359→323, 399→359 after 10%
+  'PREMIUM': { '5': 41900, '6': 45900 },  // 419→377, 459→413 after 10%
+  'OFFICE': { '5': 24900, '6': 24900 },
+}
+
+// Final prices after discount (what customer pays) - rounded values
+const FINAL_PRICES: Record<PackageType, Record<DurationType, number>> = {
+  'EKONOMY': { '5': 29900, '6': 33900 },
+  'ŠTANDARD': { '5': 32300, '6': 35900 }, // 359*0.9=323.1→323, 399*0.9=359.1→359
+  'PREMIUM': { '5': 37700, '6': 41300 },  // 419*0.9=377.1→377, 459*0.9=413.1→413
+  'OFFICE': { '5': 24900, '6': 24900 },
+}
+
+// Form data for package invoice creation
+const packageForm = reactive({
+  package: 'ŠTANDARD' as PackageType,
+  duration: '5' as DurationType,
+  clientName: 'Test Klient - Package',
+  clientEmail: 'test@levfood.sk',
+})
+
+// Computed pricing info
+const pricingInfo = computed(() => {
+  const pkg = packageForm.package
+  const dur = packageForm.duration
+  const hasDiscount = pkg === 'ŠTANDARD' || pkg === 'PREMIUM'
+  const originalPrice = ORIGINAL_PRICES[pkg][dur] / 100
+  const finalPrice = FINAL_PRICES[pkg][dur] / 100
+  const daysCount = dur === '5' ? 20 : 24
+
+  return {
+    hasDiscount,
+    originalPrice,
+    finalPrice,
+    discountAmount: hasDiscount ? originalPrice - finalPrice : 0,
+    daysCount,
+  }
+})
 
 // Form data for manual invoice creation
 const manualForm = reactive({
@@ -32,6 +90,58 @@ const stripeForm = reactive({
   customerName: '',
   customerEmail: '',
 })
+
+/**
+ * Create package-based invoice
+ */
+const createPackageInvoice = async () => {
+  loading.value = true
+  error.value = null
+  result.value = null
+
+  try {
+    const response = await $fetch('/api/test/superfaktura-package', {
+      method: 'POST',
+      body: {
+        package: packageForm.package,
+        duration: packageForm.duration,
+        clientName: packageForm.clientName,
+        clientEmail: packageForm.clientEmail,
+      },
+    })
+
+    result.value = response
+  } catch (e: any) {
+    error.value = e.data?.message || e.message || 'Failed to create package invoice'
+    console.error('Package invoice creation error:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+/**
+ * Download PDF from base64
+ */
+const downloadPdf = () => {
+  if (!result.value?.invoicePdf) return
+
+  const byteCharacters = atob(result.value.invoicePdf)
+  const byteNumbers = new Array(byteCharacters.length)
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i)
+  }
+  const byteArray = new Uint8Array(byteNumbers)
+  const blob = new Blob([byteArray], { type: 'application/pdf' })
+
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `faktura-${result.value.invoiceNumber || result.value.invoiceId}.pdf`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
 
 /**
  * Create manual invoice
@@ -122,6 +232,105 @@ const clearResults = () => {
         <p class="text-slate-600 mt-1">Test invoice generation via REST API</p>
       </div>
     </div>
+
+    <!-- Package Invoice Test - NEW SECTION -->
+    <UCard class="border-2 border-primary-200 bg-primary-50/30">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-heroicons-cube" class="w-5 h-5 text-primary-500" />
+          <h3 class="text-lg font-semibold">Package Invoice Test</h3>
+          <UBadge color="primary" variant="soft">Debug Tool</UBadge>
+        </div>
+      </template>
+
+      <form @submit.prevent="createPackageInvoice" class="space-y-4">
+        <UAlert
+          icon="i-heroicons-information-circle"
+          color="info"
+          variant="soft"
+          title="Package Invoice Testing"
+          description="Select a package and duration to create a test invoice with the same pricing logic as the production webhook."
+        />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Package *</label>
+            <USelect
+              v-model="packageForm.package"
+              :items="packageOptions"
+              placeholder="Select package"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Duration *</label>
+            <USelect
+              v-model="packageForm.duration"
+              :items="durationOptions"
+              placeholder="Select duration"
+            />
+          </div>
+        </div>
+
+        <!-- Pricing Preview -->
+        <div class="bg-white rounded-lg p-4 border border-slate-200">
+          <h4 class="text-sm font-semibold text-slate-700 mb-3">Price Preview</h4>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <p class="text-slate-500">Original Price</p>
+              <p class="text-lg font-bold text-slate-900">{{ pricingInfo.originalPrice }}€</p>
+            </div>
+            <div v-if="pricingInfo.hasDiscount">
+              <p class="text-slate-500">Discount (10%)</p>
+              <p class="text-lg font-bold text-error-600">-{{ pricingInfo.discountAmount.toFixed(2) }}€</p>
+            </div>
+            <div>
+              <p class="text-slate-500">Final Price</p>
+              <p class="text-lg font-bold text-success-600">{{ pricingInfo.finalPrice }}€</p>
+            </div>
+            <div>
+              <p class="text-slate-500">Days</p>
+              <p class="text-lg font-bold text-slate-900">{{ pricingInfo.daysCount }} dní</p>
+            </div>
+          </div>
+          <p v-if="pricingInfo.hasDiscount" class="mt-2 text-xs text-amber-600">
+            ⚠️ ŠTANDARD and PREMIUM packages have 10% discount applied on invoice
+          </p>
+        </div>
+
+        <UDivider label="Optional Client Data" />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Client Name</label>
+            <UInput
+              v-model="packageForm.clientName"
+              placeholder="Test Client"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Client Email</label>
+            <UInput
+              v-model="packageForm.clientEmail"
+              type="email"
+              placeholder="test@levfood.sk"
+            />
+          </div>
+        </div>
+
+        <UButton
+          type="submit"
+          color="primary"
+          block
+          :loading="loading"
+          :disabled="loading"
+          icon="i-heroicons-document-plus"
+        >
+          Create Package Invoice
+        </UButton>
+      </form>
+    </UCard>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Manual Invoice Creation -->
@@ -328,8 +537,58 @@ const clearResults = () => {
           icon="i-heroicons-check-circle"
         />
 
-        <!-- Invoice Details -->
-        <div v-if="result.invoice" class="bg-slate-50 rounded-lg p-4 space-y-3">
+        <!-- Package Invoice Details -->
+        <div v-if="result.pricing" class="bg-slate-50 rounded-lg p-4 space-y-3">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p class="text-sm font-medium text-slate-500">Invoice Number</p>
+              <p class="text-lg font-semibold text-slate-900">
+                {{ result.invoiceNumber || result.invoiceId }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-slate-500">Package</p>
+              <p class="text-lg font-semibold text-slate-900">
+                {{ result.package }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-slate-500">Unit Price (on invoice)</p>
+              <p class="text-lg font-semibold text-slate-900">
+                {{ result.pricing.unitPriceOnInvoice }}€
+              </p>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-slate-500">Expected Final</p>
+              <p class="text-lg font-semibold text-success-600">
+                {{ result.pricing.expectedFinalPrice }}€
+              </p>
+            </div>
+          </div>
+
+          <div v-if="result.pricing.hasDiscount" class="mt-2 p-2 bg-amber-50 rounded border border-amber-200">
+            <p class="text-sm text-amber-800">
+              <strong>Discount Applied:</strong> {{ result.pricing.discountPercent }}%
+              ({{ result.pricing.originalPrice }}€ → {{ result.pricing.expectedFinalPrice }}€)
+            </p>
+          </div>
+
+          <!-- PDF Download Button -->
+          <div v-if="result.hasPdf" class="pt-3 border-t border-slate-200">
+            <UButton
+              color="primary"
+              variant="soft"
+              icon="i-heroicons-arrow-down-tray"
+              @click="downloadPdf"
+            >
+              Download Invoice PDF
+            </UButton>
+            <p class="text-xs text-slate-500 mt-1">PDF size: {{ (result.pdfSize / 1024).toFixed(1) }} KB</p>
+          </div>
+        </div>
+
+        <!-- Standard Invoice Details (for manual/stripe invoices) -->
+        <div v-else-if="result.invoice" class="bg-slate-50 rounded-lg p-4 space-y-3">
           <div v-if="result.invoice.Invoice">
             <p class="text-sm font-medium text-slate-500">Invoice Number</p>
             <p class="text-lg font-semibold text-slate-900">
