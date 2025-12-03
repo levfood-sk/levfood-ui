@@ -126,11 +126,22 @@ function formatDate(timestamp: any): string {
   })
 }
 
+// Parse Slovak date format "DD.MM.YYYY"
+function parseSlovakDate(dateStr: string): Date | null {
+  const parts = dateStr.split('.')
+  if (parts.length !== 3) return null
+  const day = Number(parts[0])
+  const month = Number(parts[1])
+  const year = Number(parts[2])
+  return new Date(year, month - 1, day)
+}
+
 // Calculate age from birthdate
 function calculateAge(birthDate?: string): number | null {
   if (!birthDate) return null
+  const birth = parseSlovakDate(birthDate)
+  if (!birth) return null
   const today = new Date()
-  const birth = new Date(birthDate)
   let age = today.getFullYear() - birth.getFullYear()
   const monthDiff = today.getMonth() - birth.getMonth()
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
@@ -332,7 +343,7 @@ onMounted(() => {
             <div v-if="order.client.birthDate">
               <p class="text-sm text-slate-600">Dátum narodenia / Vek</p>
               <p class="text-base font-medium text-slate-900">
-                {{ new Date(order.client.birthDate).toLocaleDateString('sk-SK') }}
+                {{ order.client.birthDate }}
                 <span v-if="calculateAge(order.client.birthDate)" class="text-slate-600">
                   ({{ calculateAge(order.client.birthDate) }} rokov)
                 </span>
