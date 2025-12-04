@@ -145,6 +145,32 @@ export async function createInvoice(
 }
 
 /**
+ * Mark invoice as paid
+ */
+export async function payInvoice(
+  invoiceId: number,
+  amount: number,
+  config: SuperfakturaConfig,
+  options?: {
+    currency?: string
+    payment_type?: string // 'cash', 'card', 'transfer', 'paypal', etc.
+    date?: string // YYYY-MM-DD format
+  }
+): Promise<SuperfakturaResponse> {
+  const data = {
+    InvoicePayment: {
+      invoice_id: invoiceId,
+      amount,
+      currency: options?.currency || 'EUR',
+      payment_type: options?.payment_type || 'card',
+      date: options?.date || new Date().toISOString().split('T')[0],
+    },
+  }
+
+  return makeSuperfakturaRequest(`/invoice_payments/add`, data, config)
+}
+
+/**
  * Send invoice via email
  */
 export async function sendInvoiceEmail(

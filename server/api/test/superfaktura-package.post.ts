@@ -15,7 +15,7 @@
  * }
  */
 
-import { createInvoice, downloadInvoicePDF } from '~~/server/utils/superfaktura'
+import { createInvoice, downloadInvoicePDF, payInvoice } from '~~/server/utils/superfaktura'
 import type { CreateInvoiceRequest, InvoiceClient, InvoiceItem, InvoiceData } from '~~/server/utils/superfaktura'
 import type { PackageType, DurationType } from '~~/app/lib/types/order'
 
@@ -184,6 +184,18 @@ export default defineEventHandler(async (event) => {
       invoiceNumber,
       package: packageType,
     })
+
+    // Mark invoice as paid
+    console.log('💳 Marking invoice as paid...')
+    const payResult = await payInvoice(invoiceId, finalPriceEuros, superfakturaConfig, {
+      payment_type: 'card',
+    })
+
+    if (payResult.error) {
+      console.error('❌ Failed to mark invoice as paid:', payResult.error_message)
+    } else {
+      console.log('✅ Invoice marked as paid')
+    }
 
     // Download invoice PDF
     console.log('📥 Downloading package test invoice PDF...')
