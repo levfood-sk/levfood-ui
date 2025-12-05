@@ -234,6 +234,9 @@ async function resendConfirmationEmail() {
       description: `Email bol odoslaný na ${data.email}`,
       color: 'success',
     })
+
+    // Reload order to update email status
+    await loadOrder()
   } catch (error: any) {
     console.error('Error resending email:', error)
     useToast().add({
@@ -548,6 +551,36 @@ onMounted(() => {
             <div v-if="order.superfakturaInvoiceNumber">
               <p class="text-sm text-slate-600">Číslo faktúry</p>
               <p class="text-base font-medium text-slate-900">{{ order.superfakturaInvoiceNumber }}</p>
+            </div>
+
+            <!-- Email Status -->
+            <div>
+              <p class="text-sm text-slate-600">Potvrdzovací email</p>
+              <div class="flex items-center gap-2 mt-1">
+                <span
+                  v-if="(order as any).confirmationEmailSent === true"
+                  class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium text-white bg-green-600"
+                >
+                  <UIcon name="i-heroicons-check" class="w-3 h-3 mr-1" />
+                  Odoslaný
+                </span>
+                <span
+                  v-else-if="(order as any).confirmationEmailSent === false"
+                  class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium text-white bg-red-600"
+                >
+                  <UIcon name="i-heroicons-x-mark" class="w-3 h-3 mr-1" />
+                  Zlyhalo
+                </span>
+                <span
+                  v-else
+                  class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium text-slate-700 bg-slate-200"
+                >
+                  Neznámy stav
+                </span>
+              </div>
+              <p v-if="(order as any).confirmationEmailError" class="text-xs text-red-600 mt-1">
+                {{ (order as any).confirmationEmailError }}
+              </p>
             </div>
 
             <div>

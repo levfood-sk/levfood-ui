@@ -15,7 +15,18 @@ import { createOrderSchema, calculateOrderPrice } from '~~/app/lib/types/order'
 import type { Order, CreateOrderInput, Client } from '~~/app/lib/types/order'
 import { sendOrderNotification, sendClientOrderConfirmation } from '~~/server/utils/email'
 
+// Logging helper for consistent format
+const log = {
+  info: (msg: string, data?: object) => console.log(`[ORDER] ${msg}`, data ? JSON.stringify(data) : ''),
+  success: (msg: string, data?: object) => console.log(`[ORDER] ✅ ${msg}`, data ? JSON.stringify(data) : ''),
+  warn: (msg: string, data?: object) => console.warn(`[ORDER] ⚠️ ${msg}`, data ? JSON.stringify(data) : ''),
+  error: (msg: string, data?: object) => console.error(`[ORDER] ❌ ${msg}`, data ? JSON.stringify(data) : ''),
+}
+
 export default defineEventHandler(async (event) => {
+  const startTime = Date.now()
+  log.info('=== ORDER CREATION STARTED ===')
+
   try {
     // Parse request body
     const body = await readBody<CreateOrderInput>(event)
@@ -211,7 +222,8 @@ export default defineEventHandler(async (event) => {
     // Save order to Firestore
     const orderRef = await db.collection('orders').add(order)
 
-    console.log('Order created successfully:', {
+    const duration = Date.now() - startTime
+    log.success(`Order created in ${duration}ms`, {
       orderId,
       firestoreId: orderRef.id,
       clientId,
@@ -219,10 +231,12 @@ export default defineEventHandler(async (event) => {
       package: order.package,
       deliveryCity: order.deliveryCity || null,
       totalPrice: order.totalPrice,
+      stripePaymentIntentId: order.stripePaymentIntentId,
     })
 
     // Send order notification email to admin (fire-and-forget)
     try {
+      log.info('Sending admin notification email...')
       const config = useRuntimeConfig()
 
       // Calculate end date from start date and days count
@@ -243,7 +257,7 @@ export default defineEventHandler(async (event) => {
       // Format price from cents to euros
       const priceInEuros = (order.totalPrice / 100).toFixed(0)
 
-      await sendOrderNotification(
+      const adminEmailResult = await sendOrderNotification(
         config.adminNotificationEmails,
         {
           orderId: String(orderId),
@@ -256,15 +270,21 @@ export default defineEventHandler(async (event) => {
         }
       )
 
-      console.log('Order notification email sent to admin')
-    } catch (emailError) {
+      if (adminEmailResult.success) {
+        log.success('Admin notification email sent', { to: config.adminNotificationEmails })
+      } else {
+        log.error('Admin notification email FAILED', { error: adminEmailResult.error })
+      }
+    } catch (emailError: any) {
       // Log error but don't fail the order creation
-      console.error('Failed to send order notification email:', emailError)
+      log.error('Admin notification email exception', { error: emailError.message })
     }
 
     // Note: Client order confirmation email is now sent by the Stripe webhook
     // after invoice generation, so the invoice PDF can be attached.
     // See: server/api/stripe/webhook.post.ts
+
+    log.info('=== ORDER CREATION COMPLETE ===', { orderId, clientId })
 
     // Return order details
     return {
@@ -276,7 +296,12 @@ export default defineEventHandler(async (event) => {
       message: 'Objednávka bola úspešne vytvorená',
     }
   } catch (error: any) {
-    console.error('Order creation error:', error)
+    const duration = Date.now() - startTime
+    log.error(`Order creation FAILED after ${duration}ms`, {
+      error: error.message,
+      statusCode: error.statusCode,
+      stack: error.stack?.split('\n').slice(0, 3).join(' '),
+    })
 
     // Handle specific error types
     if (error.statusCode) {

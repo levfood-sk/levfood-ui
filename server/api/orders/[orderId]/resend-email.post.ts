@@ -13,10 +13,22 @@ import { downloadInvoicePDF } from '~~/server/utils/superfaktura'
 import { sendClientOrderConfirmation } from '~~/server/utils/email'
 import type { Order, Client } from '~~/app/lib/types/order'
 
+// Logging helper for consistent format
+const log = {
+  info: (msg: string, data?: object) => console.log(`[RESEND] ${msg}`, data ? JSON.stringify(data) : ''),
+  success: (msg: string, data?: object) => console.log(`[RESEND] ✅ ${msg}`, data ? JSON.stringify(data) : ''),
+  warn: (msg: string, data?: object) => console.warn(`[RESEND] ⚠️ ${msg}`, data ? JSON.stringify(data) : ''),
+  error: (msg: string, data?: object) => console.error(`[RESEND] ❌ ${msg}`, data ? JSON.stringify(data) : ''),
+}
+
 export default defineEventHandler(async (event) => {
   const orderId = getRouterParam(event, 'orderId')
+  const startTime = Date.now()
+
+  log.info('=== MANUAL EMAIL RESEND STARTED ===', { orderId })
 
   if (!orderId) {
+    log.error('Missing orderId parameter')
     throw createError({
       statusCode: 400,
       message: 'Order ID is required',
@@ -29,6 +41,7 @@ export default defineEventHandler(async (event) => {
     const db = getFirestore(app)
 
     // Find order by orderId
+    log.info('Finding order...', { orderId })
     const ordersRef = db.collection('orders')
     const orderQuery = await ordersRef
       .where('orderId', '==', orderId)
@@ -36,6 +49,7 @@ export default defineEventHandler(async (event) => {
       .get()
 
     if (orderQuery.empty) {
+      log.error('Order not found', { orderId })
       throw createError({
         statusCode: 404,
         message: 'Objednávka nenájdená',
@@ -44,9 +58,11 @@ export default defineEventHandler(async (event) => {
 
     const orderDoc = orderQuery.docs[0]
     const order = orderDoc.data() as Order
+    log.success('Order found', { orderId, clientId: order.clientId, invoiceId: order.superfakturaInvoiceId })
 
     // Check if invoice exists
     if (!order.superfakturaInvoiceId) {
+      log.error('No invoice exists for order', { orderId })
       throw createError({
         statusCode: 400,
         message: 'Faktúra pre túto objednávku neexistuje',
@@ -54,9 +70,11 @@ export default defineEventHandler(async (event) => {
     }
 
     // Get client data
+    log.info('Loading client data...', { clientId: order.clientId })
     const clientDoc = await db.collection('clients').doc(order.clientId).get()
 
     if (!clientDoc.exists) {
+      log.error('Client not found', { clientId: order.clientId })
       throw createError({
         statusCode: 404,
         message: 'Klient nenájdený',
@@ -66,11 +84,14 @@ export default defineEventHandler(async (event) => {
     const client = clientDoc.data() as Client
 
     if (!client.email) {
+      log.error('Client has no email', { clientId: order.clientId })
       throw createError({
         statusCode: 400,
         message: 'Klient nemá emailovú adresu',
       })
     }
+
+    log.success('Client found', { email: client.email, fullName: client.fullName })
 
     // Configure Superfaktura
     const superfakturaConfig = {
@@ -81,23 +102,24 @@ export default defineEventHandler(async (event) => {
     }
 
     // Download invoice PDF
-    console.log('📥 Downloading invoice PDF for resend:', {
+    log.info('Downloading invoice PDF...', {
       invoiceId: order.superfakturaInvoiceId,
       isSandbox: superfakturaConfig.isSandbox,
-      hasApiKey: !!superfakturaConfig.apiKey,
     })
     const invoicePdf = await downloadInvoicePDF(order.superfakturaInvoiceId, superfakturaConfig)
 
     if (!invoicePdf) {
-      console.error('❌ Failed to download invoice PDF')
+      log.error('Failed to download invoice PDF', { invoiceId: order.superfakturaInvoiceId })
       throw createError({
         statusCode: 500,
         message: 'Nepodarilo sa stiahnuť faktúru',
       })
     }
 
+    log.success('Invoice PDF downloaded', { size: invoicePdf.length })
+
     // Send confirmation email
-    console.log('📧 Resending client confirmation email to:', client.email)
+    log.info('Sending email...', { to: client.email, orderId })
     const emailResult = await sendClientOrderConfirmation(client.email, {
       clientName: client.fullName || 'Zákazník',
       orderId: String(orderId),
@@ -105,20 +127,23 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!emailResult.success) {
-      console.error('❌ Failed to send email:', emailResult.error)
+      log.error('Email sending failed', { to: client.email, error: emailResult.error })
       throw createError({
         statusCode: 500,
         message: emailResult.error || 'Nepodarilo sa odoslať email',
       })
     }
 
-    // Update order to track email was sent
+    // Update order to track email was sent successfully
     await orderDoc.ref.update({
+      confirmationEmailSent: true,
       confirmationEmailSentAt: new Date(),
+      confirmationEmailError: null, // Clear any previous error
       updatedAt: new Date(),
     })
 
-    console.log('✅ Client confirmation email resent successfully:', {
+    const duration = Date.now() - startTime
+    log.success(`Email resent successfully in ${duration}ms`, {
       orderId,
       email: client.email,
       messageId: emailResult.messageId,
@@ -130,7 +155,12 @@ export default defineEventHandler(async (event) => {
       email: client.email,
     }
   } catch (error: any) {
-    console.error('Error resending confirmation email:', error)
+    const duration = Date.now() - startTime
+    log.error(`Resend failed after ${duration}ms`, {
+      orderId,
+      error: error.message,
+      statusCode: error.statusCode,
+    })
 
     if (error.statusCode) {
       throw error

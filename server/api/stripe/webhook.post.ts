@@ -36,7 +36,19 @@ import { sendClientOrderConfirmation } from '~~/server/utils/email'
 import type { CreateInvoiceRequest, InvoiceClient, InvoiceItem, InvoiceData } from '~~/server/utils/superfaktura'
 import type { Order } from '~~/app/lib/types/order'
 
+// Logging helper for consistent format
+const log = {
+  info: (msg: string, data?: object) => console.log(`[WEBHOOK] ${msg}`, data ? JSON.stringify(data) : ''),
+  success: (msg: string, data?: object) => console.log(`[WEBHOOK] ✅ ${msg}`, data ? JSON.stringify(data) : ''),
+  warn: (msg: string, data?: object) => console.warn(`[WEBHOOK] ⚠️ ${msg}`, data ? JSON.stringify(data) : ''),
+  error: (msg: string, data?: object) => console.error(`[WEBHOOK] ❌ ${msg}`, data ? JSON.stringify(data) : ''),
+  step: (step: string) => console.log(`[WEBHOOK] 📍 STEP: ${step}`),
+}
+
 export default defineEventHandler(async (event) => {
+  const startTime = Date.now()
+  log.info('=== WEBHOOK REQUEST STARTED ===')
+
   try {
     // Get raw body (required for signature verification)
     const body = await readRawBody(event)
@@ -63,7 +75,7 @@ export default defineEventHandler(async (event) => {
     const webhookSecret = config.stripeWebhookSecret
 
     if (!webhookSecret) {
-      console.error('STRIPE_WEBHOOK_SECRET is not configured')
+      log.error('STRIPE_WEBHOOK_SECRET is not configured')
       throw createError({
         statusCode: 500,
         message: 'Webhook secret not configured',
@@ -74,6 +86,7 @@ export default defineEventHandler(async (event) => {
     const stripe = await useServerStripe(event)
 
     // Verify webhook signature and construct event
+    log.step('Verifying webhook signature')
     let stripeEvent
     try {
       stripeEvent = stripe.webhooks.constructEvent(
@@ -82,15 +95,14 @@ export default defineEventHandler(async (event) => {
         webhookSecret
       )
     } catch (err: any) {
-      console.error('Webhook signature verification failed:', err.message)
+      log.error('Webhook signature verification failed', { error: err.message })
       throw createError({
         statusCode: 400,
         message: `Webhook Error: ${err.message}`,
       })
     }
 
-    // Log event for debugging
-    console.log('Stripe webhook received:', {
+    log.success('Webhook signature verified', {
       type: stripeEvent.type,
       id: stripeEvent.id,
       timestamp: new Date(stripeEvent.created * 1000).toISOString(),
@@ -100,21 +112,30 @@ export default defineEventHandler(async (event) => {
     switch (stripeEvent.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = stripeEvent.data.object
-        console.log('Payment succeeded:', {
-          id: paymentIntent.id,
+        log.info('=== PAYMENT_INTENT.SUCCEEDED ===', {
+          paymentIntentId: paymentIntent.id,
           amount: paymentIntent.amount,
           currency: paymentIntent.currency,
         })
 
+        // Track processing result for summary
+        const result: Record<string, any> = {
+          paymentIntentId: paymentIntent.id,
+          orderFound: false,
+          invoiceCreated: false,
+          pdfDownloaded: false,
+          emailSent: false,
+        }
+
         // Create Superfaktura invoice and send to client
         try {
           // Initialize Firebase Admin
+          log.step('1. Finding order in Firestore')
           const { app } = getFirebaseAdmin()
           const db = getFirestore(app)
 
           // Find the order associated with this payment intent
           // Retry up to 3 times with 2-second delays to handle race condition
-          // (order might not be created yet when webhook fires)
           const ordersRef = db.collection('orders')
           let orderQuery = await ordersRef
             .where('stripePaymentIntentId', '==', paymentIntent.id)
@@ -125,7 +146,7 @@ export default defineEventHandler(async (event) => {
           const maxRetries = 3
 
           while (orderQuery.empty && retries < maxRetries) {
-            console.log(`Order not found yet, retrying in 2 seconds... (attempt ${retries + 1}/${maxRetries})`)
+            log.warn(`Order not found, retrying in 2s (attempt ${retries + 1}/${maxRetries})`, { paymentIntentId: paymentIntent.id })
             await new Promise(resolve => setTimeout(resolve, 2000))
 
             orderQuery = await ordersRef
@@ -137,45 +158,57 @@ export default defineEventHandler(async (event) => {
           }
 
           if (orderQuery.empty) {
-            console.warn(`No order found for payment intent after ${maxRetries} retries:`, paymentIntent.id)
+            log.error('ORDER NOT FOUND after all retries - EMAIL WILL NOT BE SENT', {
+              paymentIntentId: paymentIntent.id,
+              retriesAttempted: maxRetries,
+            })
+            result.error = 'Order not found'
             break
           }
 
           const orderDoc = orderQuery.docs[0]
           const order = orderDoc.data() as Order
           const orderId = order.orderId
+          result.orderFound = true
+          result.orderId = orderId
 
-          console.log('✅ Found order for invoice generation:', {
+          log.success('Order found', {
             orderId,
             package: order.package,
             totalPrice: order.totalPrice,
-            deliveryStartDate: order.deliveryStartDate,
             clientId: order.clientId,
           })
 
           // Idempotency check - prevent duplicate invoices from webhook retries
           if (order.superfakturaInvoiceId) {
-            console.log('⚠️ Invoice already exists for order, skipping:', {
+            log.warn('Invoice already exists - skipping (idempotency check)', {
               orderId,
               existingInvoiceId: order.superfakturaInvoiceId,
             })
+            result.invoiceCreated = true
+            result.skippedReason = 'Invoice already exists'
             break
           }
 
           // Get client data
+          log.step('2. Loading client data')
           const clientDoc = await db.collection('clients').doc(order.clientId).get()
           if (!clientDoc.exists) {
-            console.error('❌ Client not found for order:', orderId)
+            log.error('CLIENT NOT FOUND - EMAIL WILL NOT BE SENT', { orderId, clientId: order.clientId })
+            result.error = 'Client not found'
             break
           }
 
           const client = clientDoc.data()
-          console.log('✅ Client found:', {
+          result.clientEmail = client?.email
+
+          log.success('Client found', {
             email: client?.email,
             fullName: client?.fullName,
           })
 
           // Configure Superfaktura
+          log.step('3. Creating Superfaktura invoice')
           const superfakturaConfig = {
             email: config.superfakturaEmail,
             apiKey: config.superfakturaApiKey,
@@ -183,7 +216,7 @@ export default defineEventHandler(async (event) => {
             isSandbox: config.superfakturaIsSandbox === 'true',
           }
 
-          console.log('📋 Superfaktura configuration:', {
+          log.info('Superfaktura config check', {
             hasEmail: !!superfakturaConfig.email,
             hasApiKey: !!superfakturaConfig.apiKey,
             companyId: superfakturaConfig.companyId,
@@ -192,7 +225,8 @@ export default defineEventHandler(async (event) => {
 
           // Only create invoice if Superfaktura is configured
           if (!superfakturaConfig.email || !superfakturaConfig.apiKey) {
-            console.warn('⚠️  Superfaktura not configured, skipping invoice generation')
+            log.error('SUPERFAKTURA NOT CONFIGURED - INVOICE WILL NOT BE CREATED', { orderId })
+            result.error = 'Superfaktura not configured'
             break
           }
 
@@ -239,7 +273,7 @@ export default defineEventHandler(async (event) => {
             tax: 0,
           }
 
-          console.log('💰 Invoice pricing:', {
+          log.info('Invoice pricing calculated', {
             package: order.package,
             hasDiscount,
             originalPrice: `${originalPriceEuros}€`,
@@ -271,26 +305,26 @@ export default defineEventHandler(async (event) => {
           }
 
           // Create invoice in Superfaktura
-          console.log('📤 Creating invoice in Superfaktura...')
+          log.info('Calling Superfaktura API to create invoice...')
           const invoiceResult = await createInvoice(invoiceRequest, superfakturaConfig)
 
           if (invoiceResult.error) {
-            console.error('❌ Failed to create Superfaktura invoice:', {
+            log.error('SUPERFAKTURA INVOICE CREATION FAILED', {
+              orderId,
               error: invoiceResult.error,
               message: invoiceResult.error_message,
-              data: invoiceResult.data,
+              responseData: JSON.stringify(invoiceResult.data),
             })
+            result.error = `Superfaktura error: ${invoiceResult.error_message}`
             break
           }
 
           const invoiceId = invoiceResult.data?.Invoice?.id
           const invoiceNumber = invoiceResult.data?.Invoice?.invoice_no_formatted
+          result.invoiceCreated = true
+          result.invoiceId = invoiceId
 
-          console.log('✅ Superfaktura invoice created:', {
-            invoiceId,
-            invoiceNumber,
-            orderId,
-          })
+          log.success('Superfaktura invoice created', { invoiceId, invoiceNumber, orderId })
 
           // Store invoice ID in order document for reference
           await orderDoc.ref.update({
@@ -300,22 +334,22 @@ export default defineEventHandler(async (event) => {
           })
 
           // Download invoice PDF
-          console.log('📥 Downloading invoice PDF...')
+          log.step('4. Downloading invoice PDF')
           const invoicePdf = await downloadInvoicePDF(invoiceId, superfakturaConfig)
 
           if (!invoicePdf) {
-            console.error('❌ Failed to download invoice PDF for invoice:', invoiceId)
+            log.error('PDF DOWNLOAD FAILED - Email will be sent without attachment', { invoiceId, orderId })
+            result.pdfDownloaded = false
           } else {
-            console.log('✅ Invoice PDF downloaded successfully:', {
-              invoiceId,
-              pdfSize: invoicePdf.length,
-            })
+            log.success('Invoice PDF downloaded', { invoiceId, pdfSize: invoicePdf.length })
+            result.pdfDownloaded = true
           }
 
           // Send client order confirmation email with invoice PDF attached
+          log.step('5. Sending client confirmation email')
           if (client?.email) {
             try {
-              console.log('📧 Sending client confirmation email to:', client.email)
+              log.info('Attempting to send email', { to: client.email, orderId, hasInvoice: !!invoicePdf })
 
               const emailResult = await sendClientOrderConfirmation(client.email, {
                 clientName: client.fullName || 'Zákazník',
@@ -323,24 +357,65 @@ export default defineEventHandler(async (event) => {
                 invoicePdf: invoicePdf || undefined,
               })
 
-              console.log('✅ Client order confirmation email sent:', {
-                email: client.email,
-                orderId,
-                hasInvoice: !!invoicePdf,
-                success: emailResult.success,
-                messageId: emailResult.messageId,
-              })
+              if (emailResult.success) {
+                log.success('EMAIL SENT SUCCESSFULLY', {
+                  to: client.email,
+                  orderId,
+                  hasInvoice: !!invoicePdf,
+                  messageId: emailResult.messageId,
+                })
+                result.emailSent = true
+                result.emailMessageId = emailResult.messageId
+
+                // Mark email as sent on the order
+                await orderDoc.ref.update({
+                  confirmationEmailSent: true,
+                  confirmationEmailSentAt: new Date(),
+                })
+              } else {
+                log.error('EMAIL SENDING FAILED - Check SMTP configuration', {
+                  to: client.email,
+                  orderId,
+                  error: emailResult.error,
+                })
+                result.emailSent = false
+                result.emailError = emailResult.error
+
+                // Mark email as failed on the order for admin visibility
+                await orderDoc.ref.update({
+                  confirmationEmailSent: false,
+                  confirmationEmailError: emailResult.error || 'Unknown error',
+                })
+              }
             } catch (emailError: any) {
-              console.error('❌ Failed to send client confirmation email:', {
+              log.error('EMAIL EXCEPTION', {
+                to: client.email,
+                orderId,
                 error: emailError.message,
                 stack: emailError.stack,
               })
+              result.emailSent = false
+              result.emailError = emailError.message
+
+              // Mark email as failed on the order
+              await orderDoc.ref.update({
+                confirmationEmailSent: false,
+                confirmationEmailError: emailError.message,
+              })
             }
           } else {
-            console.warn('⚠️  No client email found, skipping confirmation email')
+            log.warn('NO CLIENT EMAIL - Cannot send confirmation', { orderId, clientId: order.clientId })
+            result.emailSent = false
+            result.emailError = 'No client email'
           }
+
+          // Log final summary
+          log.info('=== PROCESSING COMPLETE ===', result)
         } catch (invoiceError: any) {
-          console.error('Invoice generation error:', invoiceError.message)
+          log.error('INVOICE GENERATION EXCEPTION', {
+            error: invoiceError.message,
+            stack: invoiceError.stack,
+          })
           // Don't fail the webhook if invoice creation fails
         }
 
@@ -349,42 +424,49 @@ export default defineEventHandler(async (event) => {
 
       case 'payment_intent.payment_failed': {
         const paymentIntent = stripeEvent.data.object
-        console.log('Payment failed:', {
-          id: paymentIntent.id,
-          last_payment_error: paymentIntent.last_payment_error?.message,
+        log.warn('PAYMENT FAILED', {
+          paymentIntentId: paymentIntent.id,
+          error: paymentIntent.last_payment_error?.message,
+          code: paymentIntent.last_payment_error?.code,
         })
-
-        // TODO: Update database with failed payment
-        // TODO: Notify customer of failure
         break
       }
 
       case 'payment_intent.created': {
         const paymentIntent = stripeEvent.data.object
-        console.log('Payment intent created:', {
-          id: paymentIntent.id,
+        log.info('Payment intent created', {
+          paymentIntentId: paymentIntent.id,
           amount: paymentIntent.amount,
+          status: paymentIntent.status,
         })
         break
       }
 
       case 'charge.succeeded': {
         const charge = stripeEvent.data.object
-        console.log('Charge succeeded:', {
-          id: charge.id,
+        log.info('Charge succeeded', {
+          chargeId: charge.id,
           amount: charge.amount,
         })
         break
       }
 
       default:
-        console.log(`Unhandled event type: ${stripeEvent.type}`)
+        log.info(`Unhandled event type: ${stripeEvent.type}`)
     }
+
+    const duration = Date.now() - startTime
+    log.info(`=== WEBHOOK COMPLETED in ${duration}ms ===`)
 
     // Return success response to Stripe
     return { received: true }
   } catch (error: any) {
-    console.error('Webhook processing error:', error)
+    const duration = Date.now() - startTime
+    log.error(`WEBHOOK FAILED after ${duration}ms`, {
+      error: error.message,
+      statusCode: error.statusCode,
+      stack: error.stack,
+    })
 
     throw createError({
       statusCode: error.statusCode || 500,

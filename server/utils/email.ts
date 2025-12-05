@@ -16,6 +16,14 @@ import type {
   ClientOrderConfirmationEmailProps
 } from '~/lib/types/email'
 
+// Logging helper for consistent format
+const log = {
+  info: (msg: string, data?: object) => console.log(`[EMAIL] ${msg}`, data ? JSON.stringify(data) : ''),
+  success: (msg: string, data?: object) => console.log(`[EMAIL] ✅ ${msg}`, data ? JSON.stringify(data) : ''),
+  warn: (msg: string, data?: object) => console.warn(`[EMAIL] ⚠️ ${msg}`, data ? JSON.stringify(data) : ''),
+  error: (msg: string, data?: object) => console.error(`[EMAIL] ❌ ${msg}`, data ? JSON.stringify(data) : ''),
+}
+
 let transporter: Transporter | null = null
 
 /**
@@ -26,6 +34,7 @@ function getTransporter(): Transporter {
     return transporter
   }
 
+  log.info('Initializing SMTP transporter...')
   const config = useRuntimeConfig()
 
   const emailConfig: EmailConfig = {
@@ -42,9 +51,27 @@ function getTransporter(): Transporter {
     }
   }
 
+  // Log config status (without sensitive data)
+  log.info('SMTP Configuration', {
+    host: emailConfig.host,
+    port: emailConfig.port,
+    secure: emailConfig.secure,
+    user: emailConfig.auth.user ? `${emailConfig.auth.user.substring(0, 3)}***` : 'MISSING',
+    hasPassword: !!emailConfig.auth.pass,
+    fromEmail: emailConfig.from.email,
+    fromName: emailConfig.from.name,
+  })
+
   // Validate required config
   if (!emailConfig.host || !emailConfig.auth.user || !emailConfig.auth.pass || !emailConfig.from.email) {
-    throw new Error('Missing required SMTP configuration. Please check your environment variables.')
+    const missing = []
+    if (!emailConfig.host) missing.push('SMTP_HOST')
+    if (!emailConfig.auth.user) missing.push('SMTP_USER')
+    if (!emailConfig.auth.pass) missing.push('SMTP_PASSWORD')
+    if (!emailConfig.from.email) missing.push('SMTP_FROM_EMAIL')
+
+    log.error('SMTP configuration incomplete', { missing })
+    throw new Error(`Missing required SMTP configuration: ${missing.join(', ')}`)
   }
 
   transporter = nodemailer.createTransport({
@@ -54,11 +81,10 @@ function getTransporter(): Transporter {
     auth: emailConfig.auth,
   })
 
-  console.log('SMTP transporter initialized:', {
+  log.success('SMTP transporter initialized', {
     host: emailConfig.host,
     port: emailConfig.port,
     secure: emailConfig.secure,
-    from: emailConfig.from.email,
   })
 
   return transporter
@@ -256,8 +282,32 @@ LevFood - Jedlo s láskou doručené
  * Send an email
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
+  const startTime = Date.now()
+  const logContext = {
+    to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
+    subject: options.subject,
+    attachments: options.attachments?.length || 0,
+  }
+
+  log.info('Preparing to send email', logContext)
+
   try {
     const config = useRuntimeConfig()
+
+    // Validate SMTP config before attempting
+    if (!config.smtpHost || !config.smtpUser || !config.smtpPassword) {
+      log.error('SMTP NOT CONFIGURED', {
+        hasHost: !!config.smtpHost,
+        hasUser: !!config.smtpUser,
+        hasPassword: !!config.smtpPassword,
+        hasFromEmail: !!config.smtpFromEmail,
+      })
+      return {
+        success: false,
+        error: 'SMTP not configured - missing host, user, or password',
+      }
+    }
+
     const transport = getTransporter()
 
     const mailOptions: any = {
@@ -276,26 +326,40 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
         content: att.content,
         contentType: att.contentType || 'application/octet-stream',
       }))
+      log.info('Email has attachments', {
+        count: options.attachments.length,
+        totalSize: options.attachments.reduce((sum, att) => sum + (att.content?.length || 0), 0),
+      })
     }
 
+    log.info('Calling SMTP transport.sendMail...')
     const info = await transport.sendMail(mailOptions)
+    const duration = Date.now() - startTime
 
-    console.log('Email sent successfully:', {
+    log.success(`Email sent in ${duration}ms`, {
       messageId: info.messageId,
-      to: mailOptions.to,
-      subject: options.subject,
-      attachments: options.attachments?.length || 0,
+      response: info.response,
+      ...logContext,
     })
 
     return {
       success: true,
       messageId: info.messageId,
     }
-  } catch (error) {
-    console.error('Error sending email:', error)
+  } catch (error: any) {
+    const duration = Date.now() - startTime
+    log.error(`Email FAILED after ${duration}ms`, {
+      ...logContext,
+      errorName: error?.name,
+      errorMessage: error?.message,
+      errorCode: error?.code,
+      errorCommand: error?.command,
+      errorResponseCode: error?.responseCode,
+      errorResponse: error?.response,
+    })
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: error instanceof Error ? `${error.name}: ${error.message}` : 'Unknown error occurred',
     }
   }
 }
