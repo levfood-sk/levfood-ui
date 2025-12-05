@@ -903,7 +903,10 @@ onMounted(() => {
                 <PhoneIcon class="w-8 h-8 flex-shrink-0 text-[var(--color-beige)]" />
                 <div>
                   <h4 class="font-condensed text-2xl font-bold text-[var(--color-beige)] mb-2">Telefón</h4>
-                  <a href="tel:+421911395933" class="text-lg text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors">+421 911 395 933</a>
+                  <p class="text-sm text-[var(--color-beige)] opacity-80">Prevádzka:</p>
+                  <a href="tel:+421948602100" class="text-lg text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors">+421 948 602 100</a>
+                  <p class="text-sm text-[var(--color-beige)] opacity-80 mt-2">Rozvoz:</p>
+                  <a href="tel:+421948602300" class="text-lg text-[var(--color-beige)] hover:text-[var(--color-orange)] transition-colors">+421 948 602 300</a>
                 </div>
               </div>
               

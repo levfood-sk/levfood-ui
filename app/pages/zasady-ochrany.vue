@@ -49,7 +49,8 @@ import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
                 <p>Sídlo: Ul. M. Monaca 5, 934 01 Levice</p>
                 <p>Prevádzka: Kalvínske námestie 126/2, 934 01 Levice</p>
                 <p>E-mail: <a href="mailto:info@levfood.sk" class="underline hover:text-[var(--color-orange)] transition-colors">info@levfood.sk</a></p>
-                <p>Telefón: <a href="tel:+421911395933" class="underline hover:text-[var(--color-orange)] transition-colors">+421 911 395 933</a></p>
+                <p>Telefón prevádzka: <a href="tel:+421948602100" class="underline hover:text-[var(--color-orange)] transition-colors">+421 948 602 100</a></p>
+                <p>Telefón rozvoz: <a href="tel:+421948602300" class="underline hover:text-[var(--color-orange)] transition-colors">+421 948 602 300</a></p>
               </div>
               <p class="text-lg md:text-xl leading-[150%] mt-4">
                 Prevádzkovateľ zodpovedá za ochranu a spracúvanie osobných údajov v súlade s platnou legislatívou.
@@ -210,7 +211,10 @@ import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
                   <a href="mailto:info@levfood.sk" class="underline hover:text-[var(--color-orange)] transition-colors">info@levfood.sk</a>
                 </p>
                 <p>
-                  <a href="tel:+421911395933" class="underline hover:text-[var(--color-orange)] transition-colors">+421 911 395 933</a>
+                  Prevádzka: <a href="tel:+421948602100" class="underline hover:text-[var(--color-orange)] transition-colors">+421 948 602 100</a>
+                </p>
+                <p>
+                  Rozvoz: <a href="tel:+421948602300" class="underline hover:text-[var(--color-orange)] transition-colors">+421 948 602 300</a>
                 </p>
               </div>
             </section>
