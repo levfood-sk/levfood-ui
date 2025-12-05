@@ -16,6 +16,7 @@ const order = ref<OrderWithClient | null>(null)
 const loading = ref(true)
 const updating = ref(false)
 const downloadingInvoice = ref(false)
+const resendingEmail = ref(false)
 
 // Load order and client data
 const loadOrder = async () => {
@@ -208,6 +209,40 @@ async function downloadInvoice() {
     })
   } finally {
     downloadingInvoice.value = false
+  }
+}
+
+// Resend client confirmation email with invoice
+async function resendConfirmationEmail() {
+  if (!order.value) return
+
+  resendingEmail.value = true
+
+  try {
+    const response = await fetch(`/api/orders/${orderId}/resend-email`, {
+      method: 'POST',
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Nepodarilo sa odoslať email')
+    }
+
+    useToast().add({
+      title: 'Úspech',
+      description: `Email bol odoslaný na ${data.email}`,
+      color: 'success',
+    })
+  } catch (error: any) {
+    console.error('Error resending email:', error)
+    useToast().add({
+      title: 'Chyba',
+      description: error.message || 'Nepodarilo sa odoslať email',
+      color: 'error',
+    })
+  } finally {
+    resendingEmail.value = false
   }
 }
 
@@ -451,17 +486,28 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center justify-between">
               <h3 class="text-xl font-bold text-slate-900">Platobné informácie</h3>
-              <UButton
-                v-if="order.superfakturaInvoiceId"
-                icon="i-heroicons-arrow-down-tray"
-                color="orange"
-                variant="soft"
-                class="cursor-pointer bg-orange text-white"
-                :loading="downloadingInvoice"
-                @click="downloadInvoice"
-              >
-                Stiahnuť faktúru
-              </UButton>
+              <div v-if="order.superfakturaInvoiceId" class="flex gap-2">
+                <UButton
+                  icon="i-heroicons-envelope"
+                  color="neutral"
+                  variant="soft"
+                  class="cursor-pointer"
+                  :loading="resendingEmail"
+                  @click="resendConfirmationEmail"
+                >
+                  Odoslať email
+                </UButton>
+                <UButton
+                  icon="i-heroicons-arrow-down-tray"
+                  color="orange"
+                  variant="soft"
+                  class="cursor-pointer bg-orange text-white"
+                  :loading="downloadingInvoice"
+                  @click="downloadInvoice"
+                >
+                  Stiahnuť faktúru
+                </UButton>
+              </div>
             </div>
           </template>
 
