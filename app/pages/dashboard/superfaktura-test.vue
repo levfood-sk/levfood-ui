@@ -186,14 +186,6 @@ onMounted(() => {
       </template>
 
       <form @submit.prevent="createPackageInvoice" class="space-y-4">
-        <UAlert
-          icon="i-heroicons-information-circle"
-          color="info"
-          variant="soft"
-          title="Testovanie faktúr"
-          description="Vyberte balík a dobu trvania pre vytvorenie testovacej faktúry s rovnakou cenovou logikou ako produkčný webhook."
-        />
-
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">Balík *</label>
