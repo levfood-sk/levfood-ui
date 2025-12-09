@@ -18,7 +18,7 @@
 import { createInvoice, downloadInvoicePDF, payInvoice } from '~~/server/utils/superfaktura'
 import type { CreateInvoiceRequest, InvoiceClient, InvoiceItem, InvoiceData } from '~~/server/utils/superfaktura'
 import type { PackageType, DurationType } from '~~/app/lib/types/order'
-import { ORIGINAL_PRICES, PACKAGE_PRICES, hasPackageDiscount } from '~~/app/lib/types/order'
+import { PACKAGE_PRICES } from '~~/app/lib/types/order'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -73,21 +73,9 @@ export default defineEventHandler(async (event) => {
       isSandbox: superfakturaConfig.isSandbox,
     })
 
-    // Check if package has discount (using single source of truth)
-    const hasDiscount = hasPackageDiscount(packageType)
-
-    // Get original price before discount
-    const originalPrice = ORIGINAL_PRICES[packageType][duration]
-    
-    // Get final price after discount (what customer actually pays)
+    // Get final price (what customer actually pays) - no discount shown on invoice
     const finalPrice = PACKAGE_PRICES[packageType][duration]
-
-    // Convert to euros (from cents)
-    const originalPriceEuros = originalPrice / 100
     const finalPriceEuros = finalPrice / 100
-
-    // Calculate nominal discount amount (e.g., 359 - 323 = 36€)
-    const discountAmount = hasDiscount ? originalPriceEuros - finalPriceEuros : 0
 
     // Calculate days
     const daysCount = duration === '5' ? 20 : 24
@@ -100,17 +88,17 @@ export default defineEventHandler(async (event) => {
       address: 'Test Street 123, Levice, 93401',
     }
 
-    // Build invoice item - use original price, discount will be on invoice level
+    // Build invoice item - use final price directly (discount not shown)
     const invoiceItem: InvoiceItem = {
       name: `LevFood ${packageType} balík`,
-      description: `${daysCount} dní / Test objednávka${hasDiscount ? ' (Zľava 10%)' : ''}`,
+      description: `${daysCount} dní / Test objednávka`,
       quantity: 1,
       unit: 'balík',
-      unit_price: originalPriceEuros, // Original price before discount
+      unit_price: finalPriceEuros, // Final price (discount already applied)
       tax: 0,
     }
 
-    // Build invoice data with discount_total on invoice level (not item level!)
+    // Build invoice data
     const now = new Date()
     const invoiceDate = now.toISOString().split('T')[0] // YYYY-MM-DD format
     const testOrderId = `TEST${Date.now().toString().slice(-6)}`
@@ -123,7 +111,6 @@ export default defineEventHandler(async (event) => {
       delivery: invoiceDate,
       due: invoiceDate,
       rounding: 'item_ext',
-      discount_total: discountAmount, // Nominal discount (e.g., 36€) on invoice level
     }
 
     // Create invoice request
@@ -137,10 +124,7 @@ export default defineEventHandler(async (event) => {
     console.log('💰 Invoice pricing details:', {
       package: packageType,
       duration,
-      hasDiscount,
-      originalPrice: `${originalPriceEuros}€`,
-      discountAmount: `${discountAmount}€`,
-      expectedFinalPrice: `${finalPriceEuros}€`,
+      finalPrice: `${finalPriceEuros}€`,
     })
 
     // Create invoice in Superfaktura
@@ -201,11 +185,7 @@ export default defineEventHandler(async (event) => {
       package: packageType,
       duration,
       pricing: {
-        originalPrice: originalPriceEuros,
-        discountAmount,
-        hasDiscount,
-        discountPercent: hasDiscount ? 10 : 0,
-        expectedFinalPrice: finalPriceEuros,
+        finalPrice: finalPriceEuros,
         daysCount,
       },
       pdfSize: invoicePdf?.length || 0,

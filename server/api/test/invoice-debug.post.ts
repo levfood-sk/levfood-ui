@@ -11,7 +11,6 @@ import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
 import { createInvoice, downloadInvoicePDF } from '~~/server/utils/superfaktura'
 import { sendClientOrderConfirmation } from '~~/server/utils/email'
 import type { CreateInvoiceRequest, InvoiceClient, InvoiceItem, InvoiceData } from '~~/server/utils/superfaktura'
-import { ORIGINAL_PRICES, hasPackageDiscount } from '~~/app/lib/types/order'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -93,29 +92,19 @@ export default defineEventHandler(async (event) => {
       address: order.deliveryAddress,
     }
 
-    // Calculate pricing with discount support (using single source of truth from order.ts)
-    const hasDiscount = hasPackageDiscount(order.package)
-
-    // Get the original price before discount (for invoice display)
-    const originalPrice = ORIGINAL_PRICES[order.package]?.[order.duration] || order.totalPrice
-
-    // Convert to euros
-    const originalPriceEuros = originalPrice / 100
+    // Calculate pricing - use final price directly (no discount shown on invoice)
     const finalPriceEuros = order.totalPrice / 100
-
-    // Calculate nominal discount amount (e.g., 359 - 323 = 36€)
-    const discountAmount = hasDiscount ? originalPriceEuros - finalPriceEuros : 0
 
     const invoiceItem: InvoiceItem = {
       name: `LevFood ${order.package} balík`,
-      description: `${order.daysCount} dní / Od: ${order.deliveryStartDate}${hasDiscount ? ' (Zľava 10%)' : ''}`,
+      description: `${order.daysCount} dní / Od: ${order.deliveryStartDate}`,
       quantity: 1,
       unit: 'balík',
-      unit_price: originalPriceEuros, // Original price before discount
+      unit_price: finalPriceEuros, // Final price (discount already applied)
       tax: 0, // No VAT - accountant will handle it
     }
 
-    logs.push(`[7b] Pricing details: Package=${order.package}, HasDiscount=${hasDiscount}, OriginalPrice=${originalPriceEuros}€, DiscountAmount=${discountAmount}€, FinalPrice=${finalPriceEuros}€`)
+    logs.push(`[7b] Pricing details: Package=${order.package}, FinalPrice=${finalPriceEuros}€`)
 
     const now = new Date()
     const invoiceDate = now.toISOString().split('T')[0]
@@ -128,7 +117,6 @@ export default defineEventHandler(async (event) => {
       delivery: invoiceDate,
       due: invoiceDate,
       rounding: 'item_ext',
-      discount_total: discountAmount, // Nominal discount on invoice level
     }
 
     const invoiceRequest: CreateInvoiceRequest = {

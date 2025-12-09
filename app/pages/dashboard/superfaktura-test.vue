@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import type { PackageType, DurationType } from '~/lib/types/order'
-import { ORIGINAL_PRICES, PACKAGE_PRICES, hasPackageDiscount } from '~/lib/types/order'
+import { PACKAGE_PRICES } from '~/lib/types/order'
 
 definePageMeta({
   layout: 'dashboard',
@@ -46,16 +46,11 @@ const packageForm = reactive({
 const pricingInfo = computed(() => {
   const pkg = packageForm.package
   const dur = packageForm.duration
-  const hasDiscount = hasPackageDiscount(pkg)
-  const originalPrice = ORIGINAL_PRICES[pkg][dur] / 100
   const finalPrice = PACKAGE_PRICES[pkg][dur] / 100
   const daysCount = dur === '5' ? 20 : 24
 
   return {
-    hasDiscount,
-    originalPrice,
     finalPrice,
-    discountAmount: hasDiscount ? originalPrice - finalPrice : 0,
     daysCount,
   }
 })
@@ -208,18 +203,10 @@ onMounted(() => {
 
         <!-- Pricing Preview -->
         <div class="bg-white rounded-lg p-4 border border-slate-200">
-          <h4 class="text-sm font-semibold text-slate-700 mb-3">Náhľad ceny</h4>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <h4 class="text-sm font-semibold text-slate-700 mb-3">Náhľad ceny na faktúre</h4>
+          <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p class="text-slate-500">Pôvodná cena</p>
-              <p class="text-lg font-bold text-slate-900">{{ pricingInfo.originalPrice }}€</p>
-            </div>
-            <div v-if="pricingInfo.hasDiscount">
-              <p class="text-slate-500">Zľava (10%)</p>
-              <p class="text-lg font-bold text-error-600">-{{ pricingInfo.discountAmount.toFixed(2) }}€</p>
-            </div>
-            <div>
-              <p class="text-slate-500">Konečná cena</p>
+              <p class="text-slate-500">Cena na faktúre</p>
               <p class="text-lg font-bold text-success-600">{{ pricingInfo.finalPrice }}€</p>
             </div>
             <div>
@@ -227,9 +214,6 @@ onMounted(() => {
               <p class="text-lg font-bold text-slate-900">{{ pricingInfo.daysCount }} dní</p>
             </div>
           </div>
-          <p v-if="pricingInfo.hasDiscount" class="mt-2 text-xs text-amber-600">
-            ⚠️ Balíky ŠTANDARD a PREMIUM majú na faktúre aplikovanú 10% zľavu
-          </p>
         </div>
 
         <UDivider label="Voliteľné údaje klienta" />
@@ -310,7 +294,7 @@ onMounted(() => {
 
         <!-- Package Invoice Details -->
         <div v-if="result.pricing" class="bg-slate-50 rounded-lg p-4 space-y-3">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <p class="text-sm font-medium text-slate-500">Číslo faktúry</p>
               <p class="text-lg font-semibold text-slate-900">
@@ -324,24 +308,11 @@ onMounted(() => {
               </p>
             </div>
             <div>
-              <p class="text-sm font-medium text-slate-500">Jednotková cena (na faktúre)</p>
-              <p class="text-lg font-semibold text-slate-900">
-                {{ result.pricing.unitPriceOnInvoice }}€
-              </p>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-slate-500">Očakávaná konečná cena</p>
+              <p class="text-sm font-medium text-slate-500">Cena na faktúre</p>
               <p class="text-lg font-semibold text-success-600">
-                {{ result.pricing.expectedFinalPrice }}€
+                {{ result.pricing.finalPrice }}€
               </p>
             </div>
-          </div>
-
-          <div v-if="result.pricing.hasDiscount" class="mt-2 p-2 bg-amber-50 rounded border border-amber-200">
-            <p class="text-sm text-amber-800">
-              <strong>Aplikovaná zľava:</strong> {{ result.pricing.discountPercent }}%
-              ({{ result.pricing.originalPrice }}€ → {{ result.pricing.expectedFinalPrice }}€)
-            </p>
           </div>
 
           <!-- PDF Download Button -->

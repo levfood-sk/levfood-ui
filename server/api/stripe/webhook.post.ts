@@ -35,7 +35,6 @@ import { createInvoice, downloadInvoicePDF } from '~~/server/utils/superfaktura'
 import { sendClientOrderConfirmation } from '~~/server/utils/email'
 import type { CreateInvoiceRequest, InvoiceClient, InvoiceItem, InvoiceData } from '~~/server/utils/superfaktura'
 import type { Order } from '~~/app/lib/types/order'
-import { ORIGINAL_PRICES, hasPackageDiscount } from '~~/app/lib/types/order'
 
 // Logging helper for consistent format
 const log = {
@@ -239,34 +238,21 @@ export default defineEventHandler(async (event) => {
             address: order.deliveryAddress,
           }
 
-          // Calculate pricing with discount support (using single source of truth from order.ts)
-          const hasDiscount = hasPackageDiscount(order.package)
-
-          // Get the original price before discount (for invoice display)
-          const originalPrice = ORIGINAL_PRICES[order.package]?.[order.duration] || order.totalPrice
-
-          // Convert to euros
-          const originalPriceEuros = originalPrice / 100
+          // Calculate pricing - use final price directly (no discount shown on invoice)
           const finalPriceEuros = order.totalPrice / 100
 
-          // Calculate nominal discount amount (e.g., 359 - 323 = 36€)
-          const discountAmount = hasDiscount ? originalPriceEuros - finalPriceEuros : 0
-
-          // Build invoice item - use original price, discount will be on invoice level
+          // Build invoice item - use final price directly (discount not shown)
           const invoiceItem: InvoiceItem = {
             name: `LevFood ${order.package} balík`,
-            description: `${order.daysCount} dní / Od: ${order.deliveryStartDate}${hasDiscount ? ' (Zľava 10%)' : ''}`,
+            description: `${order.daysCount} dní / Od: ${order.deliveryStartDate}`,
             quantity: 1,
             unit: 'balík',
-            unit_price: originalPriceEuros, // Original price before discount
+            unit_price: finalPriceEuros, // Final price (discount already applied)
             tax: 0,
           }
 
           log.info('Invoice pricing calculated', {
             package: order.package,
-            hasDiscount,
-            originalPrice: `${originalPriceEuros}€`,
-            discountAmount: `${discountAmount}€`,
             finalPrice: `${finalPriceEuros}€`,
           })
 
@@ -274,7 +260,7 @@ export default defineEventHandler(async (event) => {
           const now = new Date()
           const invoiceDate = now.toISOString().split('T')[0] // YYYY-MM-DD format
 
-          // Build invoice data - mark as already paid, with discount on invoice level
+          // Build invoice data - mark as already paid
           const invoiceData: InvoiceData = {
             name: `Objednávka #${orderId}`,
             currency: 'EUR',
@@ -283,7 +269,6 @@ export default defineEventHandler(async (event) => {
             delivery: invoiceDate, // Set delivery date to today
             due: invoiceDate, // Set due date to today (already paid)
             rounding: 'item_ext',
-            discount_total: discountAmount, // Nominal discount (e.g., 36€) on invoice level
           }
 
           // Create invoice request
