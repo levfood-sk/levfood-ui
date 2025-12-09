@@ -18,23 +18,7 @@
 import { createInvoice, downloadInvoicePDF, payInvoice } from '~~/server/utils/superfaktura'
 import type { CreateInvoiceRequest, InvoiceClient, InvoiceItem, InvoiceData } from '~~/server/utils/superfaktura'
 import type { PackageType, DurationType } from '~~/app/lib/types/order'
-
-// Original prices BEFORE 10% discount (matching webhook.post.ts)
-// Superfaktura applies the discount to get the final price
-const ORIGINAL_PRICES: Record<PackageType, Record<DurationType, number>> = {
-  'EKONOMY': { '5': 29900, '6': 33900 },
-  'ŠTANDARD': { '5': 35900, '6': 39900 }, // 359→323, 399→359 after 10%
-  'PREMIUM': { '5': 41900, '6': 45900 },  // 419→377, 459→413 after 10%
-  'OFFICE': { '5': 24900, '6': 24900 },
-}
-
-// Final prices after discount (what customer pays) - rounded values
-const FINAL_PRICES: Record<PackageType, Record<DurationType, number>> = {
-  'EKONOMY': { '5': 29900, '6': 33900 },
-  'ŠTANDARD': { '5': 32300, '6': 35900 }, // 359*0.9=323.1→323, 399*0.9=359.1→359
-  'PREMIUM': { '5': 37700, '6': 41300 },  // 419*0.9=377.1→377, 459*0.9=413.1→413
-  'OFFICE': { '5': 24900, '6': 24900 },
-}
+import { ORIGINAL_PRICES, PACKAGE_PRICES, hasPackageDiscount } from '~~/app/lib/types/order'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -89,14 +73,14 @@ export default defineEventHandler(async (event) => {
       isSandbox: superfakturaConfig.isSandbox,
     })
 
-    // Check if package has discount (ŠTANDARD or PREMIUM)
-    const hasDiscount = packageType === 'ŠTANDARD' || packageType === 'PREMIUM'
+    // Check if package has discount (using single source of truth)
+    const hasDiscount = hasPackageDiscount(packageType)
 
     // Get original price before discount
     const originalPrice = ORIGINAL_PRICES[packageType][duration]
     
-    // Get final price after discount (what customer actually pays) - already rounded
-    const finalPrice = FINAL_PRICES[packageType][duration]
+    // Get final price after discount (what customer actually pays)
+    const finalPrice = PACKAGE_PRICES[packageType][duration]
 
     // Convert to euros (from cents)
     const originalPriceEuros = originalPrice / 100

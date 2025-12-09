@@ -11,6 +11,7 @@ import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
 import { createInvoice, downloadInvoicePDF } from '~~/server/utils/superfaktura'
 import { sendClientOrderConfirmation } from '~~/server/utils/email'
 import type { CreateInvoiceRequest, InvoiceClient, InvoiceItem, InvoiceData } from '~~/server/utils/superfaktura'
+import { ORIGINAL_PRICES, hasPackageDiscount } from '~~/app/lib/types/order'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -92,37 +93,29 @@ export default defineEventHandler(async (event) => {
       address: order.deliveryAddress,
     }
 
-    // Calculate pricing with discount support
-    // Use exact original prices before 10% discount (from objednavka.vue pricing)
-    const originalPrices: Record<string, Record<string, number>> = {
-      'EKONOMY': { '5': 29900, '6': 33900 }, // TESTING: 0.50€
-      'ŠTANDARD': { '5': 35900, '6': 39900 }, // 359€ and 399€ before 10% off
-      'PREMIUM': { '5': 41900, '6': 45900 },  // 419€ and 459€ before 10% off
-      'OFFICE': { '5': 24900, '6': 24900 },
-    }
+    // Calculate pricing with discount support (using single source of truth from order.ts)
+    const hasDiscount = hasPackageDiscount(order.package)
 
-    // Check if package has discount (ŠTANDARD or PREMIUM)
-    const hasDiscount = order.package === 'ŠTANDARD' || order.package === 'PREMIUM'
+    // Get the original price before discount (for invoice display)
+    const originalPrice = ORIGINAL_PRICES[order.package]?.[order.duration] || order.totalPrice
 
-    // Get the exact original price before discount
-    const originalPrice = hasDiscount
-      ? (originalPrices[order.package]?.[order.duration] || order.totalPrice)
-      : order.totalPrice
+    // Convert to euros
+    const originalPriceEuros = originalPrice / 100
+    const finalPriceEuros = order.totalPrice / 100
 
-    // Convert to euros and round down to whole euros (accountant will handle decimals)
-    const unitPrice = Math.floor(originalPrice / 100)
+    // Calculate nominal discount amount (e.g., 359 - 323 = 36€)
+    const discountAmount = hasDiscount ? originalPriceEuros - finalPriceEuros : 0
 
     const invoiceItem: InvoiceItem = {
       name: `LevFood ${order.package} balík`,
-      description: `${order.daysCount} dní / Od: ${order.deliveryStartDate}${hasDiscount ? '/ Zľava 10%' : ''}`,
+      description: `${order.daysCount} dní / Od: ${order.deliveryStartDate}${hasDiscount ? ' (Zľava 10%)' : ''}`,
       quantity: 1,
       unit: 'balík',
-      unit_price: unitPrice,
+      unit_price: originalPriceEuros, // Original price before discount
       tax: 0, // No VAT - accountant will handle it
-      discount: hasDiscount ? 10 : 0, // 10% discount for ŠTANDARD and PREMIUM
     }
 
-    logs.push(`[7b] Pricing details: Package=${order.package}, HasDiscount=${hasDiscount}, OriginalPrice=${originalPrice / 100}€, FinalPrice=${order.totalPrice / 100}€`)
+    logs.push(`[7b] Pricing details: Package=${order.package}, HasDiscount=${hasDiscount}, OriginalPrice=${originalPriceEuros}€, DiscountAmount=${discountAmount}€, FinalPrice=${finalPriceEuros}€`)
 
     const now = new Date()
     const invoiceDate = now.toISOString().split('T')[0]
@@ -134,6 +127,8 @@ export default defineEventHandler(async (event) => {
       comment: `LevFood ${order.package} balík\nDoručenie: ${order.deliveryType}\nPoznámky: ${order.notes || 'Bez poznámok'}`,
       delivery: invoiceDate,
       due: invoiceDate,
+      rounding: 'item_ext',
+      discount_total: discountAmount, // Nominal discount on invoice level
     }
 
     const invoiceRequest: CreateInvoiceRequest = {

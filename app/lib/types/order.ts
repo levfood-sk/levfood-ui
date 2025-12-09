@@ -239,25 +239,38 @@ export const createOrderSchema = z.object({
 export type CreateOrderSchemaType = z.infer<typeof createOrderSchema>
 
 /**
- * Package Pricing (in cents) - Dynamic pricing based on duration
+ * Original Package Pricing (in cents) - before any discounts
+ * Used for invoice display (showing original price with discount line)
+ */
+export const ORIGINAL_PRICES: Record<PackageType, Record<DurationType, number>> = {
+  EKONOMY: { '5': 29900, '6': 33900 },
+  ŠTANDARD: { '5': 35900, '6': 39900 },  // Original prices before 10% discount
+  PREMIUM: { '5': 41900, '6': 45900 },   // Original prices before 10% discount
+  OFFICE: { '5': 24900, '6': 24900 },
+}
+
+/**
+ * Package Pricing (in cents) - what customers actually pay
+ * ŠTANDARD and PREMIUM have 10% discount applied
+ * THIS IS THE SINGLE SOURCE OF TRUTH FOR PRICING
  */
 export const PACKAGE_PRICES: Record<PackageType, Record<DurationType, number>> = {
-  EKONOMY: {
-    '5': 29900,  // 299€ for 5 days
-    '6': 33900   // 339€ for 6 days
-  },
-  ŠTANDARD: {
-    '5': 35900,  // 359€ for 5 days
-    '6': 39900   // 399€ for 6 days
-  },
-  PREMIUM: {
-    '5': 41900,  // 419€ for 5 days
-    '6': 45900   // 459€ for 6 days
-  },
-  OFFICE: {
-    '5': 24900,  // 249€ for 5 days (only option)
-    '6': 24900   // 249€ for 6 days (not available, but keeping for type consistency)
-  }
+  EKONOMY: { '5': 29900, '6': 33900 },   // 299€ / 339€
+  ŠTANDARD: { '5': 32300, '6': 35900 },  // 323€ / 359€ (10% off)
+  PREMIUM: { '5': 37700, '6': 41300 },   // 377€ / 413€ (10% off)
+  OFFICE: { '5': 24900, '6': 24900 },    // 249€
+}
+
+/**
+ * Packages that have discount applied
+ */
+export const DISCOUNTED_PACKAGES: PackageType[] = ['ŠTANDARD', 'PREMIUM']
+
+/**
+ * Check if a package has discount
+ */
+export function hasPackageDiscount(packageType: PackageType): boolean {
+  return DISCOUNTED_PACKAGES.includes(packageType)
 }
 
 /**

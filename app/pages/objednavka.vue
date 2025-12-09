@@ -207,31 +207,14 @@ const stressLevelOptions = [
   { label: 'Vysoký', value: 'vysoký' }
 ]
 
-// Pricing (in cents for Stripe) - Dynamic pricing based on duration
-const packagePrices = {
-  EKONOMY: {
-    '5': 29900,  // 299€ for 5 days
-    '6': 33900   // 339€ for 6 days
-  },
-  ŠTANDARD: {
-    '5': 32300,  // 323€ for 5 days (10% discount applied from 359€)
-    '6': 35900   // 359€ for 6 days (10% discount applied from 399€)
-  },
-  PREMIUM: {
-    '5': 37700,  // 377€ for 5 days (10% discount applied from 419€)
-    '6': 41300   // 413€ for 6 days (10% discount applied from 459€)
-  },
-  OFFICE: {
-    '5': 24900,  // 249€ for 5 days (only option)
-    '6': 24900   // 249€ for 6 days (not available, but keeping for type consistency)
-  }
-}
+// Import pricing from single source of truth
+import { PACKAGE_PRICES } from '~/lib/types/order'
 
 const totalPrice = computed(() => {
   if (!formData.value.step1.package || !formData.value.step1.duration) return 0
-  const packageType = formData.value.step1.package as keyof typeof packagePrices
+  const packageType = formData.value.step1.package as keyof typeof PACKAGE_PRICES
   const duration = formData.value.step1.duration as '5' | '6'
-  return packagePrices[packageType]?.[duration] || 0
+  return PACKAGE_PRICES[packageType]?.[duration] || 0
 })
 
 const totalPriceFormatted = computed(() => {

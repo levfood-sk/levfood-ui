@@ -145,6 +145,71 @@ export async function createInvoice(
 }
 
 /**
+ * Get list of invoices
+ */
+export async function listInvoices(
+  config: SuperfakturaConfig,
+  options?: {
+    page?: number
+    per_page?: number
+  }
+): Promise<SuperfakturaResponse> {
+  const baseUrl = getSuperfakturaBaseUrl(config.isSandbox)
+  const params = new URLSearchParams()
+  if (options?.page) params.append('page', String(options.page))
+  if (options?.per_page) params.append('per_page', String(options.per_page))
+  
+  const url = `${baseUrl}/invoices/index.json${params.toString() ? `?${params.toString()}` : ''}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': generateAuthHeader(config),
+      },
+    })
+
+    const result = await response.json()
+    return result
+  } catch (error: any) {
+    console.error('Superfaktura list invoices failed:', error)
+    return {
+      error: 1,
+      error_message: error.message || 'Request failed',
+    }
+  }
+}
+
+/**
+ * Delete invoice
+ */
+export async function deleteInvoice(
+  invoiceId: number,
+  config: SuperfakturaConfig
+): Promise<SuperfakturaResponse> {
+  const baseUrl = getSuperfakturaBaseUrl(config.isSandbox)
+  const url = `${baseUrl}/invoices/delete/${invoiceId}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET', // Superfaktura uses GET for delete
+      headers: {
+        'Authorization': generateAuthHeader(config),
+      },
+    })
+
+    const result = await response.json()
+    return result
+  } catch (error: any) {
+    console.error('Superfaktura delete invoice failed:', error)
+    return {
+      error: 1,
+      error_message: error.message || 'Request failed',
+    }
+  }
+}
+
+/**
  * Mark invoice as paid
  */
 export async function payInvoice(

@@ -12,6 +12,10 @@ useSeoMeta({
 const { user } = useAuth()
 const { scrollToSection } = useScrollTo()
 
+// Import pricing from single source of truth
+import { PACKAGE_PRICES, ORIGINAL_PRICES, hasPackageDiscount } from '~/lib/types/order'
+import type { PackageType, DurationType } from '~/lib/types/order'
+
 // Import simple icons as components (for Tailwind styling)
 import EmailIcon from '~/assets/icons/email-icon.svg?component'
 import PhoneIcon from '~/assets/icons/phone-icon.svg?component'
@@ -53,67 +57,39 @@ const standardDays = ref('')
 const premiumDays = ref('')
 const officeDays = ref('5') // Default to 5 days for OFFICE
 
-// Package pricing structure
-const packagePricing = {
-  EKONOMY: {
-    '5': 299,  // TESTING
-    '6': 339   // TESTING
-  },
-  ŠTANDARD: {
-    '5': 323, // 10% off from 359€
-    '6': 359  // 10% off from 399€
-  },
-  PREMIUM: {
-    '5': 377, // 10% off from 419€
-    '6': 413  // 10% off from 459€
-  },
-  OFFICE: {
-    '5': 249,
-    '6': 249 // Not used, but keeping for consistency
-  }
-}
+// Package pricing - convert from cents to euros (using single source of truth)
+const getPrice = (pkg: PackageType, dur: DurationType) => PACKAGE_PRICES[pkg][dur] / 100
+const getOriginalPrice = (pkg: PackageType, dur: DurationType) => ORIGINAL_PRICES[pkg][dur] / 100
 
-// Original prices (before discount) for Standard and Premium
-const originalPricing = {
-  ŠTANDARD: {
-    '5': 359,
-    '6': 399
-  },
-  PREMIUM: {
-    '5': 419,
-    '6': 459
-  }
-}
-
-// Computed prices for each package
+// Computed prices for each package (using single source of truth)
 const economyPrice = computed(() => {
-  const days = economyDays.value || '5'
-  return packagePricing.EKONOMY[days as '5' | '6']
+  const days = (economyDays.value || '5') as DurationType
+  return getPrice('EKONOMY', days)
 })
 
 const standardPrice = computed(() => {
-  const days = standardDays.value || '5'
-  return packagePricing.ŠTANDARD[days as '5' | '6']
+  const days = (standardDays.value || '5') as DurationType
+  return getPrice('ŠTANDARD', days)
 })
 
 const premiumPrice = computed(() => {
-  const days = premiumDays.value || '5'
-  return packagePricing.PREMIUM[days as '5' | '6']
+  const days = (premiumDays.value || '5') as DurationType
+  return getPrice('PREMIUM', days)
 })
 
 const officePrice = computed(() => {
-  return packagePricing.OFFICE['5'] // Always 5 days for OFFICE
+  return getPrice('OFFICE', '5') // Always 5 days for OFFICE
 })
 
 // Original prices (before discount) for Standard and Premium
 const standardOriginalPrice = computed(() => {
-  const days = standardDays.value || '5'
-  return originalPricing.ŠTANDARD[days as '5' | '6']
+  const days = (standardDays.value || '5') as DurationType
+  return getOriginalPrice('ŠTANDARD', days)
 })
 
 const premiumOriginalPrice = computed(() => {
-  const days = premiumDays.value || '5'
-  return originalPricing.PREMIUM[days as '5' | '6']
+  const days = (premiumDays.value || '5') as DurationType
+  return getOriginalPrice('PREMIUM', days)
 })
 
 // Map internal package names to lowercase English URL params

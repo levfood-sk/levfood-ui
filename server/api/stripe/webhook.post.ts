@@ -35,6 +35,7 @@ import { createInvoice, downloadInvoicePDF } from '~~/server/utils/superfaktura'
 import { sendClientOrderConfirmation } from '~~/server/utils/email'
 import type { CreateInvoiceRequest, InvoiceClient, InvoiceItem, InvoiceData } from '~~/server/utils/superfaktura'
 import type { Order } from '~~/app/lib/types/order'
+import { ORIGINAL_PRICES, hasPackageDiscount } from '~~/app/lib/types/order'
 
 // Logging helper for consistent format
 const log = {
@@ -238,23 +239,11 @@ export default defineEventHandler(async (event) => {
             address: order.deliveryAddress,
           }
 
-          // Calculate pricing with discount support
-          // Original prices BEFORE 10% discount - Superfaktura applies discount to get final price
-          // ŠTANDARD/PREMIUM: original price → 10% off → final price (rounded)
-          const originalPrices: Record<string, Record<string, number>> = {
-            'EKONOMY': { '5': 29900, '6': 33900 },
-            'ŠTANDARD': { '5': 35900, '6': 39900 }, // 359→323, 399→359 after 10%
-            'PREMIUM': { '5': 41900, '6': 45900 },  // 419→377, 459→413 after 10%
-            'OFFICE': { '5': 24900, '6': 24900 },
-          }
+          // Calculate pricing with discount support (using single source of truth from order.ts)
+          const hasDiscount = hasPackageDiscount(order.package)
 
-          // Check if package has discount (ŠTANDARD or PREMIUM)
-          const hasDiscount = order.package === 'ŠTANDARD' || order.package === 'PREMIUM'
-
-          // Get the exact original price before discount
-          const originalPrice = hasDiscount
-            ? (originalPrices[order.package]?.[order.duration] || order.totalPrice)
-            : order.totalPrice
+          // Get the original price before discount (for invoice display)
+          const originalPrice = ORIGINAL_PRICES[order.package]?.[order.duration] || order.totalPrice
 
           // Convert to euros
           const originalPriceEuros = originalPrice / 100
