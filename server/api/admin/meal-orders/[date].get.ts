@@ -1,0 +1,226 @@
+/**
+ * GET /api/admin/meal-orders/[date]
+ * Get aggregated meal selections for a specific date
+ * For admin dashboard - shows what to order for production
+ */
+
+import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
+import { requireAuth, handleApiError } from '~~/server/utils/auth'
+
+interface ClientSelection {
+  clientId: string
+  clientName: string
+  orderId: string
+  selectedRanajky: 'A' | 'B'
+  ranajkyName: string
+  selectedObed: 'A' | 'B' | 'C'
+  obedName: string
+}
+
+interface PackageGroup {
+  count: number
+  clients: ClientSelection[]
+}
+
+interface MealOrderSummary {
+  date: string
+  totalOrders: number
+  byPackage: Record<string, PackageGroup>
+  ranajkyCounts: {
+    optionA: { name: string; count: number }
+    optionB: { name: string; count: number }
+  }
+  obedCounts: {
+    optionA: { name: string; count: number }
+    optionB: { name: string; count: number }
+    optionC: { name: string; count: number }
+  }
+}
+
+export default defineEventHandler(async (event) => {
+  try {
+    requireAuth(event)
+    const date = getRouterParam(event, 'date')
+
+    if (!date) {
+      throw createError({
+        statusCode: 400,
+        message: 'Dátum je povinný'
+      })
+    }
+
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+    if (!dateRegex.test(date)) {
+      throw createError({
+        statusCode: 400,
+        message: 'Neplatný formát dátumu'
+      })
+    }
+
+    const { firestore } = getFirebaseAdmin()
+
+    // Get the daily meals for this date (to get meal names)
+    const mealsRef = firestore.collection('dailyMeals').doc(date)
+    const mealsDoc = await mealsRef.get()
+    const mealsData = mealsDoc.data()
+
+    if (!mealsDoc.exists || !mealsData?.isPublished) {
+      return {
+        date,
+        totalOrders: 0,
+        byPackage: {},
+        ranajkyCounts: {
+          optionA: { name: mealsData?.ranajkyOptions?.optionA || 'Variant A', count: 0 },
+          optionB: { name: mealsData?.ranajkyOptions?.optionB || 'Variant B', count: 0 }
+        },
+        obedCounts: {
+          optionA: { name: mealsData?.obedOptions?.optionA || 'Variant A', count: 0 },
+          optionB: { name: mealsData?.obedOptions?.optionB || 'Variant B', count: 0 },
+          optionC: { name: mealsData?.obedOptions?.optionC || 'Variant C', count: 0 }
+        },
+        message: 'Menu pre tento deň nie je publikované'
+      }
+    }
+
+    // Get all meal selections for this date
+    const selectionsRef = firestore.collection('mealSelections')
+    const selectionsQuery = await selectionsRef
+      .where('date', '==', date)
+      .get()
+
+    if (selectionsQuery.empty) {
+      return {
+        date,
+        totalOrders: 0,
+        byPackage: {},
+        ranajkyCounts: {
+          optionA: { name: mealsData.ranajkyOptions?.optionA || 'Variant A', count: 0 },
+          optionB: { name: mealsData.ranajkyOptions?.optionB || 'Variant B', count: 0 }
+        },
+        obedCounts: {
+          optionA: { name: mealsData.obedOptions?.optionA || 'Variant A', count: 0 },
+          optionB: { name: mealsData.obedOptions?.optionB || 'Variant B', count: 0 },
+          optionC: { name: mealsData.obedOptions?.optionC || 'Variant C', count: 0 }
+        }
+      }
+    }
+
+    // Get client IDs from selections
+    const clientIds = [...new Set(selectionsQuery.docs.map(doc => doc.data().clientId))]
+
+    // Batch fetch client data
+    const clientsMap = new Map<string, { fullName: string }>()
+    const clientChunks = []
+    for (let i = 0; i < clientIds.length; i += 10) {
+      clientChunks.push(clientIds.slice(i, i + 10))
+    }
+
+    for (const chunk of clientChunks) {
+      const clientsQuery = await firestore.collection('clients')
+        .where('__name__', 'in', chunk)
+        .get()
+      
+      clientsQuery.docs.forEach(doc => {
+        const data = doc.data()
+        clientsMap.set(doc.id, {
+          fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Neznámy'
+        })
+      })
+    }
+
+    // Check for cancelled deliveries
+    const cancelledIds = clientIds.map(id => `${id}_${date}`)
+    const cancelledSet = new Set<string>()
+    
+    // Check in batches of 10
+    for (let i = 0; i < cancelledIds.length; i += 10) {
+      const batch = cancelledIds.slice(i, i + 10)
+      const cancelledQuery = await firestore.collection('cancelledDeliveries')
+        .where('__name__', 'in', batch)
+        .get()
+      
+      cancelledQuery.docs.forEach(doc => {
+        const clientId = doc.data().clientId
+        cancelledSet.add(clientId)
+      })
+    }
+
+    // Aggregate data
+    const byPackage: Record<string, PackageGroup> = {}
+    let totalOrders = 0
+    const ranajkyCounts = { A: 0, B: 0 }
+    const obedCounts = { A: 0, B: 0, C: 0 }
+
+    for (const doc of selectionsQuery.docs) {
+      const selection = doc.data()
+      const clientId = selection.clientId
+      
+      // Skip cancelled deliveries
+      if (cancelledSet.has(clientId)) {
+        continue
+      }
+
+      totalOrders++
+
+      const packageTier = selection.packageTier || 'UNKNOWN'
+      const clientInfo = clientsMap.get(clientId)
+
+      // Count ranajky
+      if (selection.selectedRanajky === 'A') {
+        ranajkyCounts.A++
+      } else if (selection.selectedRanajky === 'B') {
+        ranajkyCounts.B++
+      }
+
+      // Count obed
+      if (selection.selectedObed === 'A') {
+        obedCounts.A++
+      } else if (selection.selectedObed === 'B') {
+        obedCounts.B++
+      } else if (selection.selectedObed === 'C') {
+        obedCounts.C++
+      }
+
+      // Group by package
+      if (!byPackage[packageTier]) {
+        byPackage[packageTier] = { count: 0, clients: [] }
+      }
+
+      byPackage[packageTier].count++
+      byPackage[packageTier].clients.push({
+        clientId,
+        clientName: clientInfo?.fullName || 'Neznámy',
+        orderId: selection.orderId,
+        selectedRanajky: selection.selectedRanajky,
+        ranajkyName: mealsData.ranajkyOptions?.[`option${selection.selectedRanajky}`] || `Variant ${selection.selectedRanajky}`,
+        selectedObed: selection.selectedObed,
+        obedName: mealsData.obedOptions?.[`option${selection.selectedObed}`] || `Variant ${selection.selectedObed}`
+      })
+    }
+
+    // Sort clients in each package group by name
+    for (const pkg of Object.values(byPackage)) {
+      pkg.clients.sort((a, b) => a.clientName.localeCompare(b.clientName, 'sk'))
+    }
+
+    const summary: MealOrderSummary = {
+      date,
+      totalOrders,
+      byPackage,
+      ranajkyCounts: {
+        optionA: { name: mealsData.ranajkyOptions?.optionA || 'Variant A', count: ranajkyCounts.A },
+        optionB: { name: mealsData.ranajkyOptions?.optionB || 'Variant B', count: ranajkyCounts.B }
+      },
+      obedCounts: {
+        optionA: { name: mealsData.obedOptions?.optionA || 'Variant A', count: obedCounts.A },
+        optionB: { name: mealsData.obedOptions?.optionB || 'Variant B', count: obedCounts.B },
+        optionC: { name: mealsData.obedOptions?.optionC || 'Variant C', count: obedCounts.C }
+      }
+    }
+
+    return summary
+  } catch (error: any) {
+    return handleApiError(error, 'Nepodarilo sa načítať objednávky jedál')
+  }
+})

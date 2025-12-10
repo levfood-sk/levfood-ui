@@ -19,15 +19,48 @@
 
       <!-- Days Grid (All 7 days in one row) -->
       <div v-else class="grid grid-cols-3 md:grid-cols-7 gap-2">
-        <MealsDayCard
+        <UCard
           v-for="(day, index) in daysOfWeek"
-          :key="day"
-          :day="day"
-          :date="getDayDate(index)"
-          :is-complete="isDayComplete(day)"
-          :is-selected="selectedDay === day"
-          @click="handleDayClick"
-        />
+          :key="day.dateStr"
+          class="cursor-pointer hover:ring-2 hover:ring-orange transition-all px-0 py-0"
+          :class="[
+            selectedDate === day.dateStr
+              ? 'bg-[var(--color-orange)] text-[var(--color-beige)]'
+              : ''
+          ]"
+          @click="handleDayClick(day.dateStr)"
+        >
+          <div class="flex flex-col items-center gap-1">
+            <div class="flex items-center justify-between w-full">
+              <span
+                class="text-sm font-medium"
+                :class="selectedDate === day.dateStr ? 'text-[var(--color-beige)]' : 'text-gray-600'"
+              >
+                {{ day.shortName }}
+              </span>
+              <UIcon
+                v-if="dailyMealsCache[day.dateStr]?.isPublished"
+                name="i-heroicons-check-circle-solid"
+                class="w-4 h-4"
+                :class="selectedDate === day.dateStr ? 'text-[var(--color-beige)]' : 'text-green-500'"
+              />
+            </div>
+            <div class="text-center">
+              <p
+                class="text-xl font-bold"
+                :class="selectedDate === day.dateStr ? 'text-[var(--color-beige)]' : 'text-gray-900'"
+              >
+                {{ day.dayNumber }}
+              </p>
+              <p
+                class="text-xs"
+                :class="selectedDate === day.dateStr ? 'text-[var(--color-beige)]' : 'text-gray-500'"
+              >
+                {{ day.monthName }}
+              </p>
+            </div>
+          </div>
+        </UCard>
 
         <!-- Sunday (Disabled) -->
         <UCard class="opacity-50 cursor-not-allowed p-2">
@@ -41,36 +74,27 @@
         </UCard>
       </div>
 
-      <!-- Meal Editor Form (inline, shown when day is selected) -->
-      <div v-if="selectedDay && !isLoading" class="w-full">
+      <!-- Meal Editor Form (shown when day is selected) -->
+      <div v-if="selectedDate && !isLoading" class="w-full">
         <UCard>
-          <MealsMealEditorForm
-            :day="selectedDay"
-            :date="selectedDayDate"
+          <div v-if="isLoadingDay" class="flex justify-center py-12">
+            <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-[var(--color-orange)]" />
+          </div>
+          <MealsDailyMealEditorForm
+            v-else
+            :date="selectedDate"
             :initial-data="selectedDayData"
             @save="handleMealsSave"
             @cancel="handleCancelEdit"
           />
         </UCard>
       </div>
-
-      <!-- Save All Button (if any changes were made) -->
-      <div v-if="hasUnsavedChanges && !selectedDay" class="flex justify-end">
-        <button
-          class="flex items-center hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          :disabled="!canSave || isSaving"
-          @click="handleSave"
-        >
-          <UIcon v-if="isSaving" name="i-heroicons-arrow-path" class="w-5 h-5 mr-2 animate-spin" />
-          {{ isSaving ? 'Ukladám...' : 'Uložiť celý týždeň' }}
-        </button>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { DayName, DayMeals, WeekMeals } from '~/lib/types/meals'
+import type { DailyMeal } from '~/lib/types/meals'
 
 definePageMeta({
   layout: 'dashboard'
@@ -80,17 +104,30 @@ const toast = useToast()
 
 // State
 const currentMonday = ref<Date>(getMondayOfCurrentWeek())
-const weekMealsData = ref<WeekMeals | null>(null)
+const selectedDate = ref<string | null>(null)
 const isLoading = ref(false)
+const isLoadingDay = ref(false)
 const isSaving = ref(false)
-const selectedDay = ref<DayName | null>(null)
-const hasUnsavedChanges = ref(false)
 
-const daysOfWeek: DayName[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+// Cache for daily meals data
+const dailyMealsCache = ref<Record<string, DailyMeal | null>>({})
+
+// Day names
+const DAY_SHORT_NAMES = ['Po', 'Ut', 'St', 'Št', 'Pi', 'So']
+const MONTH_SHORT_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Máj', 'Jún', 'Júl', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
 
 // Computed
-const currentWeekId = computed(() => {
-  return getWeekId(currentMonday.value)
+const daysOfWeek = computed(() => {
+  return DAY_SHORT_NAMES.map((shortName, index) => {
+    const date = new Date(currentMonday.value)
+    date.setDate(date.getDate() + index)
+    return {
+      shortName,
+      dateStr: formatDateStr(date),
+      dayNumber: date.getDate(),
+      monthName: MONTH_SHORT_NAMES[date.getMonth()]
+    }
+  })
 })
 
 const sundayDate = computed(() => {
@@ -99,27 +136,9 @@ const sundayDate = computed(() => {
   return sunday
 })
 
-const selectedDayDate = computed(() => {
-  if (!selectedDay.value) return null
-  const dayIndex = daysOfWeek.indexOf(selectedDay.value)
-  return getDayDate(dayIndex)
-})
-
 const selectedDayData = computed(() => {
-  if (!selectedDay.value || !weekMealsData.value?.days) {
-    return null
-  }
-  return weekMealsData.value.days[selectedDay.value] || null
-})
-
-const canSave = computed(() => {
-  if (!weekMealsData.value) return false
-
-  // Check if all days are complete
-  return daysOfWeek.every(day => {
-    const dayData = weekMealsData.value!.days[day]
-    return dayData?.isComplete === true
-  })
+  if (!selectedDate.value) return null
+  return dailyMealsCache.value[selectedDate.value] || null
 })
 
 // Methods
@@ -133,34 +152,33 @@ function getMondayOfCurrentWeek(): Date {
   return monday
 }
 
-function getWeekId(date: Date): string {
+function formatDateStr(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
-function getDayDate(dayIndex: number): Date {
-  const date = new Date(currentMonday.value)
-  date.setDate(date.getDate() + dayIndex)
-  return date
-}
-
 function getSundayMonth(): string {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Máj', 'Jún', 'Júl', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
-  return months[sundayDate.value.getMonth()] || ''
+  return MONTH_SHORT_NAMES[sundayDate.value.getMonth()] || ''
 }
 
-function isDayComplete(day: DayName): boolean {
-  return weekMealsData.value?.days[day]?.isComplete === true
+async function fetchDayMeals(dateStr: string) {
+  try {
+    const response = await useAuthFetch(`/api/meals/daily/${dateStr}`)
+    dailyMealsCache.value[dateStr] = response as DailyMeal
+  } catch (error) {
+    console.error('Error fetching day meals:', error)
+    dailyMealsCache.value[dateStr] = null
+  }
 }
 
 async function fetchWeekMeals() {
   isLoading.value = true
   try {
-    const response = await useAuthFetch(`/api/meals/${currentWeekId.value}`)
-    weekMealsData.value = response as any
-    hasUnsavedChanges.value = false
+    // Fetch all days in parallel
+    const promises = daysOfWeek.value.map(day => fetchDayMeals(day.dateStr))
+    await Promise.all(promises)
   } catch (error) {
     console.error('Error fetching week meals:', error)
     toast.add({
@@ -175,58 +193,54 @@ async function fetchWeekMeals() {
 
 function handleWeekChange(newMonday: Date) {
   currentMonday.value = newMonday
+  selectedDate.value = null
 }
 
-function handleDayClick(day: DayName) {
-  selectedDay.value = day
+async function handleDayClick(dateStr: string) {
+  selectedDate.value = dateStr
+  
+  // Fetch fresh data for selected day
+  if (!dailyMealsCache.value[dateStr]) {
+    isLoadingDay.value = true
+    await fetchDayMeals(dateStr)
+    isLoadingDay.value = false
+  }
 }
 
 function handleCancelEdit() {
-  selectedDay.value = null
+  selectedDate.value = null
 }
 
-function handleMealsSave(dayMeals: DayMeals) {
-  if (!weekMealsData.value || !selectedDay.value) return
-
-  // Update the day's meals in local state
-  if (!weekMealsData.value.days) {
-    weekMealsData.value.days = {}
-  }
-
-  weekMealsData.value.days[selectedDay.value] = dayMeals
-  hasUnsavedChanges.value = true
-  selectedDay.value = null
-
-  toast.add({
-    title: 'Úspech',
-    description: 'Deň bol uložený. Nezabudnite uložiť celý týždeň.',
-    color: 'success',
-  })
-}
-
-async function handleSave() {
-  if (!weekMealsData.value || !canSave.value) return
+async function handleMealsSave(formData: { meals: any; ranajkyOptions: any; obedOptions: any }) {
+  if (!selectedDate.value) return
 
   isSaving.value = true
   try {
-    await useAuthFetch(`/api/meals/${currentWeekId.value}`, {
+    const response = await useAuthFetch(`/api/meals/daily/${selectedDate.value}`, {
       method: 'POST',
-      body: {
-        days: weekMealsData.value.days
-      }
+      body: formData
     })
 
-    hasUnsavedChanges.value = false
+    // Update cache with response
+    const result = response as any
+    if (result.data) {
+      dailyMealsCache.value[selectedDate.value] = result.data
+    }
+
     toast.add({
       title: 'Úspech',
-      description: 'Celý týždeň bol úspešne uložený',
+      description: result.isPublished 
+        ? 'Jedlá boli uložené a publikované' 
+        : 'Jedlá boli uložené ako koncept',
       color: 'success',
     })
+
+    // Stay on the same day to allow further editing
   } catch (error: any) {
     console.error('Error saving meals:', error)
     toast.add({
       title: 'Chyba',
-      description: error.data?.message || 'Nepodarilo sa uložiť jedálny lístok',
+      description: error.data?.message || 'Nepodarilo sa uložiť jedlá',
       color: 'error',
     })
   } finally {
@@ -252,20 +266,20 @@ onMounted(async () => {
 
   // Only fetch data if authenticated
   if (isAuthenticated.value) {
-    fetchWeekMeals()
+    await fetchWeekMeals()
+    // Auto-select first day
+    if (daysOfWeek.value.length > 0) {
+      selectedDate.value = daysOfWeek.value[0].dateStr
+    }
   }
 })
 
 // Watch for week changes
-watch(currentWeekId, () => {
-  selectedDay.value = null
-  fetchWeekMeals()
-})
-
-// Auto-select first day when week loads (after data is fetched)
-watch(() => weekMealsData.value, (newData) => {
-  if (newData && !selectedDay.value && daysOfWeek.length > 0) {
-    selectedDay.value = daysOfWeek[0] ?? null
+watch(() => currentMonday.value, async () => {
+  await fetchWeekMeals()
+  // Auto-select first day of new week
+  if (daysOfWeek.value.length > 0) {
+    selectedDate.value = daysOfWeek.value[0].dateStr
   }
-}, { immediate: false })
+})
 </script>
