@@ -31,7 +31,7 @@
 import { useServerStripe } from '#stripe/server'
 import { getFirestore } from 'firebase-admin/firestore'
 import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
-import { createInvoice, downloadInvoicePDF } from '~~/server/utils/superfaktura'
+import { createInvoice, downloadInvoicePDF, payInvoice } from '~~/server/utils/superfaktura'
 import { sendClientOrderConfirmation } from '~~/server/utils/email'
 import type { CreateInvoiceRequest, InvoiceClient, InvoiceItem, InvoiceData } from '~~/server/utils/superfaktura'
 import type { Order } from '~~/app/lib/types/order'
@@ -143,11 +143,11 @@ export default defineEventHandler(async (event) => {
             .get()
 
           let retries = 0
-          const maxRetries = 3
+          const maxRetries = 5
 
           while (orderQuery.empty && retries < maxRetries) {
-            log.warn(`Order not found, retrying in 2s (attempt ${retries + 1}/${maxRetries})`, { paymentIntentId: paymentIntent.id })
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            log.warn(`Order not found, retrying in 3s (attempt ${retries + 1}/${maxRetries})`, { paymentIntentId: paymentIntent.id })
+            await new Promise(resolve => setTimeout(resolve, 3000))
 
             orderQuery = await ordersRef
               .where('stripePaymentIntentId', '==', paymentIntent.id)
@@ -299,6 +299,17 @@ export default defineEventHandler(async (event) => {
           result.invoiceId = invoiceId
 
           log.success('Superfaktura invoice created', { invoiceId, invoiceNumber, orderId })
+
+          // Mark invoice as paid (since Stripe payment already succeeded)
+          const payResult = await payInvoice(invoiceId, finalPriceEuros, superfakturaConfig, {
+            payment_type: 'card',
+          })
+
+          if (payResult.error) {
+            log.error('Failed to mark invoice as paid', { invoiceId, error: payResult.error_message })
+          } else {
+            log.success('Invoice marked as paid', { invoiceId })
+          }
 
           // Store invoice ID in order document for reference
           await orderDoc.ref.update({

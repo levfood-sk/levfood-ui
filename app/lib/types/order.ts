@@ -181,11 +181,9 @@ export const createOrderSchema = z.object({
   // Personal info (all optional)
   birthDate: z.string().optional().default(''),
   height: z.number()
-    .max(300, 'Výška je príliš vysoká')
     .optional()
     .nullable(),
   weight: z.number()
-    .max(500, 'Hmotnosť je príliš vysoká')
     .optional()
     .nullable(),
   physicalActivity: z.enum(['nízka', 'stredná', 'vysoká'], {
