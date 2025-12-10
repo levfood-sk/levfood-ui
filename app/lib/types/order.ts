@@ -74,6 +74,7 @@ export interface Client {
   totalSpent: number           // Total amount spent in cents
   createdAt: Timestamp
   updatedAt: Timestamp
+  firebaseUid?: string
 }
 
 /**
