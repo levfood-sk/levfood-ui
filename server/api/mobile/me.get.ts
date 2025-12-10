@@ -56,26 +56,40 @@ export default defineEventHandler(async (event) => {
 
     log.info('Client found', { clientId, email: client.email })
 
-    // Fetch active orders for this client
-    const ordersRef = db.collection('orders')
-    const ordersQuery = await ordersRef
-      .where('clientId', '==', clientId)
-      .where('orderStatus', 'in', ['pending', 'approved'])
-      .orderBy('createdAt', 'desc')
-      .limit(10)
-      .get()
+    // Fetch active orders (wrapped in try-catch - orders are non-critical)
+    let activeOrders: Array<{
+      orderId: string
+      package: string
+      orderStatus: string
+      deliveryStartDate: string
+      daysCount: number
+      totalPrice: number
+    }> = []
 
-    const activeOrders = ordersQuery.docs.map(doc => {
-      const order = doc.data() as Order
-      return {
-        orderId: order.orderId,
-        package: order.package,
-        orderStatus: order.orderStatus,
-        deliveryStartDate: order.deliveryStartDate,
-        daysCount: order.daysCount,
-        totalPrice: order.totalPrice,
-      }
-    })
+    try {
+      const ordersRef = db.collection('orders')
+      const ordersQuery = await ordersRef
+        .where('clientId', '==', clientId)
+        .where('orderStatus', 'in', ['pending', 'approved'])
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .get()
+
+      activeOrders = ordersQuery.docs.map(doc => {
+        const order = doc.data() as Order
+        return {
+          orderId: order.orderId,
+          package: order.package,
+          orderStatus: order.orderStatus,
+          deliveryStartDate: order.deliveryStartDate,
+          daysCount: order.daysCount,
+          totalPrice: order.totalPrice,
+        }
+      })
+    } catch (ordersError: any) {
+      // Orders query may fail if Firestore index is missing - this is non-critical
+      log.info('Orders fetch skipped (index may be missing)', { error: ordersError.message })
+    }
 
     const duration = Date.now() - startTime
     log.success(`User data fetched (${duration}ms)`, {
