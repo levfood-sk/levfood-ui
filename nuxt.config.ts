@@ -1,32 +1,38 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from "@tailwindcss/vite";
-import svgLoader from 'vite-svg-loader';
+import svgLoader from "vite-svg-loader";
 
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
+  compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxt/icon', '@unlok-co/nuxt-stripe', '@nuxt/scripts'],
-  css: ['~/assets/css/main.css'],
+  modules: [
+    "@nuxt/eslint",
+    "@nuxt/ui",
+    "@nuxt/icon",
+    "@unlok-co/nuxt-stripe",
+    "@nuxt/scripts",
+  ],
+  css: ["~/assets/css/main.css"],
   ui: {
-    colorMode: false
+    colorMode: false,
   },
 
   // Google Analytics configuration
   scripts: {
     registry: {
       googleAnalytics: {
-        id: process.env.GOOGLE_ANALYTICS_ID || '',
-      }
-    }
+        id: process.env.GOOGLE_ANALYTICS_ID || "",
+      },
+    },
   },
 
   // App metadata
   app: {
     head: {
-      title: 'Levfood Web',
+      title: "Levfood Web",
       meta: [
-        { name: 'description', content: 'Levfood web & Admin Panel' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: "description", content: "Levfood web & Admin Panel" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
       ],
     },
   },
@@ -44,7 +50,7 @@ export default defineNuxtConfig({
     plugins: [
       tailwindcss(),
       svgLoader({
-        defaultImport: 'url', // Default import without query is treated as URL
+        defaultImport: "url", // Default import without query is treated as URL
       }),
     ],
   },
@@ -57,24 +63,28 @@ export default defineNuxtConfig({
       firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
       firebaseAppId: process.env.FIREBASE_APP_ID,
       firebaseVapidKey: process.env.FIREBASE_VAPID_KEY,
-      appUrl: process.env.APP_URL || 'http://localhost:3000',
+      appUrl: process.env.APP_URL || "http://localhost:3000",
       googleAnalyticsId: process.env.GOOGLE_ANALYTICS_ID,
+      enableSeeder: process.env.ENABLE_SEEDER === "true",
     },
     firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     superfakturaEmail: process.env.SUPERFAKTURA_EMAIL,
     superfakturaApiKey: process.env.SUPERFAKTURA_API_KEY,
     superfakturaCompanyId: process.env.SUPERFAKTURA_COMPANY_ID,
-    superfakturaIsSandbox: process.env.SUPERFAKTURA_IS_SANDBOX || 'true',
+    superfakturaIsSandbox: process.env.SUPERFAKTURA_IS_SANDBOX || "true",
     smtpHost: process.env.SMTP_HOST,
-    smtpPort: process.env.SMTP_PORT || '587',
+    smtpPort: process.env.SMTP_PORT || "587",
     smtpUser: process.env.SMTP_USER,
     smtpPassword: process.env.SMTP_PASSWORD,
     smtpFromEmail: process.env.SMTP_FROM_EMAIL,
-    smtpFromName: process.env.SMTP_FROM_NAME || 'LevFood',
-    smtpSecure: process.env.SMTP_SECURE || 'false',
+    smtpFromName: process.env.SMTP_FROM_NAME || "LevFood",
+    smtpSecure: process.env.SMTP_SECURE || "false",
+
     adminNotificationEmails: process.env.ADMIN_NOTIFICATION_EMAIL
-      ? process.env.ADMIN_NOTIFICATION_EMAIL.split(',').map(email => email.trim())
-      : ['info@levfood.sk'],
-  }
-})
+      ? process.env.ADMIN_NOTIFICATION_EMAIL.split(",").map((email) =>
+          email.trim(),
+        )
+      : ["info@levfood.sk"],
+  },
+});

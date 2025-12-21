@@ -7,95 +7,121 @@
  * Used by mobile app to check if user has already linked their account.
  */
 
-import { getFirestore } from 'firebase-admin/firestore'
-import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
-import { requireAuth } from '~~/server/utils/auth'
-import type { Order, Client } from '~~/app/lib/types/order'
+import { getFirestore } from "firebase-admin/firestore";
+import { getFirebaseAdmin } from "~~/server/utils/firebase-admin";
+import { requireAuth } from "~~/server/utils/auth";
+import type { Order, Client } from "~~/app/lib/types/order";
 
 // Logging helper for consistent format
 const log = {
-  info: (msg: string, data?: object) => console.log(`[ME] ${msg}`, data ? JSON.stringify(data) : ''),
-  success: (msg: string, data?: object) => console.log(`[ME] ✅ ${msg}`, data ? JSON.stringify(data) : ''),
-}
+  info: (msg: string, data?: object) =>
+    console.log(`[ME] ${msg}`, data ? JSON.stringify(data) : ""),
+  success: (msg: string, data?: object) =>
+    console.log(`[ME] ✅ ${msg}`, data ? JSON.stringify(data) : ""),
+};
 
 export default defineEventHandler(async (event) => {
-  const startTime = Date.now()
+  const startTime = Date.now();
 
   try {
     // Require authentication
-    const user = requireAuth(event)
-    const firebaseUid = user.uid
+    const user = requireAuth(event);
+    const firebaseUid = user.uid;
 
-    log.info('Fetching user data', { firebaseUid })
+    log.info("Fetching user data", { firebaseUid });
 
     // Initialize Firestore
-    const { app } = getFirebaseAdmin()
-    const db = getFirestore(app)
+    const { app } = getFirebaseAdmin();
+    const db = getFirestore(app);
 
     // Find client by firebaseUid
-    const clientsRef = db.collection('clients')
+    const clientsRef = db.collection("clients");
     const clientQuery = await clientsRef
-      .where('firebaseUid', '==', firebaseUid)
+      .where("firebaseUid", "==", firebaseUid)
       .limit(1)
-      .get()
+      .get();
 
     if (clientQuery.empty) {
-      const duration = Date.now() - startTime
-      log.info(`No linked account found (${duration}ms)`, { firebaseUid })
+      const duration = Date.now() - startTime;
+      log.info(`No linked account found (${duration}ms)`, { firebaseUid });
 
       return {
         linked: false,
         client: null,
         activeOrders: [],
-      }
+      };
     }
 
-    const clientDoc = clientQuery.docs[0]
-    const client = clientDoc.data() as Client
-    const clientId = clientDoc.id
+    const clientDoc = clientQuery.docs[0];
+    const client = clientDoc.data() as Client;
+    const clientId = clientDoc.id;
 
-    log.info('Client found', { clientId, email: client.email })
+    log.info("Client found", { clientId, email: client.email });
 
     // Fetch active orders (wrapped in try-catch - orders are non-critical)
     let activeOrders: Array<{
-      orderId: string
-      package: string
-      orderStatus: string
-      deliveryStartDate: string
-      daysCount: number
-      totalPrice: number
-    }> = []
+      orderId: string;
+      package: string;
+      orderStatus: string;
+      deliveryStartDate: string;
+      deliveryEndDate?: string;
+      duration?: "5" | "6";
+      daysCount: number;
+      totalPrice: number;
+      creditDays?: number;
+    }> = [];
 
     try {
-      const ordersRef = db.collection('orders')
+      const ordersRef = db.collection("orders");
       const ordersQuery = await ordersRef
-        .where('clientId', '==', clientId)
-        .where('orderStatus', 'in', ['pending', 'approved'])
-        .orderBy('createdAt', 'desc')
+        .where("clientId", "==", clientId)
+        .where("orderStatus", "in", ["pending", "approved"])
+        .orderBy("createdAt", "desc")
         .limit(10)
-        .get()
+        .get();
 
-      activeOrders = ordersQuery.docs.map(doc => {
-        const order = doc.data() as Order
+      activeOrders = ordersQuery.docs.map((doc) => {
+        const order = doc.data() as Order;
+        // Handle Firestore Timestamp for deliveryEndDate
+        let deliveryEndDateStr: string | undefined;
+        if (order.deliveryEndDate) {
+          if (
+            typeof order.deliveryEndDate === "object" &&
+            "toDate" in order.deliveryEndDate
+          ) {
+            deliveryEndDateStr = (order.deliveryEndDate as any)
+              .toDate()
+              .toISOString()
+              .split("T")[0];
+          } else if (typeof order.deliveryEndDate === "string") {
+            deliveryEndDateStr = order.deliveryEndDate;
+          }
+        }
+
         return {
           orderId: order.orderId,
           package: order.package,
           orderStatus: order.orderStatus,
           deliveryStartDate: order.deliveryStartDate,
+          deliveryEndDate: deliveryEndDateStr,
+          duration: order.duration,
           daysCount: order.daysCount,
           totalPrice: order.totalPrice,
-        }
-      })
+          creditDays: (order as any).creditDays || 0,
+        };
+      });
     } catch (ordersError: any) {
       // Orders query may fail if Firestore index is missing - this is non-critical
-      log.info('Orders fetch skipped (index may be missing)', { error: ordersError.message })
+      log.info("Orders fetch skipped (index may be missing)", {
+        error: ordersError.message,
+      });
     }
 
-    const duration = Date.now() - startTime
+    const duration = Date.now() - startTime;
     log.success(`User data fetched (${duration}ms)`, {
       clientId,
       activeOrdersCount: activeOrders.length,
-    })
+    });
 
     return {
       linked: true,
@@ -111,18 +137,18 @@ export default defineEventHandler(async (event) => {
         subscriptionEndDate: client.subscriptionEndDate,
       },
       activeOrders,
-    }
+    };
   } catch (error: any) {
-    const duration = Date.now() - startTime
-    log.info(`Request failed (${duration}ms)`, { error: error.message })
+    const duration = Date.now() - startTime;
+    log.info(`Request failed (${duration}ms)`, { error: error.message });
 
     if (error.statusCode) {
-      throw error
+      throw error;
     }
 
     throw createError({
       statusCode: 500,
-      message: error.message || 'Nepodarilo sa načítať údaje',
-    })
+      message: error.message || "Nepodarilo sa načítať údaje",
+    });
   }
-})
+});
