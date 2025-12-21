@@ -30,7 +30,12 @@ function getFirstSkippableDate(now: Date = new Date()): Date {
 }
 
 function canReactivateDate(dateStr: string, now: Date = new Date()): boolean {
-  const target = new Date(dateStr)
+  // Parse as local date to avoid timezone issues
+  const parts = dateStr.split("-")
+  const year = parseInt(parts[0], 10)
+  const month = parseInt(parts[1], 10) - 1
+  const day = parseInt(parts[2], 10)
+  const target = new Date(year, month, day)
   target.setHours(0, 0, 0, 0)
 
   const today = new Date(now)

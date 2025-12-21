@@ -49,7 +49,12 @@ function getLastSkippableDate(now: Date = new Date()): Date {
 }
 
 function isValidDeliveryDay(dateStr: string, deliveryDays: 5 | 6): boolean {
-  const date = new Date(dateStr);
+  // Parse as local date to avoid timezone issues
+  const parts = dateStr.split("-");
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+  const day = parseInt(parts[2], 10);
+  const date = new Date(year, month, day);
   const dayOfWeek = date.getDay();
 
   if (dayOfWeek === 0) return false; // Sunday never
@@ -63,7 +68,12 @@ function canSkipDate(
   deliveryDays: 5 | 6,
   now: Date = new Date(),
 ): boolean {
-  const target = new Date(targetDate);
+  // Parse as local date to avoid timezone issues
+  const parts = targetDate.split("-");
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  const target = new Date(year, month, day);
   target.setHours(0, 0, 0, 0);
 
   const today = new Date(now);
