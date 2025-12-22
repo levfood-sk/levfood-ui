@@ -69,6 +69,9 @@ export default defineEventHandler(async (event) => {
       daysCount: number;
       totalPrice: number;
       creditDays?: number;
+      deliveryType?: string;
+      deliveryCity?: string;
+      deliveryAddress?: string;
     }> = [];
 
     try {
@@ -108,6 +111,9 @@ export default defineEventHandler(async (event) => {
           daysCount: order.daysCount,
           totalPrice: order.totalPrice,
           creditDays: (order as any).creditDays || 0,
+          deliveryType: order.deliveryType,
+          deliveryCity: order.deliveryCity,
+          deliveryAddress: order.deliveryAddress,
         };
       });
     } catch (ordersError: any) {
