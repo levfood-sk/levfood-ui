@@ -84,12 +84,13 @@ export default defineEventHandler(async (event) => {
     const validationResult = updateProfileSchema.safeParse(body);
 
     if (!validationResult.success) {
-      const errors = validationResult.error.errors
-        .map((e) => e.message)
-        .join(", ");
+      // Log detailed errors for debugging
+      log.info("Validation failed", { issues: validationResult.error.issues });
+
+      // Return user-friendly message
       throw createError({
         statusCode: 400,
-        message: errors,
+        message: "Skontrolujte prosím zadané údaje a skúste znova.",
       });
     }
 
