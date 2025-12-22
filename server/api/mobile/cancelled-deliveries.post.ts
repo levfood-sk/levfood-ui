@@ -1,7 +1,6 @@
 /**
  * POST /api/mobile/cancelled-deliveries
- * Cancel delivery day(s) for a user
- * Supports both single date and batch operations
+ * Cancel a single delivery day for a user
  * Extends subscription by +1 day per cancelled date
  */
 
@@ -41,12 +40,6 @@ function getFirstSkippableDate(now: Date = new Date()): Date {
   return result;
 }
 
-function getLastSkippableDate(now: Date = new Date()): Date {
-  const firstSkippable = getFirstSkippableDate(now);
-  const lastSkippable = new Date(firstSkippable);
-  lastSkippable.setDate(lastSkippable.getDate() + 13); // 2 weeks
-  return lastSkippable;
-}
 
 function isValidDeliveryDay(dateStr: string, deliveryDays: 5 | 6): boolean {
   // Parse as local date to avoid timezone issues
@@ -85,9 +78,6 @@ function canSkipDate(
   const firstSkippable = getFirstSkippableDate(now);
   if (target < firstSkippable) return false;
 
-  const lastSkippable = getLastSkippableDate(now);
-  if (target > lastSkippable) return false;
-
   return true;
 }
 
@@ -96,28 +86,27 @@ export default defineEventHandler(async (event) => {
     const user = requireAuth(event);
     const body = await readBody(event);
 
-    const { date, dates, action } = body; // date for single, dates for batch
+    const { dates } = body;
 
-    // Validate action
-    if (!action || !["cancel", "reactivate"].includes(action)) {
-      throw createError({
-        statusCode: 400,
-        message: 'Neplatná akcia. Použite "cancel" alebo "reactivate"',
-      });
-    }
-
-    // Determine if batch or single operation
-    const isBatch = Array.isArray(dates) && dates.length > 0;
-    const datesToProcess: string[] = isBatch ? dates : date ? [date] : [];
-
-    if (datesToProcess.length === 0) {
+    // Validate dates array is provided
+    if (!Array.isArray(dates) || dates.length === 0) {
       throw createError({
         statusCode: 400,
         message: "Dátum je povinný",
       });
     }
 
-    // Validate date format for all dates
+    // Enforce single-day skip only
+    if (dates.length > 1) {
+      throw createError({
+        statusCode: 400,
+        message: "Môžete preskočiť iba jeden deň naraz",
+      });
+    }
+
+    const datesToProcess: string[] = dates;
+
+    // Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     for (const d of datesToProcess) {
       if (!dateRegex.test(d)) {
@@ -166,168 +155,90 @@ export default defineEventHandler(async (event) => {
     const orderData = orderDoc.data();
     const deliveryDays = (orderData.duration === "6" ? 6 : 5) as 5 | 6;
 
-    // Validate max dates based on package
-    const maxDates = deliveryDays === 5 ? 10 : 12;
-    if (datesToProcess.length > maxDates) {
-      throw createError({
-        statusCode: 400,
-        message: `Maximálny počet dní na preskočenie je ${maxDates}`,
-      });
-    }
-
     const now = new Date();
 
-    if (action === "cancel") {
-      // Validate all dates can be skipped
-      for (const d of datesToProcess) {
-        if (!canSkipDate(d, deliveryDays, now)) {
-          throw createError({
-            statusCode: 400,
-            message: `Dátum ${d} nie je možné preskočiť. Skontrolujte, či je v povolenej lehote a je to deň doručenia.`,
-          });
-        }
-      }
-
-      // Check if any dates are already cancelled
-      const cancellationRefs = datesToProcess.map((d) =>
-        firestore.collection("cancelledDeliveries").doc(`${clientId}_${d}`),
-      );
-
-      const existingDocs = await firestore.getAll(...cancellationRefs);
-      const alreadyCancelled = existingDocs
-        .filter((doc) => doc.exists)
-        .map((doc) => doc.id.split("_")[1]);
-
-      if (alreadyCancelled.length > 0) {
+    // Validate all dates can be skipped
+    for (const d of datesToProcess) {
+      if (!canSkipDate(d, deliveryDays, now)) {
         throw createError({
           statusCode: 400,
-          message: `Tieto dni sú už preskočené: ${alreadyCancelled.join(", ")}`,
+          message: `Dátum ${d} nie je možné preskočiť. Skontrolujte, či je v povolenej lehote a je to deň doručenia.`,
         });
       }
+    }
 
-      // Get current end date
-      let deliveryEndDate: Date;
-      if (orderData.deliveryEndDate?.toDate) {
-        deliveryEndDate = orderData.deliveryEndDate.toDate();
-      } else if (orderData.deliveryEndDate) {
-        deliveryEndDate = new Date(orderData.deliveryEndDate);
-      } else {
-        // Calculate from start date + days count if no end date
-        deliveryEndDate = new Date();
-        deliveryEndDate.setDate(
-          deliveryEndDate.getDate() + (orderData.daysCount || 30),
-        );
-      }
+    // Check if any dates are already cancelled
+    const cancellationRefs = datesToProcess.map((d) =>
+      firestore.collection("cancelledDeliveries").doc(`${clientId}_${d}`),
+    );
 
-      // Use batch write for atomicity
-      const batch = firestore.batch();
+    const existingDocs = await firestore.getAll(...cancellationRefs);
+    const alreadyCancelled = existingDocs
+      .filter((doc) => doc.exists)
+      .map((doc) => doc.id.split("_")[1]);
 
-      // Create cancellation records
-      for (const d of datesToProcess) {
-        const cancellationRef = firestore
-          .collection("cancelledDeliveries")
-          .doc(`${clientId}_${d}`);
-        batch.set(cancellationRef, {
-          clientId,
-          orderId: orderData.orderId,
-          date: d,
-          creditApplied: true,
-          cancelledAt: new Date(),
-        });
-      }
-
-      // Add credit days (one per cancelled date)
-      const creditDaysToAdd = datesToProcess.length;
-      deliveryEndDate.setDate(deliveryEndDate.getDate() + creditDaysToAdd);
-
-      // Update order
-      const orderRef = firestore.collection("orders").doc(orderDoc.id);
-      batch.update(orderRef, {
-        deliveryEndDate,
-        creditDays: (orderData.creditDays || 0) + creditDaysToAdd,
+    if (alreadyCancelled.length > 0) {
+      throw createError({
+        statusCode: 400,
+        message: `Tento deň je už preskočený`,
       });
+    }
 
-      // Commit all changes
-      await batch.commit();
-
-      const newEndDateStr = deliveryEndDate.toISOString().split("T")[0];
-
-      return {
-        success: true,
-        message: isBatch
-          ? `${datesToProcess.length} dní bolo preskočených. +${creditDaysToAdd} dní bolo pripočítaných k predplatnému.`
-          : "Doručenie bolo zrušené. +1 deň bol pripočítaný k predplatnému.",
-        dates: datesToProcess,
-        action: "cancel",
-        newEndDate: newEndDateStr,
-        creditDaysAdded: creditDaysToAdd,
-      };
+    // Get current end date
+    let deliveryEndDate: Date;
+    if (orderData.deliveryEndDate?.toDate) {
+      deliveryEndDate = orderData.deliveryEndDate.toDate();
+    } else if (orderData.deliveryEndDate) {
+      deliveryEndDate = new Date(orderData.deliveryEndDate);
     } else {
-      // Reactivate - only supports single date
-      if (isBatch) {
-        throw createError({
-          statusCode: 400,
-          message: "Obnovenie podporuje len jeden dátum naraz",
-        });
-      }
+      // Calculate from start date + days count if no end date
+      deliveryEndDate = new Date();
+      deliveryEndDate.setDate(
+        deliveryEndDate.getDate() + (orderData.daysCount || 30),
+      );
+    }
 
-      const dateToReactivate = datesToProcess[0];
+    // Use batch write for atomicity
+    const batch = firestore.batch();
 
-      // Check cutoff for reactivation
-      if (!canSkipDate(dateToReactivate, deliveryDays, now)) {
-        throw createError({
-          statusCode: 400,
-          message: "Tento dátum už nie je možné obnoviť - lehota uplynula.",
-        });
-      }
-
-      const cancellationId = `${clientId}_${dateToReactivate}`;
+    // Create cancellation records
+    for (const d of datesToProcess) {
       const cancellationRef = firestore
         .collection("cancelledDeliveries")
-        .doc(cancellationId);
-
-      const existingDoc = await cancellationRef.get();
-      if (!existingDoc.exists) {
-        throw createError({
-          statusCode: 400,
-          message: "Doručenie na tento deň nie je zrušené",
-        });
-      }
-
-      const existingData = existingDoc.data();
-
-      // Remove the credit day if it was applied
-      if (existingData?.creditApplied) {
-        const orderRef = firestore.collection("orders").doc(orderDoc.id);
-
-        let deliveryEndDate: Date;
-        if (orderData.deliveryEndDate?.toDate) {
-          deliveryEndDate = orderData.deliveryEndDate.toDate();
-        } else if (orderData.deliveryEndDate) {
-          deliveryEndDate = new Date(orderData.deliveryEndDate);
-        } else {
-          deliveryEndDate = new Date();
-        }
-
-        // Subtract 1 day
-        deliveryEndDate.setDate(deliveryEndDate.getDate() - 1);
-
-        await orderRef.update({
-          deliveryEndDate,
-          creditDays: Math.max((orderData.creditDays || 0) - 1, 0),
-        });
-      }
-
-      // Delete the cancellation record
-      await cancellationRef.delete();
-
-      return {
-        success: true,
-        message: "Doručenie bolo obnovené.",
-        dates: [dateToReactivate],
-        action: "reactivate",
-      };
+        .doc(`${clientId}_${d}`);
+      batch.set(cancellationRef, {
+        clientId,
+        orderId: orderData.orderId,
+        date: d,
+        creditApplied: true,
+        cancelledAt: new Date(),
+      });
     }
+
+    // Add credit days (one per cancelled date)
+    const creditDaysToAdd = datesToProcess.length;
+    deliveryEndDate.setDate(deliveryEndDate.getDate() + creditDaysToAdd);
+
+    // Update order
+    const orderRef = firestore.collection("orders").doc(orderDoc.id);
+    batch.update(orderRef, {
+      deliveryEndDate,
+      creditDays: (orderData.creditDays || 0) + creditDaysToAdd,
+    });
+
+    // Commit all changes
+    await batch.commit();
+
+    const newEndDateStr = deliveryEndDate.toISOString().split("T")[0];
+
+    return {
+      success: true,
+      message: "Doručenie bolo zrušené. +1 deň bol pripočítaný k predplatnému.",
+      dates: datesToProcess,
+      action: "cancel",
+      newEndDate: newEndDateStr,
+      creditDaysAdded: creditDaysToAdd,
+    };
   } catch (error: any) {
     return handleApiError(error, "Nepodarilo sa spracovať požiadavku");
   }
