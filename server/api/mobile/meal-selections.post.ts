@@ -91,13 +91,22 @@ export default defineEventHandler(async (event) => {
     const clientId = clientDoc.id
     const clientData = clientDoc.data()
 
+    console.log('[MEAL-SELECTIONS] Client found:', { clientId, email: clientData.email })
+
     // Get active order for package tier info
     const ordersRef = firestore.collection('orders')
     const orderQuery = await ordersRef
       .where('clientId', '==', clientId)
       .where('orderStatus', 'in', ['pending', 'approved'])
+      .orderBy('createdAt', 'desc')
       .limit(1)
       .get()
+
+    console.log('[MEAL-SELECTIONS] Order query result:', {
+      clientId,
+      orderCount: orderQuery.size,
+      orders: orderQuery.docs.map(d => ({ id: d.id, clientId: d.data().clientId, status: d.data().orderStatus }))
+    })
 
     if (orderQuery.empty) {
       throw createError({

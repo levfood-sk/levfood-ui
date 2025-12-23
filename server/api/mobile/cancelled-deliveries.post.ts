@@ -143,6 +143,7 @@ export default defineEventHandler(async (event) => {
     const orderQuery = await ordersRef
       .where("clientId", "==", clientId)
       .where("orderStatus", "in", ["pending", "approved"])
+      .orderBy("createdAt", "desc")
       .limit(1)
       .get();
 

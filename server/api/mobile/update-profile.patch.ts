@@ -96,13 +96,6 @@ export default defineEventHandler(async (event) => {
 
     const data = validationResult.data;
 
-    // Validate delivery fields combination
-    if (data.deliveryType === "domov") {
-      if (data.deliveryCity === undefined && data.deliveryAddress === undefined) {
-        // Allow partial updates, but if switching to domov, require both
-      }
-    }
-
     // Initialize Firestore
     const { app } = getFirebaseAdmin();
     const db = getFirestore(app);
@@ -157,6 +150,8 @@ export default defineEventHandler(async (event) => {
 
     // Find and update active order if delivery fields provided
     let updatedOrder: any = null;
+    let deliveryUpdateSkipped = false;
+    let deliveryUpdateReason: string | undefined;
     const hasDeliveryUpdates =
       data.deliveryType !== undefined ||
       data.deliveryCity !== undefined ||
@@ -182,11 +177,6 @@ export default defineEventHandler(async (event) => {
 
         if (data.deliveryType !== undefined) {
           orderUpdateData.deliveryType = data.deliveryType;
-
-          // If switching to prevádzka, clear delivery-specific fields
-          if (data.deliveryType === "prevádzka") {
-            orderUpdateData.deliveryCity = null;
-          }
         }
 
         if (data.deliveryCity !== undefined) {
@@ -207,6 +197,8 @@ export default defineEventHandler(async (event) => {
         const updatedOrderDoc = await orderDoc.ref.get();
         updatedOrder = updatedOrderDoc.data() as Order;
       } else {
+        deliveryUpdateSkipped = true;
+        deliveryUpdateReason = "Nemáte aktívnu objednávku na aktualizáciu doručenia";
         log.info("No active order found for delivery update", { clientId });
       }
     }
@@ -297,6 +289,8 @@ export default defineEventHandler(async (event) => {
         subscriptionEndDate: updatedClient.subscriptionEndDate,
       },
       activeOrders,
+      deliveryUpdateSkipped,
+      deliveryUpdateReason,
     };
   } catch (error: any) {
     const duration = Date.now() - startTime;
