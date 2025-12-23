@@ -6,6 +6,19 @@ import type { DurationType } from '~~/app/lib/types/order'
  * Centralized utility for all delivery date calculations.
  * Handles 5-day packages (Mon-Fri) and 6-day packages (Mon-Sat).
  * Sunday is NEVER a delivery day.
+ *
+ * Cutoff Logic (based on production schedule):
+ * - Ordering happens Monday morning for Tuesday's food
+ * - Chef cooks Wednesday, delivers, customers eat Thursday
+ *
+ * Current Day (until 23:59) -> First Modifiable Day
+ * Sunday    -> Thursday (+4 days)
+ * Monday    -> Friday (+4 days)
+ * Tuesday   -> Saturday (+4 days) - or Monday for 5-day packages
+ * Wednesday -> Monday (+5 days)
+ * Thursday  -> Tuesday (+5 days)
+ * Friday    -> Wednesday (+5 days)
+ * Saturday  -> Thursday (+5 days)
  */
 
 /**
@@ -224,4 +237,70 @@ export function getOrCalculateDeliveryEndDate(order: OrderDateData): Date {
   }
 
   return baseEndDate
+}
+
+/**
+ * Get the first date that can be modified/skipped based on current day/time
+ * Based on production schedule where ordering happens Monday morning for Tuesday's food.
+ *
+ * @param now - Current date/time (defaults to now)
+ * @returns Date object representing the first modifiable date
+ */
+export function getFirstModifiableDate(now: Date = new Date()): Date {
+  const dayOfWeek = now.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+
+  // Days to add to get to first modifiable date
+  const daysToAdd: Record<number, number> = {
+    0: 4, // Sunday -> Thursday (+4)
+    1: 4, // Monday -> Friday (+4)
+    2: 4, // Tuesday -> Saturday (+4)
+    3: 5, // Wednesday -> Monday (+5)
+    4: 5, // Thursday -> Tuesday (+5)
+    5: 5, // Friday -> Wednesday (+5)
+    6: 5, // Saturday -> Thursday (+5)
+  }
+
+  const result = new Date(now)
+  result.setDate(result.getDate() + daysToAdd[dayOfWeek])
+  result.setHours(0, 0, 0, 0)
+
+  return result
+}
+
+/**
+ * Check if a specific date can be modified (meal selection or skip)
+ * Uses production schedule cutoff logic.
+ *
+ * @param targetDateStr - Target date in YYYY-MM-DD format
+ * @param duration - '5' or '6' day package
+ * @param now - Current date/time (defaults to now)
+ * @returns true if the date can be modified
+ */
+export function canModifyDate(
+  targetDateStr: string,
+  duration: DurationType,
+  now: Date = new Date(),
+): boolean {
+  // Parse as local date to avoid timezone issues
+  const parts = targetDateStr.split('-')
+  const year = parseInt(parts[0], 10)
+  const month = parseInt(parts[1], 10) - 1
+  const day = parseInt(parts[2], 10)
+  const target = new Date(year, month, day)
+  target.setHours(0, 0, 0, 0)
+
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+
+  // Cannot modify past dates or today
+  if (target <= today) return false
+
+  // Check if it's a valid delivery day
+  if (!isValidDeliveryDay(target, duration)) return false
+
+  // Check against cutoff - must be on or after first modifiable date
+  const firstModifiable = getFirstModifiableDate(now)
+  if (target < firstModifiable) return false
+
+  return true
 }

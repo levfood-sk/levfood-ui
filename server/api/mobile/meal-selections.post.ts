@@ -5,9 +5,9 @@
 
 import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
 import { requireAuth, handleApiError } from '~~/server/utils/auth'
+import { canModifyDate, getFirstModifiableDate, formatToYYYYMMDD } from '~~/server/utils/delivery-dates'
 import type { RanajkyChoice, ObedChoice } from '~/lib/types/meals'
-
-const CUTOFF_HOURS = 48
+import type { DurationType } from '~~/app/lib/types/order'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -47,30 +47,6 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Check if date is not in the past
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const selectionDate = new Date(date)
-    selectionDate.setHours(0, 0, 0, 0)
-
-    if (selectionDate < today) {
-      throw createError({
-        statusCode: 400,
-        message: 'Nemôžete upraviť výber pre minulý dátum'
-      })
-    }
-
-    // Check 48h cutoff
-    const now = new Date()
-    const hoursUntilDelivery = (selectionDate.getTime() - now.getTime()) / (1000 * 60 * 60)
-    
-    if (hoursUntilDelivery < CUTOFF_HOURS) {
-      throw createError({
-        statusCode: 400,
-        message: `Zmeny nie sú možné menej ako ${CUTOFF_HOURS} hodín pred doručením`
-      })
-    }
-
     const { firestore } = getFirebaseAdmin()
 
     // Find the client linked to this Firebase user
@@ -91,7 +67,6 @@ export default defineEventHandler(async (event) => {
     const clientId = clientDoc.id
     const clientData = clientDoc.data()
 
-    console.log('[MEAL-SELECTIONS] Client found:', { clientId, email: clientData.email })
 
     // Get active order for package tier info
     const ordersRef = firestore.collection('orders')
@@ -102,12 +77,6 @@ export default defineEventHandler(async (event) => {
       .limit(1)
       .get()
 
-    console.log('[MEAL-SELECTIONS] Order query result:', {
-      clientId,
-      orderCount: orderQuery.size,
-      orders: orderQuery.docs.map(d => ({ id: d.id, clientId: d.data().clientId, status: d.data().orderStatus }))
-    })
-
     if (orderQuery.empty) {
       throw createError({
         statusCode: 403,
@@ -117,6 +86,18 @@ export default defineEventHandler(async (event) => {
 
     const orderDoc = orderQuery.docs[0]
     const orderData = orderDoc.data()
+
+    // Check cutoff based on production schedule
+    // Uses same logic as skipping deliveries - based on when food is ordered/cooked
+    const duration = (orderData.duration || '5') as DurationType
+    if (!canModifyDate(date, duration)) {
+      const firstModifiable = getFirstModifiableDate()
+      const firstModifiableDateStr = formatToYYYYMMDD(firstModifiable)
+      throw createError({
+        statusCode: 400,
+        message: `Zmeny nie sú možné - lehota uplynula. Najbližší upraviteľný deň je ${firstModifiableDateStr}`
+      })
+    }
 
     // Save the selection using compound ID: clientId_date
     const selectionId = `${clientId}_${date}`
