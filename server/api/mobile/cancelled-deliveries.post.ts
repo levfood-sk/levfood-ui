@@ -6,6 +6,8 @@
 
 import { getFirebaseAdmin } from "~~/server/utils/firebase-admin";
 import { requireAuth, handleApiError } from "~~/server/utils/auth";
+import { getOrCalculateDeliveryEndDate, extendDeliveryEndDate } from "~~/server/utils/delivery-dates";
+import type { DurationType } from "~~/app/lib/types/order";
 
 /**
  * New cutoff logic based on production schedule
@@ -184,19 +186,15 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Get current end date
-    let deliveryEndDate: Date;
-    if (orderData.deliveryEndDate?.toDate) {
-      deliveryEndDate = orderData.deliveryEndDate.toDate();
-    } else if (orderData.deliveryEndDate) {
-      deliveryEndDate = new Date(orderData.deliveryEndDate);
-    } else {
-      // Calculate from start date + days count if no end date
-      deliveryEndDate = new Date();
-      deliveryEndDate.setDate(
-        deliveryEndDate.getDate() + (orderData.daysCount || 30),
-      );
-    }
+    // Get current end date using utility (handles legacy orders without deliveryEndDate)
+    const duration = orderData.duration as DurationType;
+    const currentEndDate = getOrCalculateDeliveryEndDate({
+      deliveryStartDate: orderData.deliveryStartDate,
+      duration,
+      daysCount: orderData.daysCount,
+      deliveryEndDate: orderData.deliveryEndDate,
+      creditDays: orderData.creditDays || 0,
+    });
 
     // Use batch write for atomicity
     const batch = firestore.batch();
@@ -215,21 +213,21 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Add credit days (one per cancelled date)
+    // Add credit days (one per cancelled date) - extends by valid delivery days, not calendar days
     const creditDaysToAdd = datesToProcess.length;
-    deliveryEndDate.setDate(deliveryEndDate.getDate() + creditDaysToAdd);
+    const newEndDate = extendDeliveryEndDate(currentEndDate, duration, creditDaysToAdd);
 
     // Update order
     const orderRef = firestore.collection("orders").doc(orderDoc.id);
     batch.update(orderRef, {
-      deliveryEndDate,
+      deliveryEndDate: newEndDate,
       creditDays: (orderData.creditDays || 0) + creditDaysToAdd,
     });
 
     // Commit all changes
     await batch.commit();
 
-    const newEndDateStr = deliveryEndDate.toISOString().split("T")[0];
+    const newEndDateStr = newEndDate.toISOString().split("T")[0];
 
     return {
       success: true,

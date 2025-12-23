@@ -14,6 +14,7 @@ import { generateUniqueOrderId } from '~~/server/utils/generateOrderId'
 import { createOrderSchema, calculateOrderPrice } from '~~/app/lib/types/order'
 import type { Order, CreateOrderInput, Client } from '~~/app/lib/types/order'
 import { sendOrderNotification, sendClientOrderConfirmation } from '~~/server/utils/email'
+import { calculateDeliveryEndDate } from '~~/server/utils/delivery-dates'
 
 // Logging helper for consistent format
 const log = {
@@ -85,11 +86,12 @@ export default defineEventHandler(async (event) => {
 
     if (clientQuery.empty) {
       // Create new client
-      // Calculate subscription end date (start date + duration in weeks * 7 days)
-      const startDate = parseDeliveryDate(orderData.deliveryStartDate)
-      const durationWeeks = 4 // 4 weeks for both plans
-      const subscriptionEndDate = new Date(startDate)
-      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + (durationWeeks * 7))
+      // Calculate subscription end date using delivery date utility
+      const subscriptionEndDate = calculateDeliveryEndDate(
+        orderData.deliveryStartDate,
+        orderData.duration,
+        pricing.daysCount,
+      )
 
       const newClient: Omit<Client, 'clientId'> = {
         firstName,
@@ -136,11 +138,12 @@ export default defineEventHandler(async (event) => {
       const clientDoc = clientQuery.docs[0]
       clientId = clientDoc.id
 
-      // Calculate new subscription end date
-      const startDate = parseDeliveryDate(orderData.deliveryStartDate)
-      const durationWeeks = 4
-      const subscriptionEndDate = new Date(startDate)
-      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + (durationWeeks * 7))
+      // Calculate new subscription end date using delivery date utility
+      const subscriptionEndDate = calculateDeliveryEndDate(
+        orderData.deliveryStartDate,
+        orderData.duration,
+        pricing.daysCount,
+      )
 
       const updateData: any = {
         // Update contact info in case it changed
@@ -202,6 +205,10 @@ export default defineEventHandler(async (event) => {
       // Delivery information
       courierNotes: orderData.courierNotes,
       deliveryStartDate: orderData.deliveryStartDate,
+      deliveryEndDate: Timestamp.fromDate(
+        calculateDeliveryEndDate(orderData.deliveryStartDate, orderData.duration, pricing.daysCount)
+      ),
+      creditDays: 0,
 
       // Payment information
       termsAccepted: orderData.termsAccepted,

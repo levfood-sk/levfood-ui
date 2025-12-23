@@ -10,7 +10,8 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "~~/server/utils/firebase-admin";
 import { requireAuth } from "~~/server/utils/auth";
-import type { Order, Client } from "~~/app/lib/types/order";
+import type { Order, Client, DurationType } from "~~/app/lib/types/order";
+import { getOrCalculateDeliveryEndDate, formatToYYYYMMDD } from "~~/server/utils/delivery-dates";
 
 // Logging helper for consistent format
 const log = {
@@ -85,21 +86,16 @@ export default defineEventHandler(async (event) => {
 
       activeOrders = ordersQuery.docs.map((doc) => {
         const order = doc.data() as Order;
-        // Handle Firestore Timestamp for deliveryEndDate
-        let deliveryEndDateStr: string | undefined;
-        if (order.deliveryEndDate) {
-          if (
-            typeof order.deliveryEndDate === "object" &&
-            "toDate" in order.deliveryEndDate
-          ) {
-            deliveryEndDateStr = (order.deliveryEndDate as any)
-              .toDate()
-              .toISOString()
-              .split("T")[0];
-          } else if (typeof order.deliveryEndDate === "string") {
-            deliveryEndDateStr = order.deliveryEndDate;
-          }
-        }
+
+        // Calculate delivery end date using utility (handles legacy orders without stored field)
+        const computedEndDate = getOrCalculateDeliveryEndDate({
+          deliveryStartDate: order.deliveryStartDate,
+          duration: order.duration as DurationType,
+          daysCount: order.daysCount,
+          deliveryEndDate: order.deliveryEndDate,
+          creditDays: order.creditDays || 0,
+        });
+        const deliveryEndDateStr = formatToYYYYMMDD(computedEndDate);
 
         return {
           orderId: order.orderId,
@@ -110,7 +106,7 @@ export default defineEventHandler(async (event) => {
           duration: order.duration,
           daysCount: order.daysCount,
           totalPrice: order.totalPrice,
-          creditDays: (order as any).creditDays || 0,
+          creditDays: order.creditDays || 0,
           deliveryType: order.deliveryType,
           deliveryCity: order.deliveryCity,
           deliveryAddress: order.deliveryAddress,

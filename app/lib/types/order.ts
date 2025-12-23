@@ -104,7 +104,9 @@ export interface Order {
 
   // Delivery information
   courierNotes: string
-  deliveryStartDate: string    // ISO date string
+  deliveryStartDate: string    // DD.MM.YYYY format
+  deliveryEndDate?: Timestamp  // Calculated last delivery date
+  creditDays?: number          // Credit days from cancelled deliveries
 
   // Payment information
   termsAccepted: boolean
