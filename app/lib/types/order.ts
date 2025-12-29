@@ -118,6 +118,9 @@ export interface Order {
   // Order management
   orderStatus: OrderStatus
 
+  // Demo order flag (for App Store/Play Store testing)
+  isDemo?: boolean
+
   // Invoice information (optional, added after webhook processing)
   superfakturaInvoiceId?: number
   superfakturaInvoiceNumber?: string

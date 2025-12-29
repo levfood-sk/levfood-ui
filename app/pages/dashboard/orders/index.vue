@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, type Unsubscribe } from 'firebase/firestore'
-import { formatPrice, ORDER_STATUS_LABELS } from '~~/app/lib/types/order'
-import type { Order, OrderWithClient, OrderStatus, Client } from '~~/app/lib/types/order'
+import { formatPrice, ORDER_STATUS_LABELS, DELIVERY_CITIES } from '~~/app/lib/types/order'
+import type { Order, OrderWithClient, OrderStatus, Client, PackageType, DurationType, DeliveryType, DeliveryCity } from '~~/app/lib/types/order'
 
 const { exportToPdf } = usePdfExport()
 
@@ -257,6 +257,132 @@ const clearDateFilters = () => {
 // PDF Export
 const exportingPdf = ref(false)
 
+// Demo order modal state
+const showDemoOrderModal = ref(false)
+const demoOrderLoading = ref(false)
+const demoOrderForm = ref({
+  fullName: 'Testovací užívateľ',
+  email: '',
+  phone: '+421900000000',
+  package: 'ŠTANDARD' as PackageType,
+  duration: '6' as DurationType,
+  deliveryType: 'prevádzka' as DeliveryType,
+  deliveryCity: undefined as DeliveryCity | undefined,
+  deliveryAddress: 'Testovacia adresa 123, 934 01 Levice',
+  notes: '',
+})
+
+// Package options for select
+const packageOptions = [
+  { label: 'EKONOMY', value: 'EKONOMY' },
+  { label: 'ŠTANDARD', value: 'ŠTANDARD' },
+  { label: 'PREMIUM', value: 'PREMIUM' },
+  { label: 'OFFICE', value: 'OFFICE' },
+]
+
+// Duration options for select
+const durationOptions = [
+  { label: '5 dní (20 porcií)', value: '5' },
+  { label: '6 dní (24 porcií)', value: '6' },
+]
+
+// Delivery type options for select
+const deliveryTypeOptions = [
+  { label: 'Prevádzka', value: 'prevádzka' },
+  { label: 'Domov', value: 'domov' },
+]
+
+// Delivery city options for select
+const deliveryCityOptions = DELIVERY_CITIES.map(city => ({ label: city, value: city }))
+
+// Generate random email for demo
+const generateRandomEmail = () => {
+  const timestamp = Date.now()
+  demoOrderForm.value.email = `demo.${timestamp}@test.com`
+}
+
+// Reset demo order form
+const resetDemoOrderForm = () => {
+  demoOrderForm.value = {
+    fullName: 'Test User',
+    email: '',
+    phone: '+421900000000',
+    package: 'ŠTANDARD' as PackageType,
+    duration: '5' as DurationType,
+    deliveryType: 'prevádzka' as DeliveryType,
+    deliveryCity: undefined,
+    deliveryAddress: 'Testovacia adresa 123, 934 01 Levice',
+    notes: '',
+  }
+}
+
+// Open demo order modal
+const openDemoOrderModal = () => {
+  resetDemoOrderForm()
+  generateRandomEmail()
+  showDemoOrderModal.value = true
+}
+
+// Create demo order
+const createDemoOrder = async () => {
+  // Validate required fields
+  if (!demoOrderForm.value.fullName || !demoOrderForm.value.email || !demoOrderForm.value.phone) {
+    useToast().add({
+      title: 'Chyba',
+      description: 'Vyplňte všetky povinné polia',
+      color: 'error',
+    })
+    return
+  }
+
+  // Validate delivery city for home delivery
+  if (demoOrderForm.value.deliveryType === 'domov' && !demoOrderForm.value.deliveryCity) {
+    useToast().add({
+      title: 'Chyba',
+      description: 'Vyberte mesto/obec pre doručenie domov',
+      color: 'error',
+    })
+    return
+  }
+
+  demoOrderLoading.value = true
+
+  try {
+    const response = await $fetch('/api/orders/create-demo', {
+      method: 'POST',
+      body: {
+        fullName: demoOrderForm.value.fullName,
+        email: demoOrderForm.value.email,
+        phone: demoOrderForm.value.phone,
+        package: demoOrderForm.value.package,
+        duration: demoOrderForm.value.duration,
+        deliveryType: demoOrderForm.value.deliveryType,
+        deliveryCity: demoOrderForm.value.deliveryType === 'domov' ? demoOrderForm.value.deliveryCity : undefined,
+        deliveryAddress: demoOrderForm.value.deliveryAddress,
+        notes: demoOrderForm.value.notes,
+      },
+    })
+
+    useToast().add({
+      title: 'Úspech',
+      description: `Demo objednávka #${response.orderId} bola vytvorená`,
+      color: 'success',
+    })
+
+    showDemoOrderModal.value = false
+    // Orders list will auto-refresh via Firestore listener
+  } catch (error: any) {
+    console.error('Demo order creation error:', error)
+    useToast().add({
+      title: 'Chyba',
+      description: error.data?.message || error.message || 'Nepodarilo sa vytvoriť demo objednávku',
+      color: 'error',
+    })
+  } finally {
+    demoOrderLoading.value = false
+  }
+}
+
 const exportOrdersToPdf = async () => {
   if (filteredOrders.value.length === 0) {
     useToast().add({
@@ -447,6 +573,17 @@ const exportOrdersToPdf = async () => {
           <span class="md:hidden">{{ showAdvancedFilters ? 'Skryť filtre' : 'Zobraziť filtre' }}</span>
         </UButton>
 
+        <!-- Demo Order Button -->
+        <UButton
+          icon="i-lucide-plus"
+          class="w-full md:w-auto flex items-center justify-center gap-2 bg-orange h-[3.5rem] text-dark-green hover:bg-dark-green hover:text-beige cursor-pointer"
+          color="neutral"
+          size="lg"
+          @click="openDemoOrderModal"
+        >
+          <span>Demo Objednávka</span>
+        </UButton>
+
         <!-- Export Button -->
         <UButton
           :disabled="exportingPdf || filteredOrders.length === 0"
@@ -600,7 +737,16 @@ const exportOrdersToPdf = async () => {
 
               <!-- Order Status -->
               <td v-if="isColumnVisible('orderStatus')" class="px-4 py-3">
+                <!-- Demo order: show Testovacia -->
                 <span
+                  v-if="order.isDemo"
+                  class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium text-white bg-violet-600"
+                >
+                  Testovacia
+                </span>
+                <!-- Regular order: show normal status -->
+                <span
+                  v-else
                   class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium"
                   :class="{
                     'text-slate-900': order.orderStatus === 'pending',
@@ -639,5 +785,149 @@ const exportOrdersToPdf = async () => {
         </table>
       </div>
     </UCard>
+
+    <!-- Demo Order Modal -->
+    <UModal v-model:open="showDemoOrderModal">
+      <template #content>
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-slate-900">Vytvoriť Demo Objednávku</h3>
+            <UButton
+              icon="i-lucide-x"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              @click="showDemoOrderModal = false"
+            />
+          </div>
+
+          <div class="space-y-4">
+            <!-- Full Name -->
+            <UFormField label="Meno a priezvisko">
+              <UInput
+                v-model="demoOrderForm.fullName"
+                placeholder="Meno a priezvisko"
+                size="lg"
+                class="w-full"
+              />
+            </UFormField>
+
+            <!-- Email -->
+            <UFormField label="Email">
+              <div class="flex gap-2">
+                <UInput
+                  v-model="demoOrderForm.email"
+                  type="email"
+                  placeholder="Email"
+                  size="lg"
+                  class="flex-1"
+                />
+                <UButton
+                  icon="i-lucide-refresh-cw"
+                  color="neutral"
+                  variant="outline"
+                  size="lg"
+                  @click="generateRandomEmail"
+                  title="Vygenerovať náhodný email"
+                />
+              </div>
+            </UFormField>
+
+            <!-- Phone -->
+            <UFormField label="Telefón">
+              <UInput
+                v-model="demoOrderForm.phone"
+                placeholder="+421900000000"
+                size="lg"
+                class="w-full"
+              />
+            </UFormField>
+
+            <!-- Package & Duration -->
+            <div class="grid grid-cols-2 gap-4">
+              <UFormField label="Balíček">
+                <USelect
+                  v-model="demoOrderForm.package"
+                  :items="packageOptions"
+                  size="lg"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Trvanie">
+                <USelect
+                  v-model="demoOrderForm.duration"
+                  :items="durationOptions"
+                  size="lg"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+
+            <!-- Delivery Type -->
+            <UFormField label="Typ doručenia">
+              <USelect
+                v-model="demoOrderForm.deliveryType"
+                :items="deliveryTypeOptions"
+                size="lg"
+                class="w-full"
+              />
+            </UFormField>
+
+            <!-- Delivery City (only for home delivery) -->
+            <UFormField v-if="demoOrderForm.deliveryType === 'domov'" label="Mesto/obec">
+              <USelect
+                v-model="demoOrderForm.deliveryCity"
+                :items="deliveryCityOptions"
+                placeholder="Vyberte mesto/obec"
+                size="lg"
+                class="w-full"
+              />
+            </UFormField>
+
+            <!-- Delivery Address -->
+            <UFormField label="Adresa">
+              <UInput
+                v-model="demoOrderForm.deliveryAddress"
+                placeholder="Adresa"
+                size="lg"
+                class="w-full"
+              />
+            </UFormField>
+
+            <!-- Notes -->
+            <UFormField label="Poznámky (voliteľné)">
+              <UTextarea
+                v-model="demoOrderForm.notes"
+                placeholder="Poznámky k objednávke..."
+                :rows="2"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200">
+            <UButton
+              color="neutral"
+              variant="outline"
+              size="lg"
+              @click="showDemoOrderModal = false"
+            >
+              Zrušiť
+            </UButton>
+            <UButton
+              :loading="demoOrderLoading"
+              :disabled="demoOrderLoading"
+              class="bg-orange text-dark-green hover:bg-dark-green hover:text-beige"
+              size="lg"
+              @click="createDemoOrder"
+            >
+              Vytvoriť Demo Objednávku
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

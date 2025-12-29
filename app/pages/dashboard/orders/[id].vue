@@ -17,6 +17,8 @@ const loading = ref(true)
 const updating = ref(false)
 const downloadingInvoice = ref(false)
 const resendingEmail = ref(false)
+const deleting = ref(false)
+const showDeleteConfirm = ref(false)
 
 // Load order and client data
 const loadOrder = async () => {
@@ -249,6 +251,38 @@ async function resendConfirmationEmail() {
   }
 }
 
+// Delete demo order
+async function deleteDemoOrder() {
+  if (!order.value || !order.value.isDemo) return
+
+  deleting.value = true
+
+  try {
+    await $fetch(`/api/orders/${orderId}/delete`, {
+      method: 'DELETE',
+    })
+
+    useToast().add({
+      title: 'Úspech',
+      description: 'Demo objednávka bola vymazaná',
+      color: 'success',
+    })
+
+    // Navigate back to orders list
+    router.push('/dashboard/orders')
+  } catch (error: any) {
+    console.error('Error deleting demo order:', error)
+    useToast().add({
+      title: 'Chyba',
+      description: error.data?.message || error.message || 'Nepodarilo sa vymazať objednávku',
+      color: 'error',
+    })
+  } finally {
+    deleting.value = false
+    showDeleteConfirm.value = false
+  }
+}
+
 onMounted(() => {
   loadOrder()
 })
@@ -284,7 +318,16 @@ onMounted(() => {
 
         <!-- Status and Actions -->
         <div class="flex items-center gap-4">
+          <!-- Demo order: show Testovacia status -->
           <span
+            v-if="order.isDemo"
+            class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-violet-600"
+          >
+            Testovacia
+          </span>
+          <!-- Regular order: show normal status -->
+          <span
+            v-else
             class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium"
             :class="{
               'text-white bg-orange': order.orderStatus === 'pending',
@@ -295,10 +338,10 @@ onMounted(() => {
             {{ ORDER_STATUS_LABELS[order.orderStatus] }}
           </span>
 
-          <!-- Action Buttons -->
-          <div v-if="order.orderStatus === 'pending'" class="flex gap-2">
+          <!-- Action Buttons for regular orders -->
+          <div v-if="!order.isDemo && order.orderStatus === 'pending'" class="flex gap-2">
             <UButton
-              color="green"
+              color="success"
               class="cursor-pointer"
               :loading="updating"
               @click="updateOrderStatus('approved')"
@@ -306,7 +349,7 @@ onMounted(() => {
               Schváliť
             </UButton>
             <UButton
-              color="red"
+              color="error"
               class="cursor-pointer"
               variant="outline"
               :loading="updating"
@@ -315,6 +358,17 @@ onMounted(() => {
               Zrušiť
             </UButton>
           </div>
+
+          <!-- Delete Button for demo orders -->
+          <UButton
+            v-if="order.isDemo"
+            color="error"
+            class="cursor-pointer"
+            :loading="deleting"
+            @click="showDeleteConfirm = true"
+          >
+            Vymazať objednávku
+          </UButton>
         </div>
       </div>
 
@@ -597,5 +651,41 @@ onMounted(() => {
       <UIcon name="i-heroicons-exclamation-circle" class="w-12 h-12 text-slate-400 mx-auto mb-4" />
       <p class="text-slate-600">Objednávka nenájdená</p>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <UModal v-model:open="showDeleteConfirm">
+      <template #content>
+        <div class="p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+              <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-red-600" />
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900">Vymazať demo objednávku?</h3>
+          </div>
+
+          <p class="text-slate-600 mb-6">
+            Naozaj chcete vymazať túto demo objednávku? Táto akcia je nevratná.
+            Ak zákazník nemá žiadne iné objednávky, bude vymazaný aj jeho profil.
+          </p>
+
+          <div class="flex justify-end gap-3">
+            <UButton
+              color="neutral"
+              variant="outline"
+              @click="showDeleteConfirm = false"
+            >
+              Zrušiť
+            </UButton>
+            <UButton
+              color="error"
+              :loading="deleting"
+              @click="deleteDemoOrder"
+            >
+              Vymazať
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
