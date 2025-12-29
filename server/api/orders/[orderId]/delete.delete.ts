@@ -83,7 +83,7 @@ export default defineEventHandler(async (event) => {
         const clientRef = db.collection('clients').doc(clientId)
         const clientDoc = await clientRef.get()
 
-        if (clientDoc.exists()) {
+        if (clientDoc.exists) {
           await clientRef.delete()
           clientDeleted = true
           log.success('Client deleted (no other orders):', { clientId })

@@ -746,7 +746,7 @@ const exportOrdersToPdf = async () => {
                 <!-- Demo order: show Testovacia -->
                 <span
                   v-if="order.isDemo"
-                  class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium text-white bg-violet-600"
+                  class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium text-dark-green bg-beige"
                 >
                   Testovacia
                 </span>

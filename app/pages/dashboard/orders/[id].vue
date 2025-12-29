@@ -321,7 +321,7 @@ onMounted(() => {
           <!-- Demo order: show Testovacia status -->
           <span
             v-if="order.isDemo"
-            class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-violet-600"
+            class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-dark-green bg-beige"
           >
             Testovacia
           </span>
@@ -363,7 +363,8 @@ onMounted(() => {
           <UButton
             v-if="order.isDemo"
             color="error"
-            class="cursor-pointer"
+            size="sm"
+            class="cursor-pointer px-4 py-2 text-sm"
             :loading="deleting"
             @click="showDeleteConfirm = true"
           >
