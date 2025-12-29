@@ -473,7 +473,7 @@ function generateOrderNotificationEmail(props: OrderNotificationEmailProps): { h
               </p>
 
               <p style="margin: 32px 0;">
-                <a href="${process.env.APP_URL || 'http://localhost:3000'}/dashboard/orders" class="button-link"
+                <a href="${process.env.APP_URL || 'http://levfood.sk'}/dashboard/orders" class="button-link"
                    style="font-family: 'Sofia Sans Condensed', Arial, sans-serif; background-color: #F28E7A; color: #FCEFE6 !important; padding: 14px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-size: 16px; font-weight: 400;">
                   Zobraziť objednávky
                 </a>
