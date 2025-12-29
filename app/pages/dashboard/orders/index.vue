@@ -795,8 +795,8 @@ const exportOrdersToPdf = async () => {
     <!-- Demo Order Modal -->
     <UModal v-model:open="showDemoOrderModal">
       <template #content>
-        <div class="p-6">
-          <div class="flex items-center justify-between mb-6">
+        <div class="p-6 max-h-[85vh] overflow-y-auto">
+          <div class="flex items-center justify-between mb-6 sticky top-0 bg-white pb-2 -mt-2 pt-2">
             <h3 class="text-xl font-bold text-slate-900">Vytvoriť Demo Objednávku</h3>
             <UButton
               icon="i-lucide-x"
