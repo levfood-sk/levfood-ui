@@ -4,6 +4,10 @@ import { formatPrice, ORDER_STATUS_LABELS, DELIVERY_CITIES } from '~~/app/lib/ty
 import type { Order, OrderWithClient, OrderStatus, Client, PackageType, DurationType, DeliveryType, DeliveryCity } from '~~/app/lib/types/order'
 
 const { exportToPdf } = usePdfExport()
+const config = useRuntimeConfig()
+
+// Testing features flag
+const enableTestingFeatures = computed(() => config.public.enableTestingFeatures ?? false)
 
 definePageMeta({
   layout: 'dashboard',
@@ -489,9 +493,22 @@ const exportOrdersToPdf = async () => {
 
 <template>
   <div>
-    <div class="mb-8">
-      <h2 class="text-3xl font-bold text-slate-900">Objednávky</h2>
-      <p class="text-slate-600 mt-2">Spravuj všetky objednávky</p>
+    <div class="mb-8 flex items-start justify-between">
+      <div>
+        <h2 class="text-3xl font-bold text-slate-900">Objednávky</h2>
+        <p class="text-slate-600 mt-2">Spravuj všetky objednávky</p>
+      </div>
+      <!-- Testing Features Button -->
+      <UButton
+        v-if="enableTestingFeatures"
+        icon="i-lucide-plus"
+        color="neutral"
+        size="md"
+        class="bg-orange text-dark-green hover:bg-dark-green hover:text-beige cursor-pointer"
+        @click="openDemoOrderModal"
+      >
+        Demo Objednávka
+      </UButton>
     </div>
 
     <!-- Statistics Cards -->
@@ -571,17 +588,6 @@ const exportOrdersToPdf = async () => {
           @click="showAdvancedFilters = !showAdvancedFilters"
         >
           <span class="md:hidden">{{ showAdvancedFilters ? 'Skryť filtre' : 'Zobraziť filtre' }}</span>
-        </UButton>
-
-        <!-- Demo Order Button -->
-        <UButton
-          icon="i-lucide-plus"
-          class="w-full md:w-auto flex items-center justify-center gap-2 bg-orange h-[3.5rem] text-dark-green hover:bg-dark-green hover:text-beige cursor-pointer"
-          color="neutral"
-          size="lg"
-          @click="openDemoOrderModal"
-        >
-          <span>Demo Objednávka</span>
         </UButton>
 
         <!-- Export Button -->

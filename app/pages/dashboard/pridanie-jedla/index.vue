@@ -7,17 +7,17 @@
                     Spravujte jedálny lístok pre každý deň v týždni
                 </p>
             </div>
-            <!-- Development Seeder Button -->
+            <!-- Testing Features Button -->
             <UButton
-                v-if="enableSeeder"
-                :loading="isSeeding"
-                @click="handleSeedData"
-                color="amber"
-                variant="soft"
+                v-if="enableTestingFeatures"
+                :loading="isFillingWeek"
+                @click="handleFillTestWeek"
+                color="neutral"
                 size="md"
                 icon="i-heroicons-sparkles"
+                class="bg-orange text-dark-green hover:bg-dark-green hover:text-beige cursor-pointer"
             >
-                Seed Test Data
+                Predvyplniť testovacie jedlá
             </UButton>
         </div>
 
@@ -153,8 +153,114 @@ const selectedDate = ref<string | null>(null);
 const isLoading = ref(false);
 const isLoadingDay = ref(false);
 const isSaving = ref(false);
-const isSeeding = ref(false);
-const enableSeeder = computed(() => config.public.enableSeeder ?? false);
+const isFillingWeek = ref(false);
+const enableTestingFeatures = computed(() => config.public.enableTestingFeatures ?? false);
+
+// Test meal data for "Testovací týždeň" button
+const TEST_MEALS_DATA = [
+    {
+        meals: {
+            desiata: "Ovocný jogurt s granolou",
+            polievka: "Kuracia vývarová polievka s rezancami",
+            olovrant: "Proteínová tyčinka s mandelami",
+            vecera: "Grilované kuracie prsia s cesnakom a bylinkami",
+        },
+        ranajkyOptions: {
+            optionA: "Ovsená kaša s čerstvým ovocím a medom",
+            optionB: "Praženica s celozrnným chlebom a zeleninou",
+        },
+        obedOptions: {
+            optionA: "Grilované kuracie prsia s ryžou a dusenou zeleninou",
+            optionB: "Losos na masle s petržlenovou zemiakovou kašou",
+            optionC: "Zeleninové kari s quinoou a kokosovým mliekom",
+        },
+    },
+    {
+        meals: {
+            desiata: "Cottage cheese s medom a orechmi",
+            polievka: "Paradajková polievka s bazalkou",
+            olovrant: "Jablko s arašidovým maslom",
+            vecera: "Pečený losos s citrónom a špargľou",
+        },
+        ranajkyOptions: {
+            optionA: "Jogurt s müsli a čerstvými bobuľami",
+            optionB: "Celozrnné palacinky s javorovým sirupom",
+        },
+        obedOptions: {
+            optionA: "Hovädzí steak s grilovanou zeleninou",
+            optionB: "Morčacie prsia s bulgur šalátom",
+            optionC: "Šošovicový šalát s balkánskym syrom",
+        },
+    },
+    {
+        meals: {
+            desiata: "Banánový smoothie s proteínom",
+            polievka: "Šošovicová polievka s mrkvou",
+            olovrant: "Hummus s mrkvovými tyčinkami",
+            vecera: "Tofu steak s brokolicou a sezamom",
+        },
+        ranajkyOptions: {
+            optionA: "Avokádový toast s vajíčkom",
+            optionB: "Smoothie bowl s ovocím a chia semienkami",
+        },
+        obedOptions: {
+            optionA: "Kuracie soté so zeleninou a ryžovými rezancami",
+            optionB: "Grilovaný halibut s citrusovou omáčkou",
+            optionC: "Cícerový curry s jasmínovou ryžou",
+        },
+    },
+    {
+        meals: {
+            desiata: "Grécky jogurt s vlašskými orechmi",
+            polievka: "Zeleninový vývar s krupicovými haluškami",
+            olovrant: "Tmavá čokoláda s mandlami",
+            vecera: "Grilovaný králik s rozmarínovými zemiakmi",
+        },
+        ranajkyOptions: {
+            optionA: "Vaječná omeleta so špenátom a feta syrom",
+            optionB: "Chia puding s mangom a kokosom",
+        },
+        obedOptions: {
+            optionA: "Bravčová panenka s dusenou kapustou",
+            optionB: "Pstruh na masle s mandlami",
+            optionC: "Quinoa bowl s pečenou zeleninou",
+        },
+    },
+    {
+        meals: {
+            desiata: "Proteínový kokteil s banánom",
+            polievka: "Hrachová krémová polievka",
+            olovrant: "Ryžové chlebíčky s avokádom",
+            vecera: "Kačacie prsia s pomarančovou omáčkou",
+        },
+        ranajkyOptions: {
+            optionA: "Raňajkový burrito s fazuľou a vajíčkom",
+            optionB: "Tvarohové lievance s lesným ovocím",
+        },
+        obedOptions: {
+            optionA: "Jahňacie kotlety s mätovou omáčkou",
+            optionB: "Tuniak steak s wasabi majonézou",
+            optionC: "Falafel tanier s hummusom a tahinovou omáčkou",
+        },
+    },
+    {
+        meals: {
+            desiata: "Ovocný šalát s mätou",
+            polievka: "Brokolicová krémová polievka so syrom",
+            olovrant: "Energetická guľôčka s datlami",
+            vecera: "Grilované morské plody s cesnakovým maslom",
+        },
+        ranajkyOptions: {
+            optionA: "Belgické wafle s čerstvým ovocím",
+            optionB: "Škoricová ovsená kaša s jablkami",
+        },
+        obedOptions: {
+            optionA: "Kuracie prsia plnené mozzarellou a špenátom",
+            optionB: "Lososový burger s avokádovou majonézou",
+            optionC: "Zeleninová lasagne s ricottou",
+        },
+    },
+];
 
 // Cache for daily meals data
 const dailyMealsCache = ref<Record<string, DailyMeal | null>>({});
@@ -317,32 +423,44 @@ async function handleMealsSave(formData: {
     }
 }
 
-async function handleSeedData() {
-    isSeeding.value = true;
-    try {
-        const response = await useAuthFetch("/api/meals/seed", {
-            method: "POST",
-        });
+// Fill current week with test data (client-side only)
+function handleFillTestWeek() {
+    isFillingWeek.value = true;
 
-        const result = response as any;
+    try {
+        // Fill cache for each day of the week (Mon-Sat)
+        daysOfWeek.value.forEach((day, index) => {
+            const testData = TEST_MEALS_DATA[index % TEST_MEALS_DATA.length];
+            dailyMealsCache.value[day.dateStr] = {
+                date: day.dateStr,
+                meals: { ...testData.meals },
+                ranajkyOptions: { ...testData.ranajkyOptions },
+                obedOptions: { ...testData.obedOptions },
+                isPublished: false, // Not published until saved
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            } as DailyMeal;
+        });
 
         toast.add({
             title: "Úspech",
-            description: result.message,
+            description: "Testovací týždeň bol vyplnený. Kliknite na deň a uložte jedlá.",
             color: "success",
         });
 
-        // Refresh the current week's data
-        await fetchWeekMeals();
+        // Select the first day to show the form
+        if (daysOfWeek.value.length > 0) {
+            selectedDate.value = daysOfWeek.value[0].dateStr;
+        }
     } catch (error: any) {
-        console.error("Error seeding data:", error);
+        console.error("Error filling test week:", error);
         toast.add({
             title: "Chyba",
-            description: error.data?.message || "Nepodarilo sa seedovať dáta",
+            description: "Nepodarilo sa vyplniť testovací týždeň",
             color: "error",
         });
     } finally {
-        isSeeding.value = false;
+        isFillingWeek.value = false;
     }
 }
 

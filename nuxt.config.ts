@@ -65,7 +65,7 @@ export default defineNuxtConfig({
       firebaseVapidKey: process.env.FIREBASE_VAPID_KEY,
       appUrl: process.env.APP_URL || "http://localhost:3000",
       googleAnalyticsId: process.env.GOOGLE_ANALYTICS_ID,
-      enableSeeder: process.env.ENABLE_SEEDER === "true",
+      enableTestingFeatures: process.env.ENABLE_TESTING_FEATURES === "true",
     },
     firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
