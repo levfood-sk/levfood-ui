@@ -70,26 +70,55 @@ export default defineEventHandler(async (event) => {
     await orderDoc.ref.delete()
     log.success('Order deleted:', { orderId })
 
-    // Check if client has other orders
+    // Check if client has other orders (non-demo)
     let clientDeleted = false
     if (clientId) {
-      const otherOrdersQuery = await ordersRef
+      // Query for any remaining orders from this client
+      const remainingOrdersQuery = await ordersRef
         .where('clientId', '==', clientId)
-        .limit(1)
         .get()
 
-      if (otherOrdersQuery.empty) {
-        // No other orders, delete the client
+      // Check if client has any non-demo orders
+      const hasNonDemoOrders = remainingOrdersQuery.docs.some(doc => !doc.data().isDemo)
+      const remainingOrderCount = remainingOrdersQuery.size
+
+      log.info('Checking client orders:', {
+        clientId,
+        remainingOrderCount,
+        hasNonDemoOrders
+      })
+
+      if (remainingOrderCount === 0) {
+        // No remaining orders at all, delete the client
         const clientRef = db.collection('clients').doc(clientId)
         const clientDoc = await clientRef.get()
 
         if (clientDoc.exists) {
           await clientRef.delete()
           clientDeleted = true
-          log.success('Client deleted (no other orders):', { clientId })
+          log.success('Client deleted (no remaining orders):', { clientId })
+        }
+      } else if (!hasNonDemoOrders) {
+        // Only demo orders remain - still delete the client
+        // First delete all remaining demo orders
+        const batch = db.batch()
+        remainingOrdersQuery.docs.forEach(doc => {
+          batch.delete(doc.ref)
+        })
+        await batch.commit()
+        log.success('Deleted remaining demo orders:', { count: remainingOrderCount })
+
+        // Now delete the client
+        const clientRef = db.collection('clients').doc(clientId)
+        const clientDoc = await clientRef.get()
+
+        if (clientDoc.exists) {
+          await clientRef.delete()
+          clientDeleted = true
+          log.success('Client deleted (only had demo orders):', { clientId })
         }
       } else {
-        log.info('Client has other orders, keeping client:', { clientId })
+        log.info('Client has non-demo orders, keeping client:', { clientId })
       }
     }
 
