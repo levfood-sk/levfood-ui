@@ -6,6 +6,7 @@ definePageMeta({
 })
 
 const { user } = useAuth()
+const toast = useToast()
 
 // Get Firestore instance (only on client)
 const getDb = () => {
@@ -21,7 +22,7 @@ interface ModalData {
   endDate: string
 }
 
-// Form state
+// Form state for modal popup
 const formData = reactive<ModalData>({
   message: '',
   isActive: false,
@@ -33,6 +34,81 @@ const formData = reactive<ModalData>({
 const loading = ref(false)
 const saving = ref(false)
 const showPreview = ref(false)
+
+// ===== Mobile Push Notifications Section =====
+interface PushNotificationForm {
+  title: string
+  body: string
+}
+
+interface PushNotificationResult {
+  success: boolean
+  message: string
+  totalClients: number
+  successCount: number
+  failureCount: number
+}
+
+const pushForm = reactive<PushNotificationForm>({
+  title: '',
+  body: '',
+})
+
+const sendingPush = ref(false)
+const pushResult = ref<PushNotificationResult | null>(null)
+const pushHistory = ref<Array<PushNotificationResult & { timestamp: Date; title: string; body: string }>>([])
+
+const isPushValid = computed(() => {
+  return pushForm.title.trim().length > 0 && pushForm.body.trim().length > 0
+})
+
+const sendPushNotification = async () => {
+  if (!isPushValid.value) return
+
+  sendingPush.value = true
+  pushResult.value = null
+
+  try {
+    const response = await $fetch<PushNotificationResult>('/api/mobile/push-notification/send', {
+      method: 'POST',
+      body: {
+        title: pushForm.title,
+        body: pushForm.body,
+      },
+    })
+
+    pushResult.value = response
+
+    // Add to history
+    pushHistory.value.unshift({
+      ...response,
+      timestamp: new Date(),
+      title: pushForm.title,
+      body: pushForm.body,
+    })
+
+    // Clear form on success
+    if (response.success) {
+      pushForm.title = ''
+      pushForm.body = ''
+
+      toast.add({
+        title: 'Úspech',
+        description: response.message,
+        color: 'success',
+      })
+    }
+  } catch (error: any) {
+    console.error('Error sending push notification:', error)
+    toast.add({
+      title: 'Chyba',
+      description: error.data?.message || 'Nepodarilo sa odoslať notifikáciu',
+      color: 'error',
+    })
+  } finally {
+    sendingPush.value = false
+  }
+}
 
 // Character limit
 const MAX_CHARS = 100
@@ -163,9 +239,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <h2 class="text-3xl font-bold text-slate-900 mb-6">CMS - Modálne okno</h2>
+  <div class="space-y-8">
+    <h2 class="text-3xl font-bold text-slate-900">Používateľské oznamy</h2>
 
+    <!-- Section 1: Oznamovací popup -->
     <UCard v-if="loading" class="max-w-3xl">
       <div class="flex items-center justify-center py-12">
         <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-orange-500" />
@@ -313,5 +390,125 @@ onMounted(() => {
         </div>
       </template>
     </UModal>
+
+    <!-- Section 2: Mobile Push Notifications -->
+    <UCard class="max-w-3xl">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-heroicons-device-phone-mobile" class="w-5 h-5 text-orange-500" />
+          <div>
+            <h3 class="text-xl font-semibold text-slate-900">Mobilné push notifikácie</h3>
+            <p class="text-sm text-slate-500 mt-1">Odošli oznámenie všetkým používateľom mobilnej aplikácie</p>
+          </div>
+        </div>
+      </template>
+
+      <div class="space-y-6">
+        <!-- Title Input -->
+        <UFormField
+          label="Názov notifikácie"
+          required
+          class="w-full"
+        >
+          <UInput
+            v-model="pushForm.title"
+            placeholder="Zadaj názov notifikácie..."
+            class="w-full"
+          />
+        </UFormField>
+
+        <!-- Body Input -->
+        <UFormField
+          label="Text notifikácie"
+          required
+          class="w-full"
+        >
+          <UTextarea
+            v-model="pushForm.body"
+            placeholder="Zadaj text notifikácie..."
+            :rows="4"
+            class="w-full"
+          />
+        </UFormField>
+
+        <!-- Send Button -->
+        <div class="flex justify-end pt-4">
+          <button
+            class="flex items-center justify-center hero-button border-2 border-transparent bg-[var(--color-orange)] text-[var(--color-dark-green)] font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg font-condensed disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            :disabled="!isPushValid || sendingPush"
+            @click="sendPushNotification"
+          >
+            <UIcon v-if="sendingPush" name="i-heroicons-arrow-path" class="w-5 h-5 mr-2 animate-spin" />
+            <UIcon v-else name="i-heroicons-paper-airplane" class="w-5 h-5 mr-2" />
+            {{ sendingPush ? 'Odosielam...' : 'Odoslať notifikáciu' }}
+          </button>
+        </div>
+
+        <!-- Result Display -->
+        <div v-if="pushResult" class="p-4 rounded-lg border" :class="pushResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'">
+          <div class="flex items-start gap-2">
+            <UIcon
+              :name="pushResult.success ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'"
+              class="w-5 h-5 mt-0.5"
+              :class="pushResult.success ? 'text-green-600' : 'text-red-600'"
+            />
+            <div class="flex-1">
+              <p class="text-sm font-medium" :class="pushResult.success ? 'text-green-900' : 'text-red-900'">
+                {{ pushResult.message }}
+              </p>
+              <div v-if="pushResult.totalClients > 0" class="text-xs mt-1" :class="pushResult.success ? 'text-green-700' : 'text-red-700'">
+                Úspešne: {{ pushResult.successCount }} / {{ pushResult.totalClients }}
+                <span v-if="pushResult.failureCount > 0" class="text-red-600 ml-2">
+                  Neúspešne: {{ pushResult.failureCount }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </UCard>
+
+    <!-- Push Notification History -->
+    <UCard v-if="pushHistory.length > 0" class="max-w-3xl">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-clock" class="w-5 h-5 text-orange-500" />
+            <h3 class="text-xl font-semibold text-slate-900">História odoslaných notifikácií</h3>
+          </div>
+          <UBadge color="neutral" variant="subtle">
+            {{ pushHistory.length }}
+          </UBadge>
+        </div>
+      </template>
+
+      <div class="space-y-3">
+        <div
+          v-for="(notif, index) in pushHistory.slice(0, 5)"
+          :key="index"
+          class="p-4 bg-slate-50 rounded-lg"
+        >
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-slate-900">{{ notif.title }}</p>
+              <p class="text-sm text-slate-600 mt-1">{{ notif.body }}</p>
+              <div class="flex items-center gap-4 mt-2">
+                <p class="text-xs text-slate-500">
+                  {{ notif.timestamp.toLocaleString('sk-SK') }}
+                </p>
+                <UBadge
+                  v-if="notif.successCount !== undefined"
+                  color="success"
+                  variant="subtle"
+                  size="xs"
+                >
+                  {{ notif.successCount }} odoslaných
+                </UBadge>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </UCard>
   </div>
 </template>

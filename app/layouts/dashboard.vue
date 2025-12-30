@@ -73,9 +73,9 @@ const navItems = [
     to: '/dashboard/zamestnanci',
   },
   {
-    label: 'CMS - Modal',
-    icon: 'i-lucide-app-window-mac',
-    to: '/dashboard/cms-modal',
+    label: 'Užívateľské oznamy',
+    icon: 'i-lucide-megaphone',
+    to: '/dashboard/uzivatelske-oznamy',
   },
   // {
   //   label: 'Push Notifications',
