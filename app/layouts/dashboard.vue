@@ -68,6 +68,11 @@ const navItems = [
     to: '/dashboard/pridanie-jedla',
   },
   {
+    label: 'Objednávky Jedál',
+    icon: 'i-lucide-utensils',
+    to: '/dashboard/objednavky-jedal',
+  },
+  {
     label: 'Zamestnanci',
     icon: 'i-lucide-shield-user',
     to: '/dashboard/zamestnanci',
