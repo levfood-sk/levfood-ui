@@ -130,13 +130,9 @@ function formatDate(timestamp: any): string {
   })
 }
 
-// Selected client for details modal
-const selectedClient = ref<Client | null>(null)
-const showClientDetails = ref(false)
-
+// Navigate to client details
 function viewClientDetails(client: Client) {
-  selectedClient.value = client
-  showClientDetails.value = true
+  navigateTo(`/dashboard/uzivatelia/${client.clientId}`)
 }
 
 

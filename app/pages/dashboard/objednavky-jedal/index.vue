@@ -599,7 +599,7 @@ const handleExportCsv = () => {
       vecera: client.vecera || '-',
       deliveryType: client.deliveryType === 'domov' ? 'Domov' : 'Prevádzka',
       deliveryAddress: client.deliveryAddress || '-',
-      phone: client.phone || '-'
+      phone: client.phone ? `+${client.phone.replace(/^\+/, '')}` : '-'
     }))
 
     // Build header info with food totals
