@@ -208,13 +208,17 @@ const stressLevelOptions = [
 ]
 
 // Import pricing from single source of truth
-import { PACKAGE_PRICES } from '~/lib/types/order'
+import { getActivePrice } from '~/lib/types/order'
+import type { PackageType, DurationType } from '~/lib/types/order'
+
+// Use discount composable to check if discounts are active
+const { isDiscountActive } = useDiscount()
 
 const totalPrice = computed(() => {
   if (!formData.value.step1.package || !formData.value.step1.duration) return 0
-  const packageType = formData.value.step1.package as keyof typeof PACKAGE_PRICES
-  const duration = formData.value.step1.duration as '5' | '6'
-  return PACKAGE_PRICES[packageType]?.[duration] || 0
+  const packageType = formData.value.step1.package as PackageType
+  const duration = formData.value.step1.duration as DurationType
+  return getActivePrice(packageType, duration, isDiscountActive.value)
 })
 
 const totalPriceFormatted = computed(() => {

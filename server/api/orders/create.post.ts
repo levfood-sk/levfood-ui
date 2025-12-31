@@ -11,7 +11,8 @@
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore'
 import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
 import { generateUniqueOrderId } from '~~/server/utils/generateOrderId'
-import { createOrderSchema, calculateOrderPrice } from '~~/app/lib/types/order'
+import { createOrderSchema, calculateOrderPrice, getActivePrice, checkDiscountActive } from '~~/app/lib/types/order'
+import type { PackageType, DurationType } from '~~/app/lib/types/order'
 import type { Order, CreateOrderInput, Client } from '~~/app/lib/types/order'
 import { sendOrderNotification, sendClientOrderConfirmation } from '~~/server/utils/email'
 import { calculateDeliveryEndDate } from '~~/server/utils/delivery-dates'
@@ -66,8 +67,17 @@ export default defineEventHandler(async (event) => {
     // Generate unique 6-digit order ID
     const orderId = await generateUniqueOrderId()
 
-    // Calculate pricing
+    // Calculate pricing with discount check
+    const config = useRuntimeConfig()
+    const isDiscountActive = checkDiscountActive(config.public.discountEndDate)
     const pricing = calculateOrderPrice(orderData.package, orderData.duration)
+    // Override the price with discount-aware calculation
+    const activePrice = getActivePrice(
+      orderData.package as PackageType,
+      orderData.duration as DurationType,
+      isDiscountActive
+    )
+    pricing.totalPrice = activePrice
 
     // Split full name into first and last name
     const nameParts = orderData.fullName.trim().split(' ')

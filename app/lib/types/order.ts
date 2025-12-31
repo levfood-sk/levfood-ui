@@ -278,6 +278,49 @@ export function hasPackageDiscount(packageType: PackageType): boolean {
 }
 
 /**
+ * Get the active price for a package based on whether discounts are enabled
+ * @param packageType - The package type (EKONOMY, ŠTANDARD, PREMIUM, OFFICE)
+ * @param duration - The duration type ('5' or '6' days per week)
+ * @param isDiscountActive - Whether the promotional discount is currently active
+ * @returns Price in cents
+ */
+export function getActivePrice(
+  packageType: PackageType,
+  duration: DurationType,
+  isDiscountActive: boolean
+): number {
+  if (isDiscountActive && DISCOUNTED_PACKAGES.includes(packageType)) {
+    return PACKAGE_PRICES[packageType][duration]
+  }
+  return ORIGINAL_PRICES[packageType][duration]
+}
+
+/**
+ * Check if discount is active based on end date string
+ * Used on server-side where composables are not available
+ * @param discountEndDate - ISO date string (e.g., "2026-01-01T00:01:00")
+ * @returns boolean indicating if discount is still active
+ */
+export function checkDiscountActive(discountEndDate: string | undefined): boolean {
+  if (!discountEndDate) return false
+
+  try {
+    // Parse ISO date string and apply Bratislava timezone (UTC+1)
+    const endDate = new Date(discountEndDate + '+01:00')
+
+    if (isNaN(endDate.getTime())) {
+      console.warn('[checkDiscountActive] Invalid DISCOUNT_END_DATE format:', discountEndDate)
+      return false
+    }
+
+    return new Date() < endDate
+  } catch (error) {
+    console.warn('[checkDiscountActive] Error parsing DISCOUNT_END_DATE:', error)
+    return false
+  }
+}
+
+/**
  * Calculate total price based on package and duration
  */
 export function calculateOrderPrice(packageType: PackageType, duration: DurationType): {
