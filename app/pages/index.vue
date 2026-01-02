@@ -11,10 +11,9 @@ useSeoMeta({
 
 const { user } = useAuth()
 const { scrollToSection } = useScrollTo()
-const { isDiscountActive } = useDiscount()
 
 // Import pricing from single source of truth
-import { PACKAGE_PRICES, ORIGINAL_PRICES, getActivePrice } from '~/lib/types/order'
+import { PACKAGE_PRICES } from '~/lib/types/order'
 import type { PackageType, DurationType } from '~/lib/types/order'
 
 // Import simple icons as components (for Tailwind styling)
@@ -59,9 +58,7 @@ const premiumDays = ref('')
 const officeDays = ref('5') // Default to 5 days for OFFICE
 
 // Package pricing - convert from cents to euros (using single source of truth)
-// getPrice now uses getActivePrice which respects discount end date
-const getPrice = (pkg: PackageType, dur: DurationType) => getActivePrice(pkg, dur, isDiscountActive.value) / 100
-const getOriginalPrice = (pkg: PackageType, dur: DurationType) => ORIGINAL_PRICES[pkg][dur] / 100
+const getPrice = (pkg: PackageType, dur: DurationType) => PACKAGE_PRICES[pkg][dur] / 100
 
 // Computed prices for each package (using single source of truth)
 const economyPrice = computed(() => {
@@ -83,16 +80,6 @@ const officePrice = computed(() => {
   return getPrice('OFFICE', '5') // Always 5 days for OFFICE
 })
 
-// Original prices (before discount) for Standard and Premium
-const standardOriginalPrice = computed(() => {
-  const days = (standardDays.value || '5') as DurationType
-  return getOriginalPrice('ŠTANDARD', days)
-})
-
-const premiumOriginalPrice = computed(() => {
-  const days = (premiumDays.value || '5') as DurationType
-  return getOriginalPrice('PREMIUM', days)
-})
 
 // Map internal package names to lowercase English URL params
 const packageUrlMap: Record<'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | 'OFFICE', string> = {
@@ -533,10 +520,7 @@ onMounted(() => {
           <p class="md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-dark-green)]">
             Začni dnes – vyber si svoj balíček
           </p>
-          <p v-if="isDiscountActive" class="font-bold md:text-[40px] sm:text-[32px] text-[24px] leading-[150%] font-condensed text-[var(--color-dark-green)]">
-            Zľava 10% na všetky predobjednávky DO KONCA ROKA<br>pre balíky ŠTANDARD a PREMIUM
-          </p>
-        </div>
+                  </div>
 
         <!-- Pricing Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 md:gap-6 gap-8 p-4 lg:p-0">
@@ -606,7 +590,7 @@ onMounted(() => {
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
               <div>
-                <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ standardPrice }}€</span> <span v-if="isDiscountActive" class="text-[2rem] font-bold text-[#868882] line-through">{{ standardOriginalPrice }}€</span>
+                <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ standardPrice }}€</span>
               </div>
               <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>
@@ -660,7 +644,7 @@ onMounted(() => {
             <div class="border-t border-[var(--color-dark-green)] my-4"></div>
             <div class="text-4xl font-bold text-[var(--color-dark-green)] mb-6">
               <div>
-                <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ premiumPrice }}€</span> <span v-if="isDiscountActive" class="text-[2rem] font-bold text-[#868882] line-through">{{ premiumOriginalPrice }}€</span>
+                <span class="text-[4rem] font-bold text-[var(--color-dark-green)]">{{ premiumPrice }}€</span>
               </div>
               <span class="text-2xl font-bold text-[var(--color-dark-green)]">4 týždne</span>
             </div>

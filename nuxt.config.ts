@@ -66,7 +66,6 @@ export default defineNuxtConfig({
       appUrl: process.env.APP_URL || "http://localhost:3000",
       googleAnalyticsId: process.env.GOOGLE_ANALYTICS_ID,
       enableTestingFeatures: process.env.ENABLE_TESTING_FEATURES === "true",
-      discountEndDate: process.env.DISCOUNT_END_DATE || "",
     },
     firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,

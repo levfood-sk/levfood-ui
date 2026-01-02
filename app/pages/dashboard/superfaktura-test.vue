@@ -4,10 +4,7 @@
 
 <script setup lang="ts">
 import type { PackageType, DurationType } from '~/lib/types/order'
-import { PACKAGE_PRICES, getActivePrice } from '~/lib/types/order'
-
-// Use discount composable
-const { isDiscountActive } = useDiscount()
+import { PACKAGE_PRICES } from '~/lib/types/order'
 
 definePageMeta({
   layout: 'dashboard',
@@ -24,13 +21,13 @@ const invoices = ref<any[]>([])
 const invoicesError = ref<string | null>(null)
 const deletingId = ref<number | null>(null)
 
-// Package options for select (discount labels are conditional)
-const packageOptions = computed(() => [
+// Package options for select
+const packageOptions = [
   { label: 'EKONOMY', value: 'EKONOMY' },
-  { label: isDiscountActive.value ? 'ŠTANDARD (10% zľava)' : 'ŠTANDARD', value: 'ŠTANDARD' },
-  { label: isDiscountActive.value ? 'PREMIUM (10% zľava)' : 'PREMIUM', value: 'PREMIUM' },
+  { label: 'ŠTANDARD', value: 'ŠTANDARD' },
+  { label: 'PREMIUM', value: 'PREMIUM' },
   { label: 'OFFICE', value: 'OFFICE' },
-])
+]
 
 const durationOptions = [
   { label: '5 dní (20 dní celkom)', value: '5' },
@@ -45,11 +42,11 @@ const packageForm = reactive({
   clientEmail: 'test@levfood.sk',
 })
 
-// Computed pricing info (using single source of truth with discount awareness)
+// Computed pricing info (using single source of truth)
 const pricingInfo = computed(() => {
   const pkg = packageForm.package
   const dur = packageForm.duration
-  const finalPrice = getActivePrice(pkg, dur, isDiscountActive.value) / 100
+  const finalPrice = PACKAGE_PRICES[pkg][dur] / 100
   const daysCount = dur === '5' ? 20 : 24
 
   return {

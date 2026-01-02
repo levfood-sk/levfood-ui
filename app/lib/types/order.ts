@@ -243,81 +243,14 @@ export const createOrderSchema = z.object({
 export type CreateOrderSchemaType = z.infer<typeof createOrderSchema>
 
 /**
- * Original Package Pricing (in cents) - before any discounts
- * Used for invoice display (showing original price with discount line)
- */
-export const ORIGINAL_PRICES: Record<PackageType, Record<DurationType, number>> = {
-  EKONOMY: { '5': 29900, '6': 33900 },
-  ŠTANDARD: { '5': 35900, '6': 39900 },  // Original prices before 10% discount
-  PREMIUM: { '5': 41900, '6': 45900 },   // Original prices before 10% discount
-  OFFICE: { '5': 24900, '6': 24900 },
-}
-
-/**
- * Package Pricing (in cents) - what customers actually pay
- * ŠTANDARD and PREMIUM have 10% discount applied
+ * Package Pricing (in cents)
  * THIS IS THE SINGLE SOURCE OF TRUTH FOR PRICING
  */
 export const PACKAGE_PRICES: Record<PackageType, Record<DurationType, number>> = {
   EKONOMY: { '5': 29900, '6': 33900 },   // 299€ / 339€
-  ŠTANDARD: { '5': 32300, '6': 35900 },  // 323€ / 359€ (10% off)
-  PREMIUM: { '5': 37700, '6': 41300 },   // 377€ / 413€ (10% off)
+  ŠTANDARD: { '5': 35900, '6': 39900 },  // 359€ / 399€
+  PREMIUM: { '5': 41900, '6': 45900 },   // 419€ / 459€
   OFFICE: { '5': 24900, '6': 24900 },    // 249€
-}
-
-/**
- * Packages that have discount applied
- */
-export const DISCOUNTED_PACKAGES: PackageType[] = ['ŠTANDARD', 'PREMIUM']
-
-/**
- * Check if a package has discount
- */
-export function hasPackageDiscount(packageType: PackageType): boolean {
-  return DISCOUNTED_PACKAGES.includes(packageType)
-}
-
-/**
- * Get the active price for a package based on whether discounts are enabled
- * @param packageType - The package type (EKONOMY, ŠTANDARD, PREMIUM, OFFICE)
- * @param duration - The duration type ('5' or '6' days per week)
- * @param isDiscountActive - Whether the promotional discount is currently active
- * @returns Price in cents
- */
-export function getActivePrice(
-  packageType: PackageType,
-  duration: DurationType,
-  isDiscountActive: boolean
-): number {
-  if (isDiscountActive && DISCOUNTED_PACKAGES.includes(packageType)) {
-    return PACKAGE_PRICES[packageType][duration]
-  }
-  return ORIGINAL_PRICES[packageType][duration]
-}
-
-/**
- * Check if discount is active based on end date string
- * Used on server-side where composables are not available
- * @param discountEndDate - ISO date string (e.g., "2026-01-01T00:01:00")
- * @returns boolean indicating if discount is still active
- */
-export function checkDiscountActive(discountEndDate: string | undefined): boolean {
-  if (!discountEndDate) return false
-
-  try {
-    // Parse ISO date string and apply Bratislava timezone (UTC+1)
-    const endDate = new Date(discountEndDate + '+01:00')
-
-    if (isNaN(endDate.getTime())) {
-      console.warn('[checkDiscountActive] Invalid DISCOUNT_END_DATE format:', discountEndDate)
-      return false
-    }
-
-    return new Date() < endDate
-  } catch (error) {
-    console.warn('[checkDiscountActive] Error parsing DISCOUNT_END_DATE:', error)
-    return false
-  }
 }
 
 /**
