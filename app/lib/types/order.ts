@@ -29,7 +29,16 @@ export const DELIVERY_CITIES: DeliveryCity[] = [
   'Horná Seč',
 ]
 export type PaymentStatus = 'pending' | 'succeeded' | 'failed'
+export type PaymentMethod = 'card' | 'cash'
 export type OrderStatus = 'pending' | 'approved' | 'cancelled'
+
+/**
+ * Payment Method Labels for display
+ */
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  card: 'Karta',
+  cash: 'Hotovosť',
+}
 
 /**
  * Physical Activity Levels
@@ -112,6 +121,7 @@ export interface Order {
   termsAccepted: boolean
   stripePaymentIntentId: string
   paymentStatus: PaymentStatus
+  paymentMethod?: PaymentMethod // 'card' or 'cash' - optional for legacy orders
   amountPaid: number           // Amount in cents
   currency: string             // 'eur'
 

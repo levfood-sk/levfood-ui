@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, type Unsubscribe } from 'firebase/firestore'
-import { formatPrice, ORDER_STATUS_LABELS, DELIVERY_CITIES } from '~~/app/lib/types/order'
-import type { Order, OrderWithClient, OrderStatus, Client, PackageType, DurationType, DeliveryType, DeliveryCity } from '~~/app/lib/types/order'
+import { formatPrice, ORDER_STATUS_LABELS, DELIVERY_CITIES, PAYMENT_METHOD_LABELS } from '~~/app/lib/types/order'
+import type { Order, OrderWithClient, OrderStatus, Client, PackageType, DurationType, DeliveryType, DeliveryCity, PaymentMethod } from '~~/app/lib/types/order'
 
 const { exportToPdf } = usePdfExport()
-const config = useRuntimeConfig()
-
-// Testing features flag
-const enableTestingFeatures = computed(() => config.public.enableTestingFeatures ?? false)
 
 definePageMeta({
   layout: 'dashboard',
@@ -39,6 +35,7 @@ const allColumns: ColumnConfig[] = [
   { key: 'discountedPrice', label: 'Cena po zľave' },
   { key: 'orderStatus', label: 'Stav' },
   { key: 'paymentStatus', label: 'Platba' },
+  { key: 'paymentMethod', label: 'Spôsob platby' },
   { key: 'createdAt', label: 'Vytvorené' },
 ]
 
@@ -111,11 +108,15 @@ onUnmounted(() => {
   if (unsubscribe) {
     unsubscribe()
   }
+  if (clientsUnsubscribe) {
+    clientsUnsubscribe()
+  }
 })
 
-// Load orders on mount (client-side only)
+// Load orders and clients on mount (client-side only)
 onMounted(() => {
   loadOrders()
+  loadClients()
 })
 
 // Filtered and sorted orders
@@ -170,6 +171,13 @@ const statusOptions = [
   { label: 'Schválené', value: 'approved' },
   { label: 'Zrušené', value: 'cancelled' },
 ]
+
+// Helper to get payment method (with lazy fallback for legacy orders)
+const getPaymentMethod = (order: Order): PaymentMethod => {
+  if (order.paymentMethod) return order.paymentMethod
+  // Legacy fallback: derive from stripePaymentIntentId format
+  return order.stripePaymentIntentId?.startsWith('cash_payment_') ? 'cash' : 'card'
+}
 
 // Slovak month names
 const slovakMonths = [
@@ -261,19 +269,96 @@ const clearDateFilters = () => {
 // PDF Export
 const exportingPdf = ref(false)
 
-// Demo order modal state
-const showDemoOrderModal = ref(false)
-const demoOrderLoading = ref(false)
-const demoOrderForm = ref({
-  fullName: 'Testovací užívateľ',
-  email: '',
-  phone: '+421900000000',
+// Admin order modal state
+const showOrderModal = ref(false)
+const orderLoading = ref(false)
+const orderForm = ref({
+  clientId: '',
   package: 'ŠTANDARD' as PackageType,
   duration: '6' as DurationType,
   deliveryType: 'prevádzka' as DeliveryType,
   deliveryCity: undefined as DeliveryCity | undefined,
-  deliveryAddress: 'Testovacia adresa 123, 934 01 Levice',
+  deliveryAddress: '',
+  deliveryStartDate: '',
   notes: '',
+})
+
+// Clients for search dropdown
+const clients = ref<Client[]>([])
+const clientSearchQuery = ref('')
+const loadingClients = ref(true)
+
+// Load clients for dropdown
+let clientsUnsubscribe: Unsubscribe | null = null
+
+const loadClients = () => {
+  loadingClients.value = true
+  const db = useFirestore()
+  const clientsRef = collection(db, 'clients')
+  const q = query(clientsRef, orderBy('fullName', 'asc'))
+
+  clientsUnsubscribe = onSnapshot(q, (snapshot) => {
+    clients.value = snapshot.docs.map(doc => ({
+      ...doc.data(),
+      clientId: doc.id,
+    })) as Client[]
+    loadingClients.value = false
+  }, (error) => {
+    console.error('Error loading clients:', error)
+    loadingClients.value = false
+  })
+}
+
+// Filter clients based on search
+const filteredClients = computed(() => {
+  if (!clientSearchQuery.value) return clients.value.slice(0, 50)
+  const searchQuery = clientSearchQuery.value.toLowerCase()
+  return clients.value.filter(c =>
+    c.fullName?.toLowerCase().includes(searchQuery) ||
+    c.email?.toLowerCase().includes(searchQuery) ||
+    c.phone?.includes(searchQuery)
+  ).slice(0, 50)
+})
+
+// Client options for USelectMenu
+const clientOptions = computed(() => {
+  return filteredClients.value.map(c => ({
+    label: `${c.fullName} (${c.email})`,
+    value: c.clientId,
+    client: c,
+  }))
+})
+
+// Selected client object
+const selectedClient = computed(() =>
+  clients.value.find(c => c.clientId === orderForm.value.clientId)
+)
+
+// Watch for package changes to enforce business rules
+watch(() => orderForm.value.package, (newPackage) => {
+  // EKONOMY forces prevádzka delivery
+  if (newPackage === 'EKONOMY') {
+    orderForm.value.deliveryType = 'prevádzka'
+    orderForm.value.deliveryCity = undefined
+  }
+  // OFFICE forces 5 days
+  if (newPackage === 'OFFICE') {
+    orderForm.value.duration = '5'
+  }
+})
+
+// Computed: should show delivery type selector
+const showDeliveryTypeSelector = computed(() => orderForm.value.package !== 'EKONOMY')
+
+// Computed: should show address field (only for home delivery)
+const showAddressField = computed(() => orderForm.value.deliveryType === 'domov')
+
+// Computed: available duration options based on package
+const availableDurationOptions = computed(() => {
+  if (orderForm.value.package === 'OFFICE') {
+    return [{ label: '5 dní (20 porcií)', value: '5' }]
+  }
+  return durationOptions
 })
 
 // Package options for select
@@ -299,48 +384,69 @@ const deliveryTypeOptions = [
 // Delivery city options for select
 const deliveryCityOptions = DELIVERY_CITIES.map(city => ({ label: city, value: city }))
 
-// Generate random email for demo
-const generateRandomEmail = () => {
-  const timestamp = Date.now()
-  demoOrderForm.value.email = `demo.${timestamp}@test.com`
-}
-
-// Reset demo order form
-const resetDemoOrderForm = () => {
-  demoOrderForm.value = {
-    fullName: 'Test User',
-    email: '',
-    phone: '+421900000000',
+// Reset order form
+const resetOrderForm = () => {
+  orderForm.value = {
+    clientId: '',
     package: 'ŠTANDARD' as PackageType,
-    duration: '5' as DurationType,
+    duration: '6' as DurationType,
     deliveryType: 'prevádzka' as DeliveryType,
     deliveryCity: undefined,
-    deliveryAddress: 'Testovacia adresa 123, 934 01 Levice',
+    deliveryAddress: '',
+    deliveryStartDate: '',
     notes: '',
   }
+  clientSearchQuery.value = ''
 }
 
-// Open demo order modal
-const openDemoOrderModal = () => {
-  resetDemoOrderForm()
-  generateRandomEmail()
-  showDemoOrderModal.value = true
+// Open order modal
+const openOrderModal = () => {
+  resetOrderForm()
+  showOrderModal.value = true
 }
 
-// Create demo order
-const createDemoOrder = async () => {
+// Convert YYYY-MM-DD to DD.MM.YYYY format
+const convertDateFormat = (dateStr: string): string => {
+  const parts = dateStr.split('-')
+  if (parts.length === 3) {
+    return `${parts[2]}.${parts[1]}.${parts[0]}`
+  }
+  return dateStr
+}
+
+// Create admin order
+const createAdminOrder = async () => {
   // Validate required fields
-  if (!demoOrderForm.value.fullName || !demoOrderForm.value.email || !demoOrderForm.value.phone) {
+  if (!orderForm.value.clientId) {
     useToast().add({
       title: 'Chyba',
-      description: 'Vyplňte všetky povinné polia',
+      description: 'Vyberte zákazníka',
+      color: 'error',
+    })
+    return
+  }
+
+  // Only require address for home delivery
+  if (orderForm.value.deliveryType === 'domov' && !orderForm.value.deliveryAddress) {
+    useToast().add({
+      title: 'Chyba',
+      description: 'Zadajte adresu doručenia',
+      color: 'error',
+    })
+    return
+  }
+
+  if (!orderForm.value.deliveryStartDate) {
+    useToast().add({
+      title: 'Chyba',
+      description: 'Vyberte dátum prvého doručenia',
       color: 'error',
     })
     return
   }
 
   // Validate delivery city for home delivery
-  if (demoOrderForm.value.deliveryType === 'domov' && !demoOrderForm.value.deliveryCity) {
+  if (orderForm.value.deliveryType === 'domov' && !orderForm.value.deliveryCity) {
     useToast().add({
       title: 'Chyba',
       description: 'Vyberte mesto/obec pre doručenie domov',
@@ -349,41 +455,43 @@ const createDemoOrder = async () => {
     return
   }
 
-  demoOrderLoading.value = true
+  orderLoading.value = true
 
   try {
-    const response = await $fetch('/api/orders/create-demo', {
+    // Convert date from YYYY-MM-DD (HTML input) to DD.MM.YYYY (API format)
+    const formattedStartDate = convertDateFormat(orderForm.value.deliveryStartDate)
+
+    const response = await $fetch('/api/orders/create-admin', {
       method: 'POST',
       body: {
-        fullName: demoOrderForm.value.fullName,
-        email: demoOrderForm.value.email,
-        phone: demoOrderForm.value.phone,
-        package: demoOrderForm.value.package,
-        duration: demoOrderForm.value.duration,
-        deliveryType: demoOrderForm.value.deliveryType,
-        deliveryCity: demoOrderForm.value.deliveryType === 'domov' ? demoOrderForm.value.deliveryCity : undefined,
-        deliveryAddress: demoOrderForm.value.deliveryAddress,
-        notes: demoOrderForm.value.notes,
+        clientId: orderForm.value.clientId,
+        package: orderForm.value.package,
+        duration: orderForm.value.duration,
+        deliveryType: orderForm.value.deliveryType,
+        deliveryCity: orderForm.value.deliveryType === 'domov' ? orderForm.value.deliveryCity : undefined,
+        deliveryAddress: orderForm.value.deliveryAddress,
+        deliveryStartDate: formattedStartDate,
+        notes: orderForm.value.notes,
       },
     })
 
     useToast().add({
       title: 'Úspech',
-      description: `Demo objednávka #${response.orderId} bola vytvorená`,
+      description: `Objednávka #${response.orderId} bola vytvorená`,
       color: 'success',
     })
 
-    showDemoOrderModal.value = false
+    showOrderModal.value = false
     // Orders list will auto-refresh via Firestore listener
   } catch (error: any) {
-    console.error('Demo order creation error:', error)
+    console.error('Admin order creation error:', error)
     useToast().add({
       title: 'Chyba',
-      description: error.data?.message || error.message || 'Nepodarilo sa vytvoriť demo objednávku',
+      description: error.data?.message || error.message || 'Nepodarilo sa vytvoriť objednávku',
       color: 'error',
     })
   } finally {
-    demoOrderLoading.value = false
+    orderLoading.value = false
   }
 }
 
@@ -415,6 +523,7 @@ const exportOrdersToPdf = async () => {
       discountedPrice: { header: 'Cena po zľave', dataKey: 'discountedPrice' },
       orderStatus: { header: 'Stav', dataKey: 'orderStatus' },
       paymentStatus: { header: 'Platba', dataKey: 'paymentStatus' },
+      paymentMethod: { header: 'Spôsob platby', dataKey: 'paymentMethod' },
       createdAt: { header: 'Vytvorené', dataKey: 'createdAt' },
     }
 
@@ -455,6 +564,9 @@ const exportOrdersToPdf = async () => {
             break
           case 'paymentStatus':
             row.paymentStatus = order.paymentStatus === 'succeeded' ? 'Úspešná' : order.paymentStatus === 'pending' ? 'Čaká' : 'Neúspešná'
+            break
+          case 'paymentMethod':
+            row.paymentMethod = PAYMENT_METHOD_LABELS[getPaymentMethod(order)]
             break
           case 'createdAt':
             row.createdAt = order.createdAt
@@ -498,16 +610,14 @@ const exportOrdersToPdf = async () => {
         <h2 class="text-3xl font-bold text-slate-900">Objednávky</h2>
         <p class="text-slate-600 mt-2">Spravuj všetky objednávky</p>
       </div>
-      <!-- Testing Features Button -->
       <UButton
-        v-if="enableTestingFeatures"
         icon="i-lucide-plus"
         color="neutral"
         size="md"
-        class="bg-orange text-dark-green hover:bg-dark-green hover:text-beige cursor-pointer"
-        @click="openDemoOrderModal"
+        class="bg-orange text-white hover:bg-dark-green cursor-pointer"
+        @click="openOrderModal"
       >
-        Demo Objednávka
+        Vytvoriť objednávku
       </UButton>
     </div>
 
@@ -691,6 +801,7 @@ const exportOrdersToPdf = async () => {
               <th v-if="isColumnVisible('discountedPrice')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Cena po zľave</th>
               <th v-if="isColumnVisible('orderStatus')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Stav</th>
               <th v-if="isColumnVisible('paymentStatus')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Platba</th>
+              <th v-if="isColumnVisible('paymentMethod')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Spôsob platby</th>
               <th v-if="isColumnVisible('createdAt')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Vytvorené</th>
             </tr>
           </thead>
@@ -743,16 +854,7 @@ const exportOrdersToPdf = async () => {
 
               <!-- Order Status -->
               <td v-if="isColumnVisible('orderStatus')" class="px-4 py-3">
-                <!-- Demo order: show Testovacia -->
                 <span
-                  v-if="order.isDemo"
-                  class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium text-dark-green bg-beige"
-                >
-                  Testovacia
-                </span>
-                <!-- Regular order: show normal status -->
-                <span
-                  v-else
                   class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium"
                   :class="{
                     'text-slate-900': order.orderStatus === 'pending',
@@ -782,6 +884,11 @@ const exportOrdersToPdf = async () => {
                 </span>
               </td>
 
+              <!-- Payment Method -->
+              <td v-if="isColumnVisible('paymentMethod')" class="px-4 py-3">
+                <span class="text-slate-600 text-sm">{{ PAYMENT_METHOD_LABELS[getPaymentMethod(order)] }}</span>
+              </td>
+
               <!-- Created At -->
               <td v-if="isColumnVisible('createdAt')" class="px-4 py-3">
                 <span class="text-slate-600 text-sm">{{ formatDate(order.createdAt) }}</span>
@@ -792,98 +899,101 @@ const exportOrdersToPdf = async () => {
       </div>
     </UCard>
 
-    <!-- Demo Order Modal -->
-    <UModal v-model:open="showDemoOrderModal">
+    <!-- Admin Order Modal -->
+    <UModal v-model:open="showOrderModal" :ui="{ content: 'max-w-2xl' }">
       <template #content>
-        <div class="p-6 max-h-[85vh] overflow-y-auto">
-          <div class="flex items-center justify-between mb-6 sticky top-0 bg-white pb-2 -mt-2 pt-2">
-            <h3 class="text-xl font-bold text-slate-900">Vytvoriť Demo Objednávku</h3>
+        <div class="p-6 max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-slate-900">Vytvoriť objednávku</h3>
             <UButton
               icon="i-lucide-x"
               color="neutral"
               variant="ghost"
               size="sm"
-              @click="showDemoOrderModal = false"
+              class="cursor-pointer"
+              @click="showOrderModal = false"
             />
           </div>
 
           <div class="space-y-4">
-            <!-- Full Name -->
-            <UFormField label="Meno a priezvisko">
-              <UInput
-                v-model="demoOrderForm.fullName"
-                placeholder="Meno a priezvisko"
+            <!-- Client Search -->
+            <UFormField label="Zákazník *">
+              <USelectMenu
+                v-model="orderForm.clientId"
+                v-model:query="clientSearchQuery"
+                :items="clientOptions"
+                :loading="loadingClients"
+                value-key="value"
+                placeholder="Vyhľadajte zákazníka..."
+                searchable
                 size="lg"
                 class="w-full"
-              />
+                :search-input="{
+                  placeholder: 'Hľadať podľa mena, emailu alebo telefónu...',
+                  icon: 'i-lucide-search',
+                }"
+              >
+                <template #empty>
+                  <p class="text-slate-500 text-sm p-2">
+                    {{ clientSearchQuery ? 'Žiadny zákazník nenájdený' : 'Začnite písať pre vyhľadávanie...' }}
+                  </p>
+                </template>
+                <template #item="{ item }">
+                  <div class="flex flex-col">
+                    <span class="font-medium">{{ item.client.fullName }}</span>
+                    <span class="text-sm text-slate-500">{{ item.client.email }} | {{ item.client.phone }}</span>
+                  </div>
+                </template>
+              </USelectMenu>
             </UFormField>
 
-            <!-- Email -->
-            <UFormField label="Email">
-              <div class="flex gap-2">
-                <UInput
-                  v-model="demoOrderForm.email"
-                  type="email"
-                  placeholder="Email"
-                  size="lg"
-                  class="flex-1"
-                />
-                <UButton
-                  icon="i-lucide-refresh-cw"
-                  color="neutral"
-                  variant="outline"
-                  size="lg"
-                  @click="generateRandomEmail"
-                  title="Vygenerovať náhodný email"
-                />
-              </div>
-            </UFormField>
-
-            <!-- Phone -->
-            <UFormField label="Telefón">
-              <UInput
-                v-model="demoOrderForm.phone"
-                placeholder="+421900000000"
-                size="lg"
-                class="w-full"
-              />
-            </UFormField>
+            <!-- Selected Client Info -->
+            <div v-if="selectedClient" class="bg-slate-50 rounded-lg p-3 text-sm">
+              <p class="font-medium text-slate-900">{{ selectedClient.fullName }}</p>
+              <p class="text-slate-600">{{ selectedClient.email }} | {{ selectedClient.phone }}</p>
+            </div>
 
             <!-- Package & Duration -->
             <div class="grid grid-cols-2 gap-4">
-              <UFormField label="Balíček">
+              <UFormField label="Balíček *">
                 <USelect
-                  v-model="demoOrderForm.package"
+                  v-model="orderForm.package"
                   :items="packageOptions"
                   size="lg"
                   class="w-full"
                 />
               </UFormField>
 
-              <UFormField label="Trvanie">
+              <UFormField label="Trvanie *">
                 <USelect
-                  v-model="demoOrderForm.duration"
-                  :items="durationOptions"
+                  v-model="orderForm.duration"
+                  :items="availableDurationOptions"
                   size="lg"
                   class="w-full"
                 />
               </UFormField>
             </div>
 
-            <!-- Delivery Type -->
-            <UFormField label="Typ doručenia">
+            <!-- Delivery Type (hidden for EKONOMY - always prevádzka) -->
+            <UFormField v-if="showDeliveryTypeSelector" label="Typ doručenia *">
               <USelect
-                v-model="demoOrderForm.deliveryType"
+                v-model="orderForm.deliveryType"
                 :items="deliveryTypeOptions"
                 size="lg"
                 class="w-full"
               />
             </UFormField>
 
+            <!-- Show info when EKONOMY is selected -->
+            <div v-if="!showDeliveryTypeSelector" class="bg-slate-50 rounded-lg p-3 text-sm">
+              <p class="text-slate-600">Typ doručenia: <span class="font-medium text-slate-900">Prevádzka</span></p>
+              <p class="text-xs text-slate-500 mt-1">EKONOMY balíček je dostupný len pre odber na prevádzke</p>
+            </div>
+
             <!-- Delivery City (only for home delivery) -->
-            <UFormField v-if="demoOrderForm.deliveryType === 'domov'" label="Mesto/obec">
+            <UFormField v-if="orderForm.deliveryType === 'domov'" label="Mesto/obec *">
               <USelect
-                v-model="demoOrderForm.deliveryCity"
+                v-model="orderForm.deliveryCity"
                 :items="deliveryCityOptions"
                 placeholder="Vyberte mesto/obec"
                 size="lg"
@@ -891,11 +1001,21 @@ const exportOrdersToPdf = async () => {
               />
             </UFormField>
 
-            <!-- Delivery Address -->
-            <UFormField label="Adresa">
+            <!-- Delivery Address (only for home delivery) -->
+            <UFormField v-if="showAddressField" label="Adresa doručenia *">
               <UInput
-                v-model="demoOrderForm.deliveryAddress"
-                placeholder="Adresa"
+                v-model="orderForm.deliveryAddress"
+                placeholder="Ulica, číslo, PSČ, Mesto"
+                size="lg"
+                class="w-full"
+              />
+            </UFormField>
+
+            <!-- Delivery Start Date -->
+            <UFormField label="Dátum prvého doručenia *">
+              <UInput
+                v-model="orderForm.deliveryStartDate"
+                type="date"
                 size="lg"
                 class="w-full"
               />
@@ -904,7 +1024,7 @@ const exportOrdersToPdf = async () => {
             <!-- Notes -->
             <UFormField label="Poznámky (voliteľné)">
               <UTextarea
-                v-model="demoOrderForm.notes"
+                v-model="orderForm.notes"
                 placeholder="Poznámky k objednávke..."
                 :rows="2"
                 class="w-full"
@@ -918,18 +1038,20 @@ const exportOrdersToPdf = async () => {
               color="neutral"
               variant="outline"
               size="lg"
-              @click="showDemoOrderModal = false"
+              class="cursor-pointer"
+              :disabled="orderLoading"
+              @click="showOrderModal = false"
             >
               Zrušiť
             </UButton>
             <UButton
-              :loading="demoOrderLoading"
-              :disabled="demoOrderLoading"
-              class="bg-orange text-dark-green hover:bg-dark-green hover:text-beige"
+              :loading="orderLoading"
+              :disabled="orderLoading"
+              class="bg-orange text-white hover:bg-dark-green cursor-pointer"
               size="lg"
-              @click="createDemoOrder"
+              @click="createAdminOrder"
             >
-              Vytvoriť Demo Objednávku
+              Vytvoriť objednávku
             </UButton>
           </div>
         </div>

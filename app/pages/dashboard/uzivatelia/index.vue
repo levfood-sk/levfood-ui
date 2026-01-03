@@ -2,12 +2,16 @@
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, type Unsubscribe } from 'firebase/firestore'
 import { formatPrice } from '~~/app/lib/types/order'
 import type { Client, AccountStatus, OrderWithClient } from '~~/app/lib/types/order'
+import CreateClientModal from '~~/app/components/dashboard/CreateClientModal.vue'
 
 const { exportToPdf } = usePdfExport()
 
 definePageMeta({
   layout: 'dashboard',
 })
+
+// Create client modal state
+const showCreateModal = ref(false)
 
 // State
 const clients = ref<Client[]>([])
@@ -219,10 +223,23 @@ const exportClientsToPdf = async () => {
 
 <template>
   <div>
-    <div class="mb-8">
-      <h2 class="text-3xl font-bold text-slate-900">Užívatelia</h2>
-      <p class="text-slate-600 mt-2">Prehľad a správa všetkých používateľov</p>
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-3xl font-bold text-slate-900">Užívatelia</h2>
+        <p class="text-slate-600 mt-2">Prehľad a správa všetkých používateľov</p>
+      </div>
+      <UButton
+        icon="i-heroicons-plus"
+        class="bg-orange text-white hover:bg-dark-green cursor-pointer"
+        size="lg"
+        @click="showCreateModal = true"
+      >
+        Pridať nového používateľa
+      </UButton>
     </div>
+
+    <!-- Create Client Modal -->
+    <CreateClientModal v-model:open="showCreateModal" />
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">

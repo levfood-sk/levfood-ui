@@ -25,6 +25,8 @@ const clientOrders = ref<Order[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const isEditing = ref(false)
+const deleting = ref(false)
+const showDeleteConfirm = ref(false)
 
 // Form state (for editing)
 const formData = ref({
@@ -253,6 +255,51 @@ const saveClient = async () => {
   }
 }
 
+// Delete client
+async function deleteClient() {
+  if (!client.value) return
+
+  deleting.value = true
+
+  try {
+    await $fetch(`/api/clients/${clientId}/delete`, {
+      method: 'DELETE',
+    })
+
+    useToast().add({
+      title: 'Úspech',
+      description: 'Zákazník bol vymazaný',
+      color: 'success',
+    })
+
+    // Navigate back to users list
+    router.push('/dashboard/uzivatelia')
+  } catch (error: any) {
+    console.error('Error deleting client:', error)
+    useToast().add({
+      title: 'Chyba',
+      description: error.data?.message || error.message || 'Nepodarilo sa vymazať zákazníka',
+      color: 'error',
+    })
+  } finally {
+    deleting.value = false
+    showDeleteConfirm.value = false
+  }
+}
+
+// Check if client can be deleted (no card payment orders)
+const canDeleteClient = computed(() => {
+  if (!clientOrders.value.length) return true
+
+  // Check if all orders are cash or demo
+  return clientOrders.value.every(order => {
+    const isCashOrder = order.paymentMethod === 'cash' ||
+      order.stripePaymentIntentId?.startsWith('cash_payment_')
+    const isDemo = order.isDemo === true
+    return isCashOrder || isDemo
+  })
+})
+
 // Format date from Firestore timestamp
 function formatDate(timestamp: any): string {
   if (!timestamp) return '-'
@@ -331,6 +378,17 @@ onMounted(() => {
         </div>
 
         <div class="flex items-center gap-4">
+          <!-- Delete button -->
+          <UButton
+            v-if="canDeleteClient"
+            icon="i-heroicons-trash"
+            color="error"
+            variant="soft"
+            class="cursor-pointer"
+            :loading="deleting"
+            @click="showDeleteConfirm = true"
+          />
+
           <!-- Account Status Badge -->
           <span
             class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium"
@@ -738,5 +796,43 @@ onMounted(() => {
       <UIcon name="i-heroicons-exclamation-circle" class="w-12 h-12 text-slate-400 mx-auto mb-4" />
       <p class="text-slate-600">Používateľ nenájdený</p>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <UModal v-model:open="showDeleteConfirm">
+      <template #content>
+        <div class="p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+              <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-red-600" />
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900">Vymazať zákazníka?</h3>
+          </div>
+
+          <p class="text-slate-600 mb-6">
+            Naozaj chcete vymazať tohto zákazníka? Táto akcia je nevratná.
+            <template v-if="clientOrders.length > 0">
+              Spolu s ním bude vymazaných {{ clientOrders.length }} objednávok.
+            </template>
+          </p>
+
+          <div class="flex justify-end gap-3">
+            <UButton
+              color="neutral"
+              variant="outline"
+              @click="showDeleteConfirm = false"
+            >
+              Zrušiť
+            </UButton>
+            <UButton
+              color="error"
+              :loading="deleting"
+              @click="deleteClient"
+            >
+              Vymazať
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

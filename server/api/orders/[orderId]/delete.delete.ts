@@ -1,25 +1,26 @@
 /**
- * Delete Demo Order API Endpoint
+ * Delete Order API Endpoint
  *
  * DELETE /api/orders/:orderId/delete
  *
- * Deletes a demo order and optionally the associated client if they have no other orders.
- * Only works for orders with isDemo: true flag.
+ * Deletes an order. Supports:
+ * - Demo orders (isDemo: true) - deletes client if no other orders
+ * - Cash orders (paymentMethod: 'cash') - decrements client stats
  */
 
-import { getFirestore } from 'firebase-admin/firestore'
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
 
 // Logging helper for consistent format
 const log = {
-  info: (msg: string, data?: object) => console.log(`[DELETE-DEMO-ORDER] ${msg}`, data ? JSON.stringify(data) : ''),
-  success: (msg: string, data?: object) => console.log(`[DELETE-DEMO-ORDER] ✅ ${msg}`, data ? JSON.stringify(data) : ''),
-  error: (msg: string, data?: object) => console.error(`[DELETE-DEMO-ORDER] ❌ ${msg}`, data ? JSON.stringify(data) : ''),
+  info: (msg: string, data?: object) => console.log(`[DELETE-ORDER] ${msg}`, data ? JSON.stringify(data) : ''),
+  success: (msg: string, data?: object) => console.log(`[DELETE-ORDER] ✅ ${msg}`, data ? JSON.stringify(data) : ''),
+  error: (msg: string, data?: object) => console.error(`[DELETE-ORDER] ❌ ${msg}`, data ? JSON.stringify(data) : ''),
 }
 
 export default defineEventHandler(async (event) => {
   const startTime = Date.now()
-  log.info('=== DELETE DEMO ORDER STARTED ===')
+  log.info('=== DELETE ORDER STARTED ===')
 
   try {
     // Get order ID from route params
@@ -32,7 +33,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    log.info('Deleting demo order:', { orderId })
+    log.info('Deleting order:', { orderId })
 
     // Initialize Firebase Admin
     const { app } = getFirebaseAdmin()
@@ -55,91 +56,116 @@ export default defineEventHandler(async (event) => {
     const orderDoc = orderQuery.docs[0]
     const order = orderDoc.data()
 
-    // Verify this is a demo order
-    if (!order.isDemo) {
+    // Check if deletion is allowed (demo order OR cash payment)
+    const isCashOrder = order.paymentMethod === 'cash' ||
+      order.stripePaymentIntentId?.startsWith('cash_payment_')
+
+    if (!order.isDemo && !isCashOrder) {
       throw createError({
         statusCode: 403,
-        message: 'Len demo objednávky môžu byť vymazané',
+        message: 'Len demo alebo hotovostné objednávky môžu byť vymazané',
       })
     }
 
     const clientId = order.clientId
-    log.info('Order verified as demo:', { orderId, clientId })
+    log.info('Order verified for deletion:', { orderId, clientId, isDemo: order.isDemo, isCash: isCashOrder })
 
     // Delete the order
     await orderDoc.ref.delete()
     log.success('Order deleted:', { orderId })
 
-    // Check if client has other orders (non-demo)
     let clientDeleted = false
+    let clientUpdated = false
+
     if (clientId) {
-      // Query for any remaining orders from this client
-      const remainingOrdersQuery = await ordersRef
-        .where('clientId', '==', clientId)
-        .get()
+      if (order.isDemo) {
+        // Demo order: check if client has other orders, delete if not
+        const remainingOrdersQuery = await ordersRef
+          .where('clientId', '==', clientId)
+          .get()
 
-      // Check if client has any non-demo orders
-      const hasNonDemoOrders = remainingOrdersQuery.docs.some(doc => !doc.data().isDemo)
-      const remainingOrderCount = remainingOrdersQuery.size
+        const hasNonDemoOrders = remainingOrdersQuery.docs.some(doc => !doc.data().isDemo)
+        const remainingOrderCount = remainingOrdersQuery.size
 
-      log.info('Checking client orders:', {
-        clientId,
-        remainingOrderCount,
-        hasNonDemoOrders
-      })
-
-      if (remainingOrderCount === 0) {
-        // No remaining orders at all, delete the client
-        const clientRef = db.collection('clients').doc(clientId)
-        const clientDoc = await clientRef.get()
-
-        if (clientDoc.exists) {
-          await clientRef.delete()
-          clientDeleted = true
-          log.success('Client deleted (no remaining orders):', { clientId })
-        }
-      } else if (!hasNonDemoOrders) {
-        // Only demo orders remain - still delete the client
-        // First delete all remaining demo orders
-        const batch = db.batch()
-        remainingOrdersQuery.docs.forEach(doc => {
-          batch.delete(doc.ref)
+        log.info('Checking client orders:', {
+          clientId,
+          remainingOrderCount,
+          hasNonDemoOrders
         })
-        await batch.commit()
-        log.success('Deleted remaining demo orders:', { count: remainingOrderCount })
 
-        // Now delete the client
-        const clientRef = db.collection('clients').doc(clientId)
-        const clientDoc = await clientRef.get()
+        if (remainingOrderCount === 0) {
+          // No remaining orders at all, delete the client
+          const clientRef = db.collection('clients').doc(clientId)
+          const clientDoc = await clientRef.get()
 
-        if (clientDoc.exists) {
-          await clientRef.delete()
-          clientDeleted = true
-          log.success('Client deleted (only had demo orders):', { clientId })
+          if (clientDoc.exists) {
+            await clientRef.delete()
+            clientDeleted = true
+            log.success('Client deleted (no remaining orders):', { clientId })
+          }
+        } else if (!hasNonDemoOrders) {
+          // Only demo orders remain - still delete the client
+          // First delete all remaining demo orders
+          const batch = db.batch()
+          remainingOrdersQuery.docs.forEach(doc => {
+            batch.delete(doc.ref)
+          })
+          await batch.commit()
+          log.success('Deleted remaining demo orders:', { count: remainingOrderCount })
+
+          // Now delete the client
+          const clientRef = db.collection('clients').doc(clientId)
+          const clientDoc = await clientRef.get()
+
+          if (clientDoc.exists) {
+            await clientRef.delete()
+            clientDeleted = true
+            log.success('Client deleted (only had demo orders):', { clientId })
+          }
+        } else {
+          log.info('Client has non-demo orders, keeping client:', { clientId })
         }
       } else {
-        log.info('Client has non-demo orders, keeping client:', { clientId })
+        // Cash order: decrement client stats
+        const clientRef = db.collection('clients').doc(clientId)
+        const clientDoc = await clientRef.get()
+
+        if (clientDoc.exists) {
+          await clientRef.update({
+            totalOrders: FieldValue.increment(-1),
+            totalSpent: FieldValue.increment(-order.totalPrice),
+            updatedAt: new Date(),
+          })
+          clientUpdated = true
+          log.success('Client stats decremented:', {
+            clientId,
+            decrementedOrders: 1,
+            decrementedSpent: order.totalPrice
+          })
+        }
       }
     }
 
     const duration = Date.now() - startTime
-    log.success(`Demo order deletion completed in ${duration}ms`, {
+    log.success(`Order deletion completed in ${duration}ms`, {
       orderId,
       clientId,
       clientDeleted,
+      clientUpdated,
     })
 
-    log.info('=== DELETE DEMO ORDER COMPLETE ===')
+    log.info('=== DELETE ORDER COMPLETE ===')
 
     return {
       success: true,
       orderId,
       clientDeleted,
-      message: 'Demo objednávka bola vymazaná',
+      clientUpdated,
+      message: 'Objednávka bola vymazaná',
     }
   } catch (error: any) {
     const duration = Date.now() - startTime
-    log.error(`Demo order deletion FAILED after ${duration}ms`, {
+    log.error(`Order deletion FAILED after ${duration}ms`, {
       error: error.message,
       statusCode: error.statusCode,
     })
@@ -152,7 +178,7 @@ export default defineEventHandler(async (event) => {
     // Generic error
     throw createError({
       statusCode: 500,
-      message: error.message || 'Nepodarilo sa vymazať demo objednávku',
+      message: error.message || 'Nepodarilo sa vymazať objednávku',
     })
   }
 })

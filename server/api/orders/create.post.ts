@@ -214,6 +214,7 @@ export default defineEventHandler(async (event) => {
       termsAccepted: orderData.termsAccepted,
       stripePaymentIntentId: orderData.stripePaymentIntentId,
       paymentStatus: 'succeeded',
+      paymentMethod: 'card',
       amountPaid: pricing.totalPrice,
       currency: 'eur',
 

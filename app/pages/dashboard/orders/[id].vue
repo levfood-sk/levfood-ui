@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore'
-import { formatPrice, ORDER_STATUS_LABELS } from '~~/app/lib/types/order'
-import type { OrderWithClient, Order, Client, OrderStatus } from '~~/app/lib/types/order'
+import { formatPrice, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '~~/app/lib/types/order'
+import type { OrderWithClient, Order, Client, OrderStatus, PaymentMethod } from '~~/app/lib/types/order'
 
 definePageMeta({
   layout: 'dashboard',
@@ -153,6 +153,12 @@ function calculateAge(birthDate?: string): number | null {
   return age
 }
 
+// Helper to get payment method (with lazy fallback for legacy orders)
+const getPaymentMethod = (order: Order): PaymentMethod => {
+  if (order.paymentMethod) return order.paymentMethod
+  return order.stripePaymentIntentId?.startsWith('cash_payment_') ? 'cash' : 'card'
+}
+
 // Get delivery type label
 const deliveryTypeLabel = computed(() => {
   if (!order.value) return '-'
@@ -251,9 +257,13 @@ async function resendConfirmationEmail() {
   }
 }
 
-// Delete demo order
-async function deleteDemoOrder() {
-  if (!order.value || !order.value.isDemo) return
+// Delete order (demo or cash)
+async function deleteOrder() {
+  if (!order.value) return
+
+  // Only allow deletion of demo orders or cash payment orders
+  const isCashOrder = getPaymentMethod(order.value) === 'cash'
+  if (!order.value.isDemo && !isCashOrder) return
 
   deleting.value = true
 
@@ -264,14 +274,14 @@ async function deleteDemoOrder() {
 
     useToast().add({
       title: 'Úspech',
-      description: 'Demo objednávka bola vymazaná',
+      description: order.value.isDemo ? 'Demo objednávka bola vymazaná' : 'Objednávka bola vymazaná',
       color: 'success',
     })
 
     // Navigate back to orders list
     router.push('/dashboard/orders')
   } catch (error: any) {
-    console.error('Error deleting demo order:', error)
+    console.error('Error deleting order:', error)
     useToast().add({
       title: 'Chyba',
       description: error.data?.message || error.message || 'Nepodarilo sa vymazať objednávku',
@@ -318,6 +328,17 @@ onMounted(() => {
 
         <!-- Status and Actions -->
         <div class="flex items-center gap-4">
+          <!-- Delete button for cash orders -->
+          <UButton
+            v-if="!order.isDemo && getPaymentMethod(order) === 'cash'"
+            icon="i-heroicons-trash"
+            color="error"
+            variant="soft"
+            class="cursor-pointer"
+            :loading="deleting"
+            @click="showDeleteConfirm = true"
+          />
+
           <!-- Demo order: show Testovacia status -->
           <span
             v-if="order.isDemo"
@@ -341,8 +362,9 @@ onMounted(() => {
           <!-- Action Buttons for regular orders -->
           <div v-if="!order.isDemo && order.orderStatus === 'pending'" class="flex gap-2">
             <UButton
-              color="success"
-              class="cursor-pointer"
+              color="neutral"
+              class="cursor-pointer text-white"
+              :style="{ backgroundColor: '#16a34a' }"
               :loading="updating"
               @click="updateOrderStatus('approved')"
             >
@@ -544,7 +566,7 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center justify-between">
               <h3 class="text-xl font-bold text-slate-900">Platobné informácie</h3>
-              <div v-if="order.superfakturaInvoiceId" class="flex gap-2">
+              <div class="flex gap-2">
                 <UButton
                   icon="i-heroicons-envelope"
                   color="neutral"
@@ -556,8 +578,9 @@ onMounted(() => {
                   Odoslať email
                 </UButton>
                 <UButton
+                  v-if="order.superfakturaInvoiceId"
                   icon="i-heroicons-arrow-down-tray"
-                  color="orange"
+                  color="neutral"
                   variant="soft"
                   class="cursor-pointer bg-orange text-white"
                   :loading="downloadingInvoice"
@@ -585,6 +608,18 @@ onMounted(() => {
                 }"
               >
                 {{ order.paymentStatus === 'succeeded' ? 'Úspešná' : order.paymentStatus === 'pending' ? 'Čaká' : 'Neúspešná' }}
+              </span>
+            </div>
+
+            <div>
+              <p class="text-sm text-slate-600">Spôsob platby</p>
+              <span
+                class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium mt-1 text-white"
+                :style="{
+                  backgroundColor: getPaymentMethod(order) === 'card' ? '#2563eb' : '#16a34a'
+                }"
+              >
+                {{ PAYMENT_METHOD_LABELS[getPaymentMethod(order)] }}
               </span>
             </div>
 
@@ -661,12 +696,17 @@ onMounted(() => {
             <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
               <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-red-600" />
             </div>
-            <h3 class="text-lg font-semibold text-slate-900">Vymazať demo objednávku?</h3>
+            <h3 class="text-lg font-semibold text-slate-900">Vymazať objednávku?</h3>
           </div>
 
           <p class="text-slate-600 mb-6">
-            Naozaj chcete vymazať túto demo objednávku? Táto akcia je nevratná.
-            Ak zákazník nemá žiadne iné objednávky, bude vymazaný aj jeho profil.
+            Naozaj chcete vymazať túto objednávku? Táto akcia je nevratná.
+            <template v-if="order?.isDemo">
+              Ak zákazník nemá žiadne iné objednávky, bude vymazaný aj jeho profil.
+            </template>
+            <template v-else>
+              Štatistiky zákazníka budú aktualizované (počet objednávok a celková útrata).
+            </template>
           </p>
 
           <div class="flex justify-end gap-3">
@@ -680,7 +720,7 @@ onMounted(() => {
             <UButton
               color="error"
               :loading="deleting"
-              @click="deleteDemoOrder"
+              @click="deleteOrder"
             >
               Vymazať
             </UButton>

@@ -60,15 +60,6 @@ export default defineEventHandler(async (event) => {
     const order = orderDoc.data() as Order
     log.success('Order found', { orderId, clientId: order.clientId, invoiceId: order.superfakturaInvoiceId })
 
-    // Check if invoice exists
-    if (!order.superfakturaInvoiceId) {
-      log.error('No invoice exists for order', { orderId })
-      throw createError({
-        statusCode: 400,
-        message: 'Faktúra pre túto objednávku neexistuje',
-      })
-    }
-
     // Get client data
     log.info('Loading client data...', { clientId: order.clientId })
     const clientDoc = await db.collection('clients').doc(order.clientId).get()
@@ -93,30 +84,44 @@ export default defineEventHandler(async (event) => {
 
     log.success('Client found', { email: client.email, fullName: client.fullName })
 
-    // Configure Superfaktura
-    const superfakturaConfig = {
-      email: config.superfakturaEmail,
-      apiKey: config.superfakturaApiKey,
-      companyId: config.superfakturaCompanyId,
-      isSandbox: config.superfakturaIsSandbox === 'true',
+    // For cash orders without invoice, send email without attachment
+    let invoicePdf: Buffer | undefined = undefined
+
+    if (order.superfakturaInvoiceId) {
+      // Card payment - download invoice PDF from SuperFaktura
+      log.info('Downloading invoice PDF...', { invoiceId: order.superfakturaInvoiceId })
+
+      // Configure Superfaktura
+      const superfakturaConfig = {
+        email: config.superfakturaEmail,
+        apiKey: config.superfakturaApiKey,
+        companyId: config.superfakturaCompanyId,
+        isSandbox: config.superfakturaIsSandbox === 'true',
+      }
+
+      try {
+        invoicePdf = await downloadInvoicePDF(order.superfakturaInvoiceId, superfakturaConfig)
+
+        if (!invoicePdf) {
+          log.error('Failed to download invoice PDF', { invoiceId: order.superfakturaInvoiceId })
+          throw createError({
+            statusCode: 500,
+            message: 'Nepodarilo sa stiahnuť faktúru',
+          })
+        }
+
+        log.success('Invoice PDF downloaded', { size: invoicePdf.length })
+      } catch (pdfError: any) {
+        log.error('Failed to download invoice PDF', { error: pdfError.message })
+        throw createError({
+          statusCode: 500,
+          message: 'Nepodarilo sa stiahnuť faktúru',
+        })
+      }
+    } else {
+      // Cash payment - no invoice, send email without attachment
+      log.info('Cash order - sending confirmation without invoice')
     }
-
-    // Download invoice PDF
-    log.info('Downloading invoice PDF...', {
-      invoiceId: order.superfakturaInvoiceId,
-      isSandbox: superfakturaConfig.isSandbox,
-    })
-    const invoicePdf = await downloadInvoicePDF(order.superfakturaInvoiceId, superfakturaConfig)
-
-    if (!invoicePdf) {
-      log.error('Failed to download invoice PDF', { invoiceId: order.superfakturaInvoiceId })
-      throw createError({
-        statusCode: 500,
-        message: 'Nepodarilo sa stiahnuť faktúru',
-      })
-    }
-
-    log.success('Invoice PDF downloaded', { size: invoicePdf.length })
 
     // Send confirmation email
     log.info('Sending email...', { to: client.email, orderId })
