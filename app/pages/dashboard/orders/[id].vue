@@ -20,6 +20,19 @@ const resendingEmail = ref(false)
 const deleting = ref(false)
 const showDeleteConfirm = ref(false)
 
+// Custom invoice feature (testing only)
+const config = useRuntimeConfig()
+const enableTestingFeatures = computed(() => config.public.enableTestingFeatures ?? false)
+const showCustomInvoiceModal = ref(false)
+const customPrice = ref<number | null>(null)
+const creatingCustomInvoice = ref(false)
+
+// Edit delivery start date feature
+const showEditStartDateModal = ref(false)
+const newStartDate = ref('')
+const updatingStartDate = ref(false)
+const startDateError = ref('')
+
 // Load order and client data
 const loadOrder = async () => {
   loading.value = true
@@ -159,6 +172,17 @@ const getPaymentMethod = (order: Order): PaymentMethod => {
   return order.stripePaymentIntentId?.startsWith('cash_payment_') ? 'cash' : 'card'
 }
 
+// Check if order has already started (today >= deliveryStartDate)
+const orderHasStarted = computed(() => {
+  if (!order.value?.deliveryStartDate) return false
+  const startDate = parseSlovakDate(order.value.deliveryStartDate)
+  if (!startDate) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  startDate.setHours(0, 0, 0, 0)
+  return today >= startDate
+})
+
 // Get delivery type label
 const deliveryTypeLabel = computed(() => {
   if (!order.value) return '-'
@@ -290,6 +314,112 @@ async function deleteOrder() {
   } finally {
     deleting.value = false
     showDeleteConfirm.value = false
+  }
+}
+
+// Create custom invoice with custom price (testing feature)
+async function createCustomInvoice() {
+  if (!order.value || !customPrice.value) return
+
+  creatingCustomInvoice.value = true
+
+  try {
+    await $fetch('/api/orders/custom-invoice', {
+      method: 'POST',
+      body: {
+        orderId: order.value.orderId,
+        customPrice: customPrice.value * 100, // Convert EUR to cents
+      },
+    })
+
+    useToast().add({
+      title: 'Úspech',
+      description: 'Faktúra bola vytvorená a email bol odoslaný',
+      color: 'success',
+    })
+
+    showCustomInvoiceModal.value = false
+    customPrice.value = null
+  } catch (error: any) {
+    console.error('Error creating custom invoice:', error)
+    useToast().add({
+      title: 'Chyba',
+      description: error.data?.message || 'Nepodarilo sa vytvoriť faktúru',
+      color: 'error',
+    })
+  } finally {
+    creatingCustomInvoice.value = false
+  }
+}
+
+// Open edit start date modal
+function openEditStartDateModal() {
+  if (!order.value) return
+  newStartDate.value = order.value.deliveryStartDate
+  startDateError.value = ''
+  showEditStartDateModal.value = true
+}
+
+// Validate delivery day on client side
+function isValidDeliveryDay(dateStr: string, duration: string): { valid: boolean; error: string } {
+  const parsed = parseSlovakDate(dateStr)
+  if (!parsed) return { valid: false, error: 'Neplatný formát dátumu' }
+
+  const dayOfWeek = parsed.getDay() // 0=Sunday, 6=Saturday
+
+  if (dayOfWeek === 0) {
+    return { valid: false, error: 'Nedeľa nie je platný deň doručenia' }
+  }
+
+  if (dayOfWeek === 6 && duration === '5') {
+    return { valid: false, error: 'Sobota nie je platný deň doručenia pre 5-dňový balíček (Po-Pi)' }
+  }
+
+  return { valid: true, error: '' }
+}
+
+// Update delivery start date
+async function updateDeliveryStartDate() {
+  if (!order.value || !newStartDate.value) return
+
+  // Client-side validation
+  const validation = isValidDeliveryDay(newStartDate.value, order.value.duration)
+  if (!validation.valid) {
+    startDateError.value = validation.error
+    return
+  }
+
+  updatingStartDate.value = true
+  startDateError.value = ''
+
+  try {
+    await $fetch(`/api/orders/${orderId}/update-start-date`, {
+      method: 'POST',
+      body: {
+        newStartDate: newStartDate.value,
+      },
+    })
+
+    useToast().add({
+      title: 'Úspech',
+      description: 'Dátum začiatku dodávky bol aktualizovaný',
+      color: 'success',
+    })
+
+    showEditStartDateModal.value = false
+
+    // Reload order to get updated end date
+    await loadOrder()
+  } catch (error: any) {
+    console.error('Error updating start date:', error)
+    startDateError.value = error.data?.message || 'Nepodarilo sa aktualizovať dátum'
+    useToast().add({
+      title: 'Chyba',
+      description: error.data?.message || 'Nepodarilo sa aktualizovať dátum začiatku',
+      color: 'error',
+    })
+  } finally {
+    updatingStartDate.value = false
   }
 }
 
@@ -504,7 +634,20 @@ onMounted(() => {
         <!-- Order Details -->
         <UCard>
           <template #header>
-            <h3 class="text-xl font-bold text-slate-900">Detaily objednávky</h3>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-bold text-slate-900">Detaily objednávky</h3>
+              <UButton
+                v-if="!orderHasStarted"
+                icon="i-heroicons-pencil-square"
+                size="sm"
+                color="neutral"
+                variant="soft"
+                class="cursor-pointer"
+                @click="openEditStartDateModal"
+              >
+                Zmeniť začiatok dodávky
+              </UButton>
+            </div>
           </template>
 
           <div class="space-y-4">
@@ -587,6 +730,17 @@ onMounted(() => {
                   @click="downloadInvoice"
                 >
                   Stiahnuť faktúru
+                </UButton>
+                <!-- Testing Feature: Custom Invoice -->
+                <UButton
+                  v-if="enableTestingFeatures"
+                  icon="i-heroicons-document-plus"
+                  color="neutral"
+                  variant="soft"
+                  class="cursor-pointer"
+                  @click="showCustomInvoiceModal = true"
+                >
+                  Vlastná faktúra
                 </UButton>
               </div>
             </div>
@@ -723,6 +877,95 @@ onMounted(() => {
               @click="deleteOrder"
             >
               Vymazať
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Custom Invoice Modal (Testing Feature) -->
+    <UModal v-model:open="showCustomInvoiceModal">
+      <template #content>
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-slate-900 mb-4">Vytvoriť vlastnú faktúru</h3>
+          <p class="text-sm text-slate-600 mb-4">
+            Zadajte vlastnú cenu pre faktúru (v EUR). Faktúra bude vytvorená v SuperFaktura
+            a odoslaná zákazníkovi na email.
+          </p>
+
+          <div class="mb-6">
+            <label class="text-sm text-slate-600 block mb-1">Cena (EUR)</label>
+            <UInput
+              v-model.number="customPrice"
+              type="number"
+              placeholder="napr. 199"
+              size="lg"
+            />
+          </div>
+
+          <div class="flex justify-end gap-3">
+            <UButton
+              color="neutral"
+              variant="outline"
+              @click="showCustomInvoiceModal = false"
+            >
+              Zrušiť
+            </UButton>
+            <UButton
+              class="bg-orange text-white"
+              :loading="creatingCustomInvoice"
+              :disabled="!customPrice || customPrice <= 0"
+              @click="createCustomInvoice"
+            >
+              Vytvoriť a odoslať
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Edit Delivery Start Date Modal -->
+    <UModal v-model:open="showEditStartDateModal">
+      <template #content>
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-slate-900 mb-4">Zmeniť dátum začiatku dodávky</h3>
+          <p class="text-sm text-slate-600 mb-4">
+            Zadajte nový dátum začiatku dodávky. Dátum konca bude automaticky prepočítaný.
+            <br>
+            <span class="font-medium">
+              Platné dni: {{ order?.duration === '5' ? 'Pondelok - Piatok' : 'Pondelok - Sobota' }}
+            </span>
+          </p>
+
+          <div class="mb-4">
+            <label class="text-sm text-slate-600 block mb-1">Nový dátum (DD.MM.YYYY)</label>
+            <UInput
+              v-model="newStartDate"
+              type="text"
+              placeholder="napr. 20.01.2026"
+              size="lg"
+              :color="startDateError ? 'error' : undefined"
+            />
+            <p v-if="startDateError" class="text-sm text-red-600 mt-1">
+              {{ startDateError }}
+            </p>
+          </div>
+
+          <div class="flex justify-end gap-3">
+            <UButton
+              color="neutral"
+              variant="outline"
+              @click="showEditStartDateModal = false"
+            >
+              Zrušiť
+            </UButton>
+            <UButton
+              class="bg-orange text-white"
+              :loading="updatingStartDate"
+              :disabled="!newStartDate"
+              @click="updateDeliveryStartDate"
+            >
+              Uložiť
             </UButton>
           </div>
         </div>

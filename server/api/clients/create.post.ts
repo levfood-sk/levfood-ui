@@ -29,6 +29,7 @@ const createClientSchema = z.object({
   workActivity: z.enum(['ľahká', 'mierne náročná', 'náročná']).nullable().optional(),
   stressLevel: z.enum(['nízky', 'stredný', 'vysoký']).nullable().optional(),
   goal: z.string().max(500).nullable().optional(),
+  dietaryRequirements: z.array(z.string()).optional().default([]),
 })
 
 type CreateClientInput = z.infer<typeof createClientSchema>
@@ -86,6 +87,7 @@ export default defineEventHandler(async (event) => {
       ...(clientData.workActivity && { workActivity: clientData.workActivity }),
       ...(clientData.stressLevel && { stressLevel: clientData.stressLevel }),
       ...(clientData.goal && { goal: clientData.goal }),
+      ...(clientData.dietaryRequirements?.length && { dietaryRequirements: clientData.dietaryRequirements }),
 
       // Account status
       accountStatus: clientData.accountStatus,

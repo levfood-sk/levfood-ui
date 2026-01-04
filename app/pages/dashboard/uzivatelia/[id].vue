@@ -42,6 +42,7 @@ const formData = ref({
   workActivity: null as WorkActivity | null,
   stressLevel: null as StressLevel | null,
   goal: '',
+  dietaryRequirements: [] as string[],
 })
 
 // Validation errors
@@ -63,6 +64,7 @@ const clientUpdateSchema = z.object({
   workActivity: z.enum(['ľahká', 'mierne náročná', 'náročná']).nullable().optional(),
   stressLevel: z.enum(['nízky', 'stredný', 'vysoký']).nullable().optional(),
   goal: z.string().max(500, 'Cieľ je príliš dlhý').optional(),
+  dietaryRequirements: z.array(z.string()).optional().default([]),
 })
 
 // Select options
@@ -89,6 +91,12 @@ const stressLevelOptions = [
   { label: 'Vysoký', value: 'vysoký' },
 ]
 
+const dietaryOptions = [
+  { value: 'bezlaktózová', label: 'Bezlaktózová' },
+  { value: 'vegetariánska', label: 'Vegetariánska' },
+  { value: 'bezlepková', label: 'Bezlepková' },
+]
+
 // Populate form data from client
 const populateFormData = () => {
   if (!client.value) return
@@ -106,6 +114,7 @@ const populateFormData = () => {
     workActivity: client.value.workActivity ?? null,
     stressLevel: client.value.stressLevel ?? null,
     goal: client.value.goal || '',
+    dietaryRequirements: client.value.dietaryRequirements || [],
   }
 }
 
@@ -223,6 +232,7 @@ const saveClient = async () => {
       workActivity: formData.value.workActivity,
       stressLevel: formData.value.stressLevel,
       goal: formData.value.goal || null,
+      dietaryRequirements: formData.value.dietaryRequirements,
       updatedAt: new Date(),
     }
 
@@ -703,6 +713,44 @@ onMounted(() => {
               <p v-if="validationErrors.goal" class="text-xs text-red-500 mt-1">
                 {{ validationErrors.goal }}
               </p>
+            </div>
+
+            <!-- Dietary Requirements -->
+            <div>
+              <label class="text-sm text-slate-600 block mb-2">Diétne požiadavky</label>
+              <template v-if="isEditing">
+                <div class="flex flex-wrap gap-2">
+                  <label
+                    v-for="option in dietaryOptions"
+                    :key="option.value"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                    :class="formData.dietaryRequirements.includes(option.value)
+                      ? 'border-orange bg-orange/10 text-orange'
+                      : 'border-slate-200 hover:border-slate-300'"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="option.value"
+                      v-model="formData.dietaryRequirements"
+                      class="sr-only"
+                    />
+                    <span class="text-sm font-medium">{{ option.label }}</span>
+                  </label>
+                </div>
+              </template>
+              <template v-else>
+                <div v-if="client.dietaryRequirements?.length" class="flex flex-wrap gap-2">
+                  <span
+                    v-for="req in client.dietaryRequirements"
+                    :key="req"
+                    class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium text-slate-900"
+                    :style="{ backgroundColor: 'var(--color-beige)' }"
+                  >
+                    {{ req }}
+                  </span>
+                </div>
+                <p v-else class="text-slate-400">-</p>
+              </template>
             </div>
           </div>
         </UCard>

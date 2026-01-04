@@ -68,6 +68,7 @@ export interface Client {
   workActivity?: WorkActivity | null
   stressLevel?: StressLevel | null
   goal?: string                // User's goal (text field)
+  dietaryRequirements?: string[]  // Allergens/dietary preferences
 
   // Account status
   accountStatus: AccountStatus // aktívny / neaktívny

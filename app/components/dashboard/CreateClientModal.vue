@@ -38,6 +38,7 @@ const formData = ref({
   workActivity: null as WorkActivity | null,
   stressLevel: null as StressLevel | null,
   goal: '',
+  dietaryRequirements: [] as string[],
 })
 
 // Validation errors
@@ -59,6 +60,7 @@ const createClientSchema = z.object({
   workActivity: z.enum(['ľahká', 'mierne náročná', 'náročná']).nullable().optional(),
   stressLevel: z.enum(['nízky', 'stredný', 'vysoký']).nullable().optional(),
   goal: z.string().max(500, 'Cieľ je príliš dlhý').optional(),
+  dietaryRequirements: z.array(z.string()).optional().default([]),
 })
 
 // Select options
@@ -85,6 +87,12 @@ const stressLevelOptions = [
   { label: 'Vysoký', value: 'vysoký' },
 ]
 
+const dietaryOptions = [
+  { value: 'bezlaktózová', label: 'Bezlaktózová' },
+  { value: 'vegetariánska', label: 'Vegetariánska' },
+  { value: 'bezlepková', label: 'Bezlepková' },
+]
+
 // Reset form
 const resetForm = () => {
   formData.value = {
@@ -100,6 +108,7 @@ const resetForm = () => {
     workActivity: null,
     stressLevel: null,
     goal: '',
+    dietaryRequirements: [],
   }
   validationErrors.value = {}
 }
@@ -147,6 +156,7 @@ const createClient = async () => {
         workActivity: formData.value.workActivity,
         stressLevel: formData.value.stressLevel,
         goal: formData.value.goal || null,
+        dietaryRequirements: formData.value.dietaryRequirements,
       },
     })
 
@@ -369,6 +379,29 @@ const createClient = async () => {
                 <p v-if="validationErrors.goal" class="text-xs text-red-500 mt-1">
                   {{ validationErrors.goal }}
                 </p>
+              </div>
+
+              <!-- Dietary Requirements -->
+              <div>
+                <label class="text-sm text-slate-600 block mb-2">Diétne požiadavky</label>
+                <div class="flex flex-wrap gap-2">
+                  <label
+                    v-for="option in dietaryOptions"
+                    :key="option.value"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                    :class="formData.dietaryRequirements.includes(option.value)
+                      ? 'border-orange bg-orange/10 text-orange'
+                      : 'border-slate-200 hover:border-slate-300'"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="option.value"
+                      v-model="formData.dietaryRequirements"
+                      class="sr-only"
+                    />
+                    <span class="text-sm font-medium">{{ option.label }}</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
