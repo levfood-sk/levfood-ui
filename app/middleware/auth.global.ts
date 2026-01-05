@@ -4,6 +4,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
+  // Client routes have their own middleware - skip admin middleware
+  const isClientRoute = to.path.startsWith('/client')
+  if (isClientRoute) {
+    return
+  }
+
   // Get auth state from useState (set by plugin)
   const user = useState('firebase-user')
   const loading = useState('firebase-auth-loading')

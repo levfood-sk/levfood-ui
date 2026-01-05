@@ -37,6 +37,16 @@ export default defineNuxtConfig({
     },
   },
 
+  // Route rules for specific paths
+  routeRules: {
+    // Disable strict COOP for client auth pages to allow Firebase OAuth popup
+    "/client/**": {
+      headers: {
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+      },
+    },
+  },
+
   // Stripe configuration
   stripe: {
     server: {

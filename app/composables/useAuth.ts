@@ -2,24 +2,25 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   OAuthProvider,
   signOut as firebaseSignOut,
   updateProfile,
-  onAuthStateChanged,
-  type User as FirebaseUser,
   type UserCredential,
 } from 'firebase/auth'
-import type { User, AuthState } from '../lib/firebase/types'
+import type { User } from '../lib/firebase/types'
 import { mapFirebaseUser } from '../lib/firebase/types'
 
-const authState = reactive<AuthState>({
-  user: null,
-  loading: true,
-  error: null,
-})
-
-let initialized = false
+// Serializable user type from the plugin (avoids Firebase User reactivity issues)
+interface SerializableUser {
+  uid: string
+  email: string | null
+  displayName: string | null
+  photoURL: string | null
+  emailVerified: boolean
+}
 
 export const useAuth = () => {
   // Skip initialization on server
@@ -31,40 +32,36 @@ export const useAuth = () => {
       isAuthenticated: computed(() => false),
       signIn: async () => ({} as UserCredential),
       signUp: async () => ({} as UserCredential),
-      signInWithGoogle: async () => ({} as UserCredential),
-      signInWithApple: async () => ({} as UserCredential),
+      signInWithGoogle: async () => null,
+      signInWithApple: async () => null,
       signOut: async () => {},
       getIdToken: async () => null,
+      handleRedirectResult: async () => null,
     }
   }
 
   const auth = useFirebaseAuth()
 
-  // Initialize auth state listener
-  if (!initialized && import.meta.client) {
-    initialized = true
+  // Use the shared state from the firebase plugin (single source of truth)
+  // This is a serialized version of the Firebase User to avoid Vue reactivity issues
+  const firebaseUser = useState<SerializableUser | null>('firebase-user')
+  const loading = useState<boolean>('firebase-auth-loading')
 
-    onAuthStateChanged(auth, (firebaseUser) => {
-      authState.user = mapFirebaseUser(firebaseUser)
-      authState.loading = false
-    }, (error) => {
-      authState.error = error
-      authState.loading = false
-    })
-  }
+  // Local error state (shared across useAuth calls)
+  const authError = useState<Error | null>('firebase-auth-error', () => null)
+
+  // Computed user mapped to our User type
+  const user = computed(() => mapFirebaseUser(firebaseUser.value))
 
   const signIn = async (email: string, password: string): Promise<UserCredential> => {
-    authState.loading = true
-    authState.error = null
+    authError.value = null
 
     try {
       const credential = await signInWithEmailAndPassword(auth, email, password)
       return credential
     } catch (error) {
-      authState.error = error as Error
+      authError.value = error as Error
       throw error
-    } finally {
-      authState.loading = false
     }
   }
 
@@ -74,8 +71,7 @@ export const useAuth = () => {
     firstName: string,
     lastName: string
   ): Promise<UserCredential> => {
-    authState.loading = true
-    authState.error = null
+    authError.value = null
 
     try {
       const credential = await createUserWithEmailAndPassword(auth, email, password)
@@ -85,68 +81,99 @@ export const useAuth = () => {
         displayName: `${firstName} ${lastName}`,
       })
 
-      authState.user = mapFirebaseUser(credential.user)
-
       return credential
     } catch (error) {
-      authState.error = error as Error
+      authError.value = error as Error
       throw error
-    } finally {
-      authState.loading = false
     }
   }
 
-  const signInWithGoogle = async (): Promise<UserCredential> => {
-    authState.loading = true
-    authState.error = null
+  const signInWithGoogle = async (): Promise<UserCredential | null> => {
+    authError.value = null
 
     try {
       const provider = new GoogleAuthProvider()
       provider.setCustomParameters({
-        prompt: 'select_account'
+        prompt: 'select_account',
       })
 
-      const credential = await signInWithPopup(auth, provider)
-      return credential
+      // Try popup first, fall back to redirect if popup is blocked
+      try {
+        const result = await signInWithPopup(auth, provider)
+        console.log('[useAuth] Google popup sign-in successful:', result.user?.email)
+        return result
+      } catch (popupError: any) {
+        // If popup was blocked or failed due to COOP, try redirect
+        if (popupError.code === 'auth/popup-blocked' ||
+            popupError.code === 'auth/popup-closed-by-user' ||
+            popupError.message?.includes('Cross-Origin-Opener-Policy')) {
+          console.log('[useAuth] Popup blocked, falling back to redirect')
+          await signInWithRedirect(auth, provider)
+          return null
+        }
+        throw popupError
+      }
     } catch (error) {
-      authState.error = error as Error
+      authError.value = error as Error
       throw error
-    } finally {
-      authState.loading = false
     }
   }
 
-  const signInWithApple = async (): Promise<UserCredential> => {
-    authState.loading = true
-    authState.error = null
+  const signInWithApple = async (): Promise<UserCredential | null> => {
+    authError.value = null
 
     try {
       const provider = new OAuthProvider('apple.com')
       provider.addScope('email')
       provider.addScope('name')
 
-      const credential = await signInWithPopup(auth, provider)
-      return credential
+      // Try popup first, fall back to redirect if popup is blocked
+      try {
+        const result = await signInWithPopup(auth, provider)
+        console.log('[useAuth] Apple popup sign-in successful:', result.user?.email)
+        return result
+      } catch (popupError: any) {
+        // If popup was blocked or failed due to COOP, try redirect
+        if (popupError.code === 'auth/popup-blocked' ||
+            popupError.code === 'auth/popup-closed-by-user' ||
+            popupError.message?.includes('Cross-Origin-Opener-Policy')) {
+          console.log('[useAuth] Popup blocked, falling back to redirect')
+          await signInWithRedirect(auth, provider)
+          return null
+        }
+        throw popupError
+      }
     } catch (error) {
-      authState.error = error as Error
+      authError.value = error as Error
       throw error
-    } finally {
-      authState.loading = false
+    }
+  }
+
+  // Handle redirect result after returning from OAuth provider
+  // Note: This is now primarily handled by the firebase.client.ts plugin
+  // but we keep this for manual calls if needed
+  const handleRedirectResult = async (): Promise<UserCredential | null> => {
+    try {
+      const result = await getRedirectResult(auth)
+      if (result) {
+        console.log('[useAuth] handleRedirectResult:', result.user?.email)
+        return result
+      }
+      return null
+    } catch (error) {
+      authError.value = error as Error
+      throw error
     }
   }
 
   const signOut = async (): Promise<void> => {
-    authState.loading = true
-    authState.error = null
+    authError.value = null
 
     try {
       await firebaseSignOut(auth)
-      authState.user = null
     } catch (error) {
-      authState.error = error as Error
+      authError.value = error as Error
       throw error
-    } finally {
-      authState.loading = false
     }
   }
 
@@ -156,15 +183,16 @@ export const useAuth = () => {
   }
 
   return {
-    user: computed(() => authState.user),
-    loading: computed(() => authState.loading),
-    error: computed(() => authState.error),
-    isAuthenticated: computed(() => !!authState.user),
+    user,
+    loading: computed(() => loading.value),
+    error: computed(() => authError.value),
+    isAuthenticated: computed(() => !!firebaseUser.value),
     signIn,
     signUp,
     signInWithGoogle,
     signInWithApple,
     signOut,
     getIdToken,
+    handleRedirectResult,
   }
 }

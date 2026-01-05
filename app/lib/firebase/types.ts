@@ -1,5 +1,3 @@
-import type { User as FirebaseUser } from 'firebase/auth'
-
 export interface User {
   uid: string
   email: string | null
@@ -15,7 +13,15 @@ export interface AuthState {
   error: Error | null
 }
 
-export function mapFirebaseUser(firebaseUser: FirebaseUser | null): User | null {
+// Accepts either Firebase User or serialized user from plugin
+interface UserLike {
+  uid: string
+  email: string | null
+  displayName: string | null
+  photoURL: string | null
+}
+
+export function mapFirebaseUser(firebaseUser: UserLike | null): User | null {
   if (!firebaseUser) return null
 
   const nameParts = firebaseUser.displayName?.split(' ') || []
