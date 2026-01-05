@@ -45,6 +45,12 @@ export default defineNuxtConfig({
         "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
       },
     },
+    // Client login page (moved from /client/login to /login)
+    "/login": {
+      headers: {
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+      },
+    },
   },
 
   // Stripe configuration

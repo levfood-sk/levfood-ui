@@ -1,7 +1,7 @@
 /**
  * Client Portal Middleware
  * Handles routing logic for the client authentication flow:
- * - Not logged in -> /client/login
+ * - Not logged in -> /login
  * - Logged in but not linked -> /client/order-code
  * - Logged in and linked -> /client/calendar (or requested page)
  */
@@ -58,7 +58,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     })
   }
 
-  const isLoginPage = to.path === '/client/login'
+  const isLoginPage = to.path === '/login'
   const isOrderCodePage = to.path === '/client/order-code'
 
   // Login page logic
@@ -79,7 +79,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (isOrderCodePage) {
     // Redirect unauthenticated users to login
     if (!user.value) {
-      return navigateTo('/client/login')
+      return navigateTo('/login')
     }
     // Redirect linked users to calendar
     if (isLinked.value) {
@@ -91,7 +91,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // All other /client/* pages require auth + link
   if (!user.value) {
-    return navigateTo('/client/login')
+    return navigateTo('/login')
   }
 
   if (!isLinked.value && linkCheckComplete.value) {

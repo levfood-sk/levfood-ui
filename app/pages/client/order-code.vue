@@ -116,7 +116,7 @@ const handleClear = () => {
 
 const handleLogout = async () => {
   await signOut()
-  router.push('/client/login')
+  router.push('/login')
 }
 </script>
 

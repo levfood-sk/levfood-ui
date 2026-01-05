@@ -12,7 +12,7 @@ const handleSignOut = async () => {
   loading.value = true
   try {
     await firebaseSignOut()
-    await navigateTo('/login')
+    await navigateTo('/admin-levfood')
   } catch (error) {
     console.error('Sign out error:', error)
   } finally {

@@ -51,7 +51,7 @@ export default defineEventHandler(async (event): Promise<ForgotPasswordResponse>
 
     // Generate password reset link using Firebase Admin SDK
     const resetLink = await auth.generatePasswordResetLink(email, {
-      url: `${config.public.appUrl}/login`,
+      url: `${config.public.appUrl}/admin-levfood`,
     })
 
     // Send password reset email

@@ -5,7 +5,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // Client routes have their own middleware - skip admin middleware
-  const isClientRoute = to.path.startsWith('/client')
+  // Also skip /login as it's now the client login page
+  const isClientRoute = to.path.startsWith('/client') || to.path === '/login'
   if (isClientRoute) {
     return
   }
@@ -18,8 +19,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const protectedRoutes = ['/app', '/dashboard']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route))
 
-  // Auth routes
-  const authRoutes = ['/login', '/register']
+  // Auth routes (admin login)
+  const authRoutes = ['/admin-levfood', '/register']
   const isAuthRoute = authRoutes.some(route => to.path.startsWith(route))
 
   // Wait for auth to initialize before checking routes
@@ -41,7 +42,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Redirect unauthenticated users from protected routes
   if (isProtectedRoute && !user.value) {
-    return navigateTo('/login')
+    return navigateTo('/admin-levfood')
   }
 
   // Redirect authenticated users from auth routes

@@ -2,27 +2,63 @@
 import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
 
 definePageMeta({
-  layout: false
+  layout: false,
+  ssr: false, // Client-only page - requires Firebase auth
+  middleware: 'client', // Use client portal middleware for auth flow
 })
 
-const { signIn } = useAuth()
+const router = useRouter()
+const { signInWithGoogle, signInWithApple, user, isLinked, linkCheckComplete } = useClientAuth()
 
-const email = ref('')
-const password = ref('')
-const loading = ref(false)
-const error = ref('')
+const loginLoading = ref<'google' | 'apple' | null>(null)
+const loginError = ref<string | null>(null)
 
-const handleEmailLogin = async () => {
-  loading.value = true
-  error.value = ''
+// Redirect result is now handled by the firebase.client.ts plugin
+// The watcher below will handle redirect when user state changes
+
+// Watch for auth state changes and redirect accordingly
+watch(
+  [user, isLinked, linkCheckComplete],
+  ([currentUser, linked, checkComplete]) => {
+    console.log('Auth state changed:', { user: currentUser?.email, linked, checkComplete })
+    if (currentUser && checkComplete) {
+      if (linked) {
+        router.replace('/client/calendar')
+      } else {
+        router.replace('/client/order-code')
+      }
+    }
+  },
+  { immediate: true }
+)
+
+const handleGoogleLogin = async () => {
+  loginLoading.value = 'google'
+  loginError.value = null
 
   try {
-    await signIn(email.value, password.value)
-    await navigateTo('/dashboard')
-  } catch (e: any) {
-    error.value = e.message || 'Prihlásenie zlyhalo'
-  } finally {
-    loading.value = false
+    await signInWithGoogle()
+    // Page will redirect to Google, then back here
+    // handleRedirectResult in onMounted will process the result
+  } catch (err: any) {
+    console.error('Google login error:', err)
+    loginError.value = err.message || 'Nepodarilo sa prihlásiť cez Google'
+    loginLoading.value = null
+  }
+}
+
+const handleAppleLogin = async () => {
+  loginLoading.value = 'apple'
+  loginError.value = null
+
+  try {
+    await signInWithApple()
+    // Page will redirect to Apple, then back here
+    // handleRedirectResult in onMounted will process the result
+  } catch (err: any) {
+    console.error('Apple login error:', err)
+    loginError.value = err.message || 'Nepodarilo sa prihlásiť cez Apple'
+    loginLoading.value = null
   }
 }
 </script>
@@ -30,87 +66,60 @@ const handleEmailLogin = async () => {
 <template>
   <div class="min-h-screen flex items-center justify-center bg-beige px-4">
     <UCard class="w-full bg-beige max-w-md" :ui="{ root: 'border-0 ring-0', header: 'border-0 ring-0' }">
-      <template #header >
-        <div class="text-center pt-2" >
+      <template #header>
+        <div class="text-center pt-2">
           <NuxtLink to="/" class="inline-block mb-4">
             <img :src="logoLongIcon" alt="LevFood logo" class="w-[240px] h-auto" />
           </NuxtLink>
-          <h2 class="text-2xl font-bold text-[var(--color-dark-green)]">Prihlásenie do Admin Panelu</h2>
-          <p class="text-sm text-[var(--color-dark-green)]/80 mt-2">Prihláste sa pomocou svojho admin účtu</p>
+          <h2 class="text-2xl font-bold text-[var(--color-dark-green)]">Vitajte</h2>
+          <p class="text-sm text-[var(--color-dark-green)]/80 mt-2">
+            Prihláste sa pre prístup k vašim objednávkam
+          </p>
         </div>
       </template>
 
       <div class="space-y-4">
-
         <!-- Error Alert -->
         <UAlert
-          v-if="error"
+          v-if="loginError"
           variant="soft"
-          :title="error"
-          :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'red', variant: 'link' }"
-          @close="error = ''"
+          :title="loginError"
+          :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'error', variant: 'link' }"
+          @close="loginError = null"
         />
 
-        <!-- Email Login Form -->
-        <form @submit.prevent="handleEmailLogin" class="flex flex-col gap-4">
-          <UFormField label="Email" required class="w-full">
-            <UInput
-              v-model="email"
-              type="email"
-              placeholder="vas@email.com"
-              size="lg"
-              :disabled="loading"
-              required
-              class="w-full bg-beige"
-              :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]', icon: 'text-[var(--color-dark-green)]' }"
-
-            >
-              <template #leading>
-                <Icon name="lucide:mail" class="w-5 h-5" />
-              </template>
-            </UInput>
-          </UFormField>
-          <div class="flex flex-col gap-1">
-            <UFormField label="Heslo" required class="w-full">
-            <UInput
-              v-model="password"
-              type="password"
-              placeholder="••••••••"
-              size="lg"
-              :disabled="loading"
-              required
-              class="w-full"
-              :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]', icon: 'text-[var(--color-dark-green)]' }"
-
-            >
-              <template #leading>
-                <Icon name="lucide:lock" class="w-5 h-5" />
-              </template>
-            </UInput>
-            
-          </UFormField>
-          <ULink
-              tabindex="-1"
-              to="/zabudnute-heslo"
-              class="text-sm text-[var(--color-dark-green)] hover:text-[var(--color-orange)] transition-colors mt-1"
-            >
-              Zabudli ste heslo?
-            </ULink>
-          </div>
-
-          
-
+        <!-- Login Buttons -->
+        <div class="flex flex-col gap-3">
           <UButton
-            type="submit"
             block
             color="neutral"
             size="lg"
-            :loading="loading"
-            class="pricing-button bg-[var(--color-dark-green)] text-beige mb-6 h-14 text-lg font-bold"
+            class="pricing-button bg-[var(--color-dark-green)] text-beige h-14 text-lg font-bold"
+            :loading="loginLoading === 'google'"
+            :disabled="loginLoading !== null"
+            @click="handleGoogleLogin"
           >
-            Prihlásiť sa
+            <template #leading>
+              <UIcon name="i-logos-google-icon" class="size-5" />
+            </template>
+            Pokračovať s Google
           </UButton>
-        </form>
+
+          <UButton
+            block
+            color="neutral"
+            size="lg"
+            class="pricing-button bg-[var(--color-dark-green)] text-beige h-14 text-lg font-bold"
+            :loading="loginLoading === 'apple'"
+            :disabled="loginLoading !== null"
+            @click="handleAppleLogin"
+          >
+            <template #leading>
+              <UIcon name="i-fa6-brands-apple" class="size-5" />
+            </template>
+            Pokračovať s Apple
+          </UButton>
+        </div>
       </div>
     </UCard>
   </div>

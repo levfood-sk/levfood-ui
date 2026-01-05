@@ -105,7 +105,7 @@ const handleSubmit = async () => {
         <!-- Back to Login Link -->
         <div class="text-center pt-4 border-t border-[var(--color-dark-green)]/20">
           <NuxtLink
-            to="/login"
+            to="/admin-levfood"
             class="text-sm text-[var(--color-dark-green)] hover:text-[var(--color-orange)] transition-colors"
           >
             <Icon name="lucide:arrow-left" class="w-4 h-4 inline mr-1" />

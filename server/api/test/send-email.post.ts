@@ -33,7 +33,7 @@ export default defineEventHandler(async (event): Promise<TestEmailResponse> => {
 
     if (type === 'password-reset') {
       // Send test password reset email
-      const resetLink = `${config.public.appUrl}/login?reset=test-token-123`
+      const resetLink = `${config.public.appUrl}/admin-levfood?reset=test-token-123`
 
       result = await sendPasswordResetEmail(email, {
         adminName: 'Test Admin',

@@ -13,7 +13,7 @@ const router = useRouter()
 // Fallback redirect if middleware doesn't catch it
 watchEffect(() => {
   if (!user.value) {
-    router.replace('/client/login')
+    router.replace('/login')
   } else if (isLinked.value) {
     router.replace('/client/calendar')
   } else if (linkCheckComplete.value) {

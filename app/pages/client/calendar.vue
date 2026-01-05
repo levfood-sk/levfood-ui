@@ -135,7 +135,7 @@ const dayNames = ['Po', 'Ut', 'St', 'Št', 'Pi', 'So', 'Ne']
 // Logout handler
 const handleLogout = async () => {
   await signOut()
-  router.push('/client/login')
+  router.push('/login')
 }
 
 // Load calendar data for current month

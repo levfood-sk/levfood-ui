@@ -1,0 +1,117 @@
+<script setup lang="ts">
+import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
+
+definePageMeta({
+  layout: false
+})
+
+const { signIn } = useAuth()
+
+const email = ref('')
+const password = ref('')
+const loading = ref(false)
+const error = ref('')
+
+const handleEmailLogin = async () => {
+  loading.value = true
+  error.value = ''
+
+  try {
+    await signIn(email.value, password.value)
+    await navigateTo('/dashboard')
+  } catch (e: any) {
+    error.value = e.message || 'Prihlásenie zlyhalo'
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen flex items-center justify-center bg-beige px-4">
+    <UCard class="w-full bg-beige max-w-md" :ui="{ root: 'border-0 ring-0', header: 'border-0 ring-0' }">
+      <template #header >
+        <div class="text-center pt-2" >
+          <NuxtLink to="/" class="inline-block mb-4">
+            <img :src="logoLongIcon" alt="LevFood logo" class="w-[240px] h-auto" />
+          </NuxtLink>
+          <h2 class="text-2xl font-bold text-[var(--color-dark-green)]">Prihlásenie do Admin Panelu</h2>
+          <p class="text-sm text-[var(--color-dark-green)]/80 mt-2">Prihláste sa pomocou svojho admin účtu</p>
+        </div>
+      </template>
+
+      <div class="space-y-4">
+
+        <!-- Error Alert -->
+        <UAlert
+          v-if="error"
+          variant="soft"
+          :title="error"
+          :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'red', variant: 'link' }"
+          @close="error = ''"
+        />
+
+        <!-- Email Login Form -->
+        <form @submit.prevent="handleEmailLogin" class="flex flex-col gap-4">
+          <UFormField label="Email" required class="w-full">
+            <UInput
+              v-model="email"
+              type="email"
+              placeholder="vas@email.com"
+              size="lg"
+              :disabled="loading"
+              required
+              class="w-full bg-beige"
+              :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]', icon: 'text-[var(--color-dark-green)]' }"
+
+            >
+              <template #leading>
+                <Icon name="lucide:mail" class="w-5 h-5" />
+              </template>
+            </UInput>
+          </UFormField>
+          <div class="flex flex-col gap-1">
+            <UFormField label="Heslo" required class="w-full">
+            <UInput
+              v-model="password"
+              type="password"
+              placeholder="••••••••"
+              size="lg"
+              :disabled="loading"
+              required
+              class="w-full"
+              :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]', icon: 'text-[var(--color-dark-green)]' }"
+
+            >
+              <template #leading>
+                <Icon name="lucide:lock" class="w-5 h-5" />
+              </template>
+            </UInput>
+            
+          </UFormField>
+          <ULink
+              tabindex="-1"
+              to="/zabudnute-heslo"
+              class="text-sm text-[var(--color-dark-green)] hover:text-[var(--color-orange)] transition-colors mt-1"
+            >
+              Zabudli ste heslo?
+            </ULink>
+          </div>
+
+          
+
+          <UButton
+            type="submit"
+            block
+            color="neutral"
+            size="lg"
+            :loading="loading"
+            class="pricing-button bg-[var(--color-dark-green)] text-beige mb-6 h-14 text-lg font-bold"
+          >
+            Prihlásiť sa
+          </UButton>
+        </form>
+      </div>
+    </UCard>
+  </div>
+</template>
