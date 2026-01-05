@@ -29,6 +29,13 @@ const paymentElement = ref<any>(null)
 const orderSuccess = ref(false)
 const createdOrderId = ref<string | null>(null)
 
+// Discount code state
+const discountCode = ref('')
+const discountApplied = ref(false)
+const discountPercentage = ref(0)
+const validatingDiscount = ref(false)
+const discountError = ref('')
+
 // Form data
 const formData = ref({
   step1: {
@@ -220,6 +227,30 @@ const totalPrice = computed(() => {
 const totalPriceFormatted = computed(() => {
   const euros = totalPrice.value / 100
   return `${euros.toFixed(2)}€`
+})
+
+// Discounted price calculation (rounded to nearest euro)
+const discountedPrice = computed(() => {
+  if (!discountApplied.value || discountPercentage.value === 0) {
+    return totalPrice.value
+  }
+  const discountAmount = totalPrice.value * (discountPercentage.value / 100)
+  const afterDiscount = totalPrice.value - discountAmount
+  // Round to nearest euro (100 cents)
+  return Math.round(afterDiscount / 100) * 100
+})
+
+const finalPrice = computed(() => discountedPrice.value)
+
+const finalPriceFormatted = computed(() => {
+  const euros = finalPrice.value / 100
+  return `${euros.toFixed(0)}€`
+})
+
+const discountAmountFormatted = computed(() => {
+  const discountAmount = totalPrice.value - discountedPrice.value
+  const euros = discountAmount / 100
+  return `${euros.toFixed(0)}€`
 })
 
 const daysCount = computed(() => {
@@ -600,6 +631,69 @@ function handleCancel() {
 }
 
 /**
+ * Validate discount code
+ */
+const validateDiscountCode = async () => {
+  if (!discountCode.value.trim()) return
+
+  validatingDiscount.value = true
+  discountError.value = ''
+
+  try {
+    const response = await $fetch<{ valid: boolean; coupon?: { code: string; discountPercentage: number }; error?: string }>('/api/coupons/validate', {
+      method: 'POST',
+      body: { code: discountCode.value },
+    })
+
+    if (response.valid && response.coupon) {
+      discountApplied.value = true
+      discountPercentage.value = response.coupon.discountPercentage
+      discountCode.value = response.coupon.code // Use normalized code from server
+
+      // Reinitialize payment with new amount
+      await reinitializePayment()
+    } else {
+      discountError.value = response.error || 'Neplatný kód'
+    }
+  } catch (e: any) {
+    console.error('Discount validation error:', e)
+    discountError.value = 'Nepodarilo sa overiť kód'
+  } finally {
+    validatingDiscount.value = false
+  }
+}
+
+/**
+ * Remove applied discount code
+ */
+const removeDiscountCode = async () => {
+  discountCode.value = ''
+  discountApplied.value = false
+  discountPercentage.value = 0
+  discountError.value = ''
+
+  // Reinitialize payment with original amount
+  await reinitializePayment()
+}
+
+/**
+ * Reinitialize payment after discount change
+ */
+const reinitializePayment = async () => {
+  // Destroy existing payment element
+  if (paymentElement.value) {
+    paymentElement.value.destroy()
+    paymentElement.value = null
+  }
+  elements.value = null
+  clientSecret.value = null
+  paymentIntentId.value = null
+
+  // Create new payment intent with updated amount
+  await initializePayment()
+}
+
+/**
  * Initialize Stripe payment when entering step 4
  */
 const initializePayment = async () => {
@@ -607,13 +701,13 @@ const initializePayment = async () => {
   stripeError.value = null
 
   try {
-    // Call server endpoint to create payment intent
+    // Call server endpoint to create payment intent (use discounted price)
     const response = await $fetch('/api/stripe/create-payment-intent', {
       method: 'POST',
       body: {
-        amount: totalPrice.value,
+        amount: finalPrice.value,
         currency: 'eur',
-        description: `Levfood ${formData.value.step1.package} balíček`,
+        description: `Levfood ${formData.value.step1.package} balíček${discountApplied.value ? ` (zľava ${discountPercentage.value}%)` : ''}`,
       },
     })
 
@@ -753,6 +847,12 @@ async function saveOrder(stripePaymentIntentId: string) {
       deliveryStartDate: formData.value.step4.deliveryStartDate,
       termsAccepted: formData.value.step4.termsAccepted,
       stripePaymentIntentId,
+
+      // Coupon (if applied)
+      ...(discountApplied.value && {
+        couponCode: discountCode.value,
+        discountPercentage: discountPercentage.value,
+      }),
     }
 
     console.log('Order data being sent:', orderData)
@@ -1226,7 +1326,7 @@ watch(() => currentStep.value, (newStep) => {
 
             <!-- Summary Section -->
             <div class="bg-orange border-1 border-[var(--color-dark-green)] rounded-lg p-6 mb-6">
-              <h3 class="text-lg font-bold text-[var(--color-dark-green)] mb-4 font-condensed ">Zhrnutie</h3>
+              <h3 class="text-lg font-bold text-[var(--color-dark-green)] mb-4 font-condensed">Zhrnutie</h3>
               <div class="space-y-2 text-[var(--color-dark-green)]">
                 <div class="flex justify-between">
                   <span>Balíček:</span>
@@ -1237,8 +1337,16 @@ watch(() => currentStep.value, (newStep) => {
                   <span class="font-semibold">{{ summaryData.days || '-' }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span>Cena spolu:</span>
-                  <span class="font-semibold">{{ totalPriceFormatted }}</span>
+                  <span>Cena:</span>
+                  <span :class="discountApplied ? 'line-through text-[var(--color-dark-green)]/50' : 'font-semibold'">{{ totalPriceFormatted }}</span>
+                </div>
+                <div v-if="discountApplied" class="flex justify-between">
+                  <span>Zľava ({{ discountPercentage }}%):</span>
+                  <span class="font-semibold">-{{ discountAmountFormatted }}</span>
+                </div>
+                <div v-if="discountApplied" class="flex justify-between pt-2 border-t border-[var(--color-dark-green)]/20">
+                  <span class="font-semibold">Cena po zľave:</span>
+                  <span class="font-bold text-lg">{{ finalPriceFormatted }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span>Typ doručenia:</span>
@@ -1302,6 +1410,53 @@ watch(() => currentStep.value, (newStep) => {
 
               <!-- Stripe Payment Element -->
               <div v-if="clientSecret && !stripeLoading" class="space-y-6">
+                <!-- Discount Code Section -->
+                <div>
+                  <div class="flex items-center gap-2 mb-3">
+                    <UIcon name="i-lucide-ticket-percent" class="w-4 h-4 text-[var(--color-dark-green)]" />
+                    <span class="text-sm font-medium text-[var(--color-dark-green)]">Zľavový kód</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <UInput
+                      v-model="discountCode"
+                      placeholder="Zadajte kód"
+                      size="md"
+                      :disabled="discountApplied || validatingDiscount"
+                      class="flex-1 uppercase"
+                      :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)]/30 focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                      @keyup.enter="validateDiscountCode"
+                    />
+                    <button
+                      v-if="!discountApplied"
+                      type="button"
+                      :disabled="!discountCode.trim() || validatingDiscount"
+                      class="flex items-center gap-1.5 text-sm bg-[var(--color-dark-green)] text-[var(--color-beige)] font-medium py-2 px-3 rounded-md transition-all duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                      @click="validateDiscountCode"
+                    >
+                      <UIcon v-if="validatingDiscount" name="i-heroicons-arrow-path" class="w-3.5 h-3.5 animate-spin" />
+                      {{ validatingDiscount ? 'Overujem...' : 'Použiť' }}
+                    </button>
+                    <button
+                      v-else
+                      type="button"
+                      class="flex items-center gap-1.5 text-sm border border-[var(--color-dark-green)]/30 text-[var(--color-dark-green)] font-medium py-2 px-3 rounded-md transition-all duration-200 hover:bg-[var(--color-dark-green)]/5"
+                      @click="removeDiscountCode"
+                    >
+                      Zrušiť
+                    </button>
+                  </div>
+                  <!-- Success message -->
+                  <div v-if="discountApplied" class="mt-2 flex items-center gap-1.5 text-[var(--color-dark-green)]">
+                    <UIcon name="i-lucide-check-circle" class="w-4 h-4" />
+                    <span class="text-sm">Zľava {{ discountPercentage }}% bola aplikovaná</span>
+                  </div>
+                  <!-- Error message -->
+                  <div v-if="discountError" class="mt-2 flex items-center gap-1.5 text-red-600">
+                    <UIcon name="i-lucide-x-circle" class="w-4 h-4" />
+                    <span class="text-sm">{{ discountError }}</span>
+                  </div>
+                </div>
+
                 <div class="bg-white rounded-lg p-6">
                   <h3 class="text-lg font-bold text-[var(--color-dark-green)] mb-4 font-condensed">Platobné údaje</h3>
                   <div id="payment-element" class="min-h-[200px]"></div>
@@ -1334,7 +1489,7 @@ watch(() => currentStep.value, (newStep) => {
                   @click="handleSubmit"
                 >
                   <UIcon v-if="stripeProcessing" name="i-heroicons-arrow-path" class="w-5 h-5 mr-2 animate-spin" />
-                  {{ stripeProcessing ? 'Spracúvam platbu...' : `Zaplatiť ${totalPriceFormatted}` }}
+                  {{ stripeProcessing ? 'Spracúvam platbu...' : `Zaplatiť ${discountApplied ? finalPriceFormatted : totalPriceFormatted}` }}
                 </button>
               </div>
 

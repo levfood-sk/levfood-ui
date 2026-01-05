@@ -33,6 +33,10 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       isSandbox: superfakturaConfig.isSandbox,
+      credentials: {
+        email: superfakturaConfig.email,
+        companyId: superfakturaConfig.companyId,
+      },
       invoices: result,
     }
   } catch (error: any) {

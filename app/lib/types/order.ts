@@ -136,6 +136,11 @@ export interface Order {
   superfakturaInvoiceId?: number
   superfakturaInvoiceNumber?: string
 
+  // Coupon/Discount fields (optional, added when coupon is applied)
+  couponCode?: string            // The applied coupon code
+  discountPercentage?: number    // Discount percentage applied (1-100)
+  originalPrice?: number         // Original price before discount (in cents)
+
   // Timestamps
   createdAt: Timestamp
   updatedAt: Timestamp
@@ -177,6 +182,10 @@ export interface CreateOrderInput {
   deliveryStartDate: string
   termsAccepted: boolean
   stripePaymentIntentId: string
+
+  // Coupon (optional)
+  couponCode?: string
+  discountPercentage?: number
 }
 
 /**
@@ -249,6 +258,10 @@ export const createOrderSchema = z.object({
     .refine((val) => val === true, 'Musíte súhlasiť s podmienkami'),
   stripePaymentIntentId: z.string()
     .min(1, 'Chýba ID platby'),
+
+  // Coupon (optional)
+  couponCode: z.string().optional(),
+  discountPercentage: z.number().min(1).max(100).optional(),
 })
 
 export type CreateOrderSchemaType = z.infer<typeof createOrderSchema>

@@ -554,10 +554,10 @@ const exportOrdersToPdf = async () => {
             row.totalPrice = formatPrice(order.totalPrice)
             break
           case 'discountCode':
-            row.discountCode = '-' // TODO: Add discount code field when implemented
+            row.discountCode = order.couponCode || '-'
             break
           case 'discountedPrice':
-            row.discountedPrice = '-' // TODO: Add discounted price when implemented
+            row.discountedPrice = order.couponCode ? formatPrice(order.totalPrice) : '-'
             break
           case 'orderStatus':
             row.orderStatus = ORDER_STATUS_LABELS[order.orderStatus]
@@ -844,12 +844,18 @@ const exportOrdersToPdf = async () => {
 
               <!-- Discount Code -->
               <td v-if="isColumnVisible('discountCode')" class="px-4 py-3">
-                <span class="text-slate-600 text-sm">-</span>
+                <span v-if="order.couponCode" class="font-mono text-sm font-medium text-green-700">
+                  {{ order.couponCode }}
+                </span>
+                <span v-else class="text-slate-400 text-sm">-</span>
               </td>
 
               <!-- Discounted Price -->
               <td v-if="isColumnVisible('discountedPrice')" class="px-4 py-3">
-                <span class="text-slate-600 text-sm">-</span>
+                <span v-if="order.couponCode" class="font-semibold text-green-700">
+                  {{ formatPrice(order.totalPrice) }}
+                </span>
+                <span v-else class="text-slate-400 text-sm">-</span>
               </td>
 
               <!-- Order Status -->

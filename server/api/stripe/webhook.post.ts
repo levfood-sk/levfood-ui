@@ -242,9 +242,12 @@ export default defineEventHandler(async (event) => {
           const finalPriceEuros = order.totalPrice / 100
 
           // Build invoice item - use final price directly (discount not shown)
+          // Add coupon code to description if applied
           const invoiceItem: InvoiceItem = {
             name: `LevFood ${order.package} balík`,
-            description: `${order.daysCount} dní / Od: ${order.deliveryStartDate}`,
+            description: order.couponCode
+              ? `${order.daysCount} dní / Od: ${order.deliveryStartDate} / Kód: ${order.couponCode}`
+              : `${order.daysCount} dní / Od: ${order.deliveryStartDate}`,
             quantity: 1,
             unit: 'balík',
             unit_price: finalPriceEuros, // Final price (discount already applied)

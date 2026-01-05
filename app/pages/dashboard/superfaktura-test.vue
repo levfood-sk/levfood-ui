@@ -20,6 +20,7 @@ const invoicesLoading = ref(false)
 const invoices = ref<any[]>([])
 const invoicesError = ref<string | null>(null)
 const deletingId = ref<number | null>(null)
+const invoicesMeta = ref<{ isSandbox?: boolean; credentials?: { email?: string; companyId?: string } } | null>(null)
 
 // Package options for select
 const packageOptions = [
@@ -40,18 +41,30 @@ const packageForm = reactive({
   duration: '5' as DurationType,
   clientName: 'Test Klient',
   clientEmail: 'test@levfood.sk',
+  couponCode: '',
+  discountPercentage: 0,
 })
 
 // Computed pricing info (using single source of truth)
 const pricingInfo = computed(() => {
   const pkg = packageForm.package
   const dur = packageForm.duration
-  const finalPrice = PACKAGE_PRICES[pkg][dur] / 100
+  const originalPrice = PACKAGE_PRICES[pkg][dur] / 100
   const daysCount = dur === '5' ? 20 : 24
 
+  // Calculate discounted price if coupon applied
+  let finalPrice = originalPrice
+  if (packageForm.discountPercentage > 0) {
+    const discountAmount = originalPrice * (packageForm.discountPercentage / 100)
+    finalPrice = Math.round(originalPrice - discountAmount) // Round to nearest euro
+  }
+
   return {
+    originalPrice,
     finalPrice,
     daysCount,
+    hasDiscount: packageForm.discountPercentage > 0,
+    discountAmount: originalPrice - finalPrice,
   }
 })
 
@@ -71,6 +84,10 @@ const createPackageInvoice = async () => {
         duration: packageForm.duration,
         clientName: packageForm.clientName,
         clientEmail: packageForm.clientEmail,
+        ...(packageForm.couponCode && {
+          couponCode: packageForm.couponCode,
+          discountPercentage: packageForm.discountPercentage,
+        }),
       },
     })
 
@@ -125,6 +142,10 @@ const loadInvoices = async () => {
   try {
     const response = await $fetch('/api/test/superfaktura-invoices')
     invoices.value = Array.isArray(response.invoices) ? response.invoices : []
+    invoicesMeta.value = {
+      isSandbox: response.isSandbox,
+      credentials: response.credentials,
+    }
   } catch (e: any) {
     invoicesError.value = e.data?.message || e.message || 'Nepodarilo sa načítať faktúry'
     console.error('Load invoices error:', e)
@@ -201,10 +222,46 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- Discount Code Section -->
+        <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+          <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+            <UIcon name="i-lucide-ticket-percent" class="w-4 h-4" />
+            Zľavový kód (voliteľné)
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Kód kupónu</label>
+              <UInput
+                v-model="packageForm.couponCode"
+                placeholder="napr. ZIMA2026"
+                class="uppercase"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Zľava (%)</label>
+              <UInput
+                v-model.number="packageForm.discountPercentage"
+                type="number"
+                min="0"
+                max="100"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </div>
+
         <!-- Pricing Preview -->
         <div class="bg-white rounded-lg p-4 border border-slate-200">
           <h4 class="text-sm font-semibold text-slate-700 mb-3">Náhľad ceny na faktúre</h4>
-          <div class="grid grid-cols-2 gap-4 text-sm">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <p class="text-slate-500">Pôvodná cena</p>
+              <p class="text-lg font-bold" :class="pricingInfo.hasDiscount ? 'text-slate-400 line-through' : 'text-slate-900'">{{ pricingInfo.originalPrice }}€</p>
+            </div>
+            <div v-if="pricingInfo.hasDiscount">
+              <p class="text-slate-500">Zľava ({{ packageForm.discountPercentage }}%)</p>
+              <p class="text-lg font-bold text-orange-500">-{{ pricingInfo.discountAmount.toFixed(0) }}€</p>
+            </div>
             <div>
               <p class="text-slate-500">Cena na faktúre</p>
               <p class="text-lg font-bold text-success-600">{{ pricingInfo.finalPrice }}€</p>
@@ -213,6 +270,9 @@ onMounted(() => {
               <p class="text-slate-500">Počet dní</p>
               <p class="text-lg font-bold text-slate-900">{{ pricingInfo.daysCount }} dní</p>
             </div>
+          </div>
+          <div v-if="packageForm.couponCode" class="mt-3 pt-3 border-t border-slate-200 text-sm text-slate-600">
+            <span class="font-medium">Popis na faktúre:</span> {{ pricingInfo.daysCount }} dní / Od: DD.MM.YYYY / Kód: {{ packageForm.couponCode.toUpperCase() }}
           </div>
         </div>
 
@@ -294,7 +354,7 @@ onMounted(() => {
 
         <!-- Package Invoice Details -->
         <div v-if="result.pricing" class="bg-slate-50 rounded-lg p-4 space-y-3">
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p class="text-sm font-medium text-slate-500">Číslo faktúry</p>
               <p class="text-lg font-semibold text-slate-900">
@@ -307,10 +367,19 @@ onMounted(() => {
                 {{ result.package }}
               </p>
             </div>
+            <div v-if="result.pricing.couponCode">
+              <p class="text-sm font-medium text-slate-500">Zľavový kód</p>
+              <p class="text-lg font-semibold text-orange-600">
+                {{ result.pricing.couponCode }} (-{{ result.pricing.discountPercentage }}%)
+              </p>
+            </div>
             <div>
               <p class="text-sm font-medium text-slate-500">Cena na faktúre</p>
               <p class="text-lg font-semibold text-success-600">
                 {{ result.pricing.finalPrice }}€
+                <span v-if="result.pricing.couponCode" class="text-sm text-slate-400 line-through ml-1">
+                  {{ result.pricing.originalPrice }}€
+                </span>
               </p>
             </div>
           </div>
@@ -345,7 +414,9 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <UIcon name="i-heroicons-document-duplicate" class="w-5 h-5 text-primary-500" />
             <h3 class="text-lg font-semibold">Existujúce faktúry</h3>
-            <UBadge color="warning" variant="soft">Sandbox/Produkcia</UBadge>
+            <UBadge v-if="invoicesMeta" :color="invoicesMeta.isSandbox ? 'success' : 'error'" variant="soft">
+              {{ invoicesMeta.isSandbox ? 'Sandbox' : 'Produkcia' }}
+            </UBadge>
           </div>
           <UButton
             color="neutral"
@@ -359,6 +430,17 @@ onMounted(() => {
           </UButton>
         </div>
       </template>
+
+      <!-- Current credentials info -->
+      <div v-if="invoicesMeta?.credentials" class="mb-4 p-3 bg-slate-50 rounded-lg text-sm">
+        <div class="flex items-center gap-4 text-slate-600">
+          <span><strong>Email:</strong> {{ invoicesMeta.credentials.email }}</span>
+          <span><strong>Company ID:</strong> {{ invoicesMeta.credentials.companyId }}</span>
+          <span :class="invoicesMeta.isSandbox ? 'text-success-600' : 'text-error-600'">
+            <strong>Sandbox:</strong> {{ invoicesMeta.isSandbox }}
+          </span>
+        </div>
+      </div>
 
       <!-- Error -->
       <UAlert

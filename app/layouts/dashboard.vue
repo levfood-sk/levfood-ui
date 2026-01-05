@@ -78,6 +78,11 @@ const navItems = [
     to: '/dashboard/zamestnanci',
   },
   {
+    label: 'Zľavové kódy',
+    icon: 'i-lucide-ticket-percent',
+    to: '/dashboard/zlavove-kody',
+  },
+  {
     label: 'Užívateľské oznamy',
     icon: 'i-lucide-megaphone',
     to: '/dashboard/uzivatelske-oznamy',

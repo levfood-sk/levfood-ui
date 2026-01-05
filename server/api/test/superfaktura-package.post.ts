@@ -5,13 +5,15 @@
  *
  * Creates a test invoice in Superfaktura for a specific package type,
  * using the exact same pricing logic as the webhook.
- * 
+ *
  * Request body:
  * {
  *   package: 'EKONOMY' | 'ŠTANDARD' | 'PREMIUM' | 'OFFICE',
  *   duration: '5' | '6',
  *   clientName?: string,
- *   clientEmail?: string
+ *   clientEmail?: string,
+ *   couponCode?: string,
+ *   discountPercentage?: number
  * }
  */
 
@@ -67,14 +69,29 @@ export default defineEventHandler(async (event) => {
       isSandbox: config.superfakturaIsSandbox === 'true',
     }
 
+    // Extract coupon data
+    const couponCode = body.couponCode as string | undefined
+    const discountPercentage = body.discountPercentage as number | undefined
+
     console.log('📋 Package invoice test configuration:', {
       package: packageType,
       duration,
+      couponCode,
+      discountPercentage,
       isSandbox: superfakturaConfig.isSandbox,
     })
 
-    // Get final price (what customer actually pays) - no discount shown on invoice
-    const finalPrice = PACKAGE_PRICES[packageType][duration]
+    // Get original price from source of truth
+    const originalPrice = PACKAGE_PRICES[packageType][duration]
+
+    // Calculate discounted price if coupon applied
+    let finalPrice = originalPrice
+    if (couponCode && discountPercentage && discountPercentage > 0) {
+      const discountAmount = originalPrice * (discountPercentage / 100)
+      // Round to nearest euro (100 cents)
+      finalPrice = Math.round((originalPrice - discountAmount) / 100) * 100
+    }
+
     const finalPriceEuros = finalPrice / 100
 
     // Calculate days
@@ -89,9 +106,14 @@ export default defineEventHandler(async (event) => {
     }
 
     // Build invoice item - use final price directly (discount not shown)
+    // Include coupon code in description if applied
+    const invoiceDescription = couponCode
+      ? `${daysCount} dní / Test objednávka / Kód: ${couponCode.toUpperCase()}`
+      : `${daysCount} dní / Test objednávka`
+
     const invoiceItem: InvoiceItem = {
       name: `LevFood ${packageType} balík`,
-      description: `${daysCount} dní / Test objednávka`,
+      description: invoiceDescription,
       quantity: 1,
       unit: 'balík',
       unit_price: finalPriceEuros, // Final price (discount already applied)
@@ -124,7 +146,13 @@ export default defineEventHandler(async (event) => {
     console.log('💰 Invoice pricing details:', {
       package: packageType,
       duration,
+      originalPrice: `${originalPrice / 100}€`,
       finalPrice: `${finalPriceEuros}€`,
+      ...(couponCode && {
+        couponCode,
+        discountPercentage: `${discountPercentage}%`,
+        discountAmount: `${(originalPrice - finalPrice) / 100}€`,
+      }),
     })
 
     // Create invoice in Superfaktura
@@ -185,8 +213,14 @@ export default defineEventHandler(async (event) => {
       package: packageType,
       duration,
       pricing: {
+        originalPrice: originalPrice / 100,
         finalPrice: finalPriceEuros,
         daysCount,
+        ...(couponCode && {
+          couponCode,
+          discountPercentage,
+          discountAmount: (originalPrice - finalPrice) / 100,
+        }),
       },
       pdfSize: invoicePdf?.length || 0,
       hasPdf: !!invoicePdf,

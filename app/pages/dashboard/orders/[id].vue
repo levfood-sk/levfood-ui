@@ -678,6 +678,25 @@ onMounted(() => {
               </p>
             </div>
 
+            <!-- Discount Info (if coupon was applied) -->
+            <div v-if="order.couponCode" class="p-4 rounded-lg" style="background-color: var(--color-beige)">
+              <p class="text-sm font-medium text-slate-700 mb-3">Aplikovaná zľava</p>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-slate-600">Zľavový kód</span>
+                  <span class="font-mono font-medium text-slate-900">{{ order.couponCode }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-slate-600">Zľava</span>
+                  <span class="font-medium text-slate-900">{{ order.discountPercentage }}%</span>
+                </div>
+                <div v-if="order.originalPrice" class="flex justify-between items-center">
+                  <span class="text-sm text-slate-600">Pôvodná cena</span>
+                  <span class="font-medium text-slate-500 line-through">{{ formatPrice(order.originalPrice) }}</span>
+                </div>
+              </div>
+            </div>
+
             <div v-if="order.dietaryRequirements && order.dietaryRequirements.length > 0">
               <p class="text-sm text-slate-600 mb-2">Diétne požiadavky</p>
               <div class="flex flex-wrap gap-2">

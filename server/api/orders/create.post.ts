@@ -66,8 +66,22 @@ export default defineEventHandler(async (event) => {
     // Generate unique 6-digit order ID
     const orderId = await generateUniqueOrderId()
 
-    // Calculate pricing
+    // Calculate pricing from source of truth
     const pricing = calculateOrderPrice(orderData.package, orderData.duration)
+
+    // Calculate discounted price if coupon applied
+    let finalPrice = pricing.totalPrice
+    if (orderData.couponCode && orderData.discountPercentage) {
+      const discountAmount = pricing.totalPrice * (orderData.discountPercentage / 100)
+      // Round to nearest euro (100 cents)
+      finalPrice = Math.round((pricing.totalPrice - discountAmount) / 100) * 100
+      log.info('Discount applied', {
+        couponCode: orderData.couponCode,
+        discountPercentage: orderData.discountPercentage,
+        originalPrice: pricing.totalPrice,
+        finalPrice,
+      })
+    }
 
     // Split full name into first and last name
     const nameParts = orderData.fullName.trim().split(' ')
@@ -160,7 +174,7 @@ export default defineEventHandler(async (event) => {
 
         // Increment counters
         totalOrders: FieldValue.increment(1),
-        totalSpent: FieldValue.increment(pricing.totalPrice),
+        totalSpent: FieldValue.increment(finalPrice),
         updatedAt: Timestamp.now(),
       }
 
@@ -196,7 +210,14 @@ export default defineEventHandler(async (event) => {
       package: orderData.package,
       duration: orderData.duration,
       daysCount: pricing.daysCount,
-      totalPrice: pricing.totalPrice,
+      totalPrice: finalPrice,
+
+      // Coupon fields (if applied)
+      ...(orderData.couponCode && {
+        couponCode: orderData.couponCode,
+        discountPercentage: orderData.discountPercentage,
+        originalPrice: pricing.totalPrice,
+      }),
 
       // Dietary preferences
       dietaryRequirements: orderData.dietaryRequirements,
@@ -215,7 +236,7 @@ export default defineEventHandler(async (event) => {
       stripePaymentIntentId: orderData.stripePaymentIntentId,
       paymentStatus: 'succeeded',
       paymentMethod: 'card',
-      amountPaid: pricing.totalPrice,
+      amountPaid: finalPrice,
       currency: 'eur',
 
       // Order management
@@ -291,6 +312,27 @@ export default defineEventHandler(async (event) => {
     // Note: Client order confirmation email is now sent by the Stripe webhook
     // after invoice generation, so the invoice PDF can be attached.
     // See: server/api/stripe/webhook.post.ts
+
+    // Increment coupon usage count if coupon was applied
+    if (orderData.couponCode) {
+      try {
+        const couponQuery = await db.collection('coupons')
+          .where('code', '==', orderData.couponCode.toUpperCase())
+          .limit(1)
+          .get()
+
+        if (!couponQuery.empty) {
+          await couponQuery.docs[0].ref.update({
+            usageCount: FieldValue.increment(1),
+            updatedAt: Timestamp.now(),
+          })
+          log.success('Coupon usage incremented', { couponCode: orderData.couponCode })
+        }
+      } catch (couponError: any) {
+        // Log but don't fail the order
+        log.error('Failed to increment coupon usage', { error: couponError.message })
+      }
+    }
 
     log.info('=== ORDER CREATION COMPLETE ===', { orderId, clientId })
 
