@@ -36,11 +36,14 @@ const allColumns: ColumnConfig[] = [
   { key: 'orderStatus', label: 'Stav' },
   { key: 'paymentStatus', label: 'Platba' },
   { key: 'paymentMethod', label: 'Spôsob platby' },
+  { key: 'deliveryType', label: 'Typ doručenia' },
+  { key: 'deliveryCity', label: 'Mesto' },
+  { key: 'deliveryAddress', label: 'Adresa' },
   { key: 'createdAt', label: 'Vytvorené' },
 ]
 
 const selectedColumns = ref<ColumnConfig[]>(
-  allColumns.filter(col => col.key !== 'discountCode' && col.key !== 'discountedPrice')
+  allColumns.filter(col => !['discountCode', 'discountedPrice', 'deliveryCity', 'deliveryAddress', 'paymentStatus', 'paymentMethod'].includes(col.key))
 )
 
 const isColumnVisible = (key: string) => selectedColumns.value.some(col => col.key === key)
@@ -524,6 +527,9 @@ const exportOrdersToPdf = async () => {
       orderStatus: { header: 'Stav', dataKey: 'orderStatus' },
       paymentStatus: { header: 'Platba', dataKey: 'paymentStatus' },
       paymentMethod: { header: 'Spôsob platby', dataKey: 'paymentMethod' },
+      deliveryType: { header: 'Typ doručenia', dataKey: 'deliveryType' },
+      deliveryCity: { header: 'Mesto', dataKey: 'deliveryCity' },
+      deliveryAddress: { header: 'Adresa', dataKey: 'deliveryAddress' },
       createdAt: { header: 'Vytvorené', dataKey: 'createdAt' },
     }
 
@@ -567,6 +573,15 @@ const exportOrdersToPdf = async () => {
             break
           case 'paymentMethod':
             row.paymentMethod = PAYMENT_METHOD_LABELS[getPaymentMethod(order)]
+            break
+          case 'deliveryType':
+            row.deliveryType = order.deliveryType === 'domov' ? 'Domov' : 'Prevádzka'
+            break
+          case 'deliveryCity':
+            row.deliveryCity = order.deliveryCity || '-'
+            break
+          case 'deliveryAddress':
+            row.deliveryAddress = order.deliveryAddress || '-'
             break
           case 'createdAt':
             row.createdAt = order.createdAt
@@ -802,6 +817,9 @@ const exportOrdersToPdf = async () => {
               <th v-if="isColumnVisible('orderStatus')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Stav</th>
               <th v-if="isColumnVisible('paymentStatus')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Platba</th>
               <th v-if="isColumnVisible('paymentMethod')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Spôsob platby</th>
+              <th v-if="isColumnVisible('deliveryType')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Typ doručenia</th>
+              <th v-if="isColumnVisible('deliveryCity')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Mesto</th>
+              <th v-if="isColumnVisible('deliveryAddress')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Adresa</th>
               <th v-if="isColumnVisible('createdAt')" class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Vytvorené</th>
             </tr>
           </thead>
@@ -893,6 +911,25 @@ const exportOrdersToPdf = async () => {
               <!-- Payment Method -->
               <td v-if="isColumnVisible('paymentMethod')" class="px-4 py-3">
                 <span class="text-slate-600 text-sm">{{ PAYMENT_METHOD_LABELS[getPaymentMethod(order)] }}</span>
+              </td>
+
+              <!-- Delivery Type -->
+              <td v-if="isColumnVisible('deliveryType')" class="px-4 py-3">
+                <span class="text-slate-600 text-sm">
+                  {{ order.deliveryType === 'domov' ? 'Domov' : 'Prevádzka' }}
+                </span>
+              </td>
+
+              <!-- Delivery City -->
+              <td v-if="isColumnVisible('deliveryCity')" class="px-4 py-3">
+                <span class="text-slate-600 text-sm">{{ order.deliveryCity || '-' }}</span>
+              </td>
+
+              <!-- Delivery Address -->
+              <td v-if="isColumnVisible('deliveryAddress')" class="px-4 py-3">
+                <span class="text-slate-600 text-sm truncate max-w-[200px] block" :title="order.deliveryAddress">
+                  {{ order.deliveryAddress || '-' }}
+                </span>
               </td>
 
               <!-- Created At -->
