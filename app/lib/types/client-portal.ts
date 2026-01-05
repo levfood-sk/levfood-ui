@@ -3,8 +3,8 @@
  * Types for the web client portal, matching the mobile app
  */
 
-export type DeliveryType = 'pickup' | 'delivery'
-export type DeliveryCity = 'Bratislava' | 'Senec' | 'Pezinok' | 'Dunajská Streda' | 'Šamorín' | 'Galanta' | 'Trnava'
+import type { DeliveryType, DeliveryCity, PendingDeliveryChange } from './order'
+export type { DeliveryType, DeliveryCity, PendingDeliveryChange }
 
 export interface Client {
   clientId: string
@@ -31,6 +31,7 @@ export interface OrderSummary {
   deliveryType?: DeliveryType
   deliveryCity?: DeliveryCity
   deliveryAddress?: string
+  pendingDeliveryChange?: PendingDeliveryChange
 }
 
 export interface MeResponse {
@@ -107,6 +108,19 @@ export interface SkipDeliveryResponse {
   action: 'cancel'
   newEndDate: string
   creditDaysAdded: number
+}
+
+export interface DeliveryChangeRequest {
+  deliveryType: DeliveryType
+  deliveryCity?: DeliveryCity
+  deliveryAddress?: string
+}
+
+export interface DeliveryChangeResponse {
+  success: boolean
+  message: string
+  pendingChange: PendingDeliveryChange
+  effectiveDateFormatted: string
 }
 
 export interface SaveSelectionRequest {

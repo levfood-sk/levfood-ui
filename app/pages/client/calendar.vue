@@ -4,8 +4,11 @@ import type {
   MobileDailyMeals,
   MealSelection,
   MealSlot,
+  DeliveryType,
+  DeliveryCity,
 } from '~/lib/types/client-portal'
 import { PACKAGE_MEAL_SLOTS, getPackageTier } from '~/lib/types/client-portal'
+import { DELIVERY_CITIES } from '~/lib/types/order'
 import {
   getCurrentMonth,
   getTodayISO,
@@ -24,8 +27,8 @@ definePageMeta({
   ssr: false, // Client-only page - requires Firebase auth
 })
 
-const { client, activeOrders, signOut } = useClientAuth()
-const { getCalendarData, getMealsForDate, getMealSelection, saveMealSelection, skipDelivery } = useClientApi()
+const { client, activeOrders, signOut, refreshClientData } = useClientAuth()
+const { getCalendarData, getMealsForDate, getMealSelection, saveMealSelection, skipDelivery, requestDeliveryChange } = useClientApi()
 const router = useRouter()
 
 // Current state
@@ -51,8 +54,27 @@ const selectionsCache = ref<Record<string, MealSelection | null>>({})
 const ranajkyModalOpen = ref(false)
 const obedModalOpen = ref(false)
 const skipModalOpen = ref(false)
+const deliveryChangeModalOpen = ref(false)
 const savingSelection = ref(false)
 const skippingDelivery = ref(false)
+const savingDeliveryChange = ref(false)
+
+// Delivery change form
+const deliveryChangeForm = ref({
+  deliveryType: 'prevádzka' as DeliveryType,
+  deliveryCity: undefined as DeliveryCity | undefined,
+  deliveryAddress: '',
+})
+const deliveryChangeError = ref<string | null>(null)
+
+// Delivery type options
+const deliveryTypeOptions = [
+  { label: 'Prevádzka (osobný odber)', value: 'prevádzka' },
+  { label: 'Domov', value: 'domov' },
+]
+
+// Delivery city options
+const deliveryCityOptions = DELIVERY_CITIES.map(city => ({ label: city, value: city }))
 
 // Derived state
 const activeOrder = computed(() => activeOrders.value[0] || null)
@@ -263,6 +285,69 @@ const handleSkipConfirm = async () => {
   }
 }
 
+// Open delivery change modal
+const openDeliveryChangeModal = () => {
+  // Pre-fill with current values
+  deliveryChangeForm.value = {
+    deliveryType: (activeOrder.value?.deliveryType as DeliveryType) || 'prevádzka',
+    deliveryCity: activeOrder.value?.deliveryCity as DeliveryCity | undefined,
+    deliveryAddress: activeOrder.value?.deliveryAddress || '',
+  }
+  deliveryChangeError.value = null
+  deliveryChangeModalOpen.value = true
+}
+
+// Handle delivery change submit
+const handleDeliveryChangeSubmit = async () => {
+  // Validate
+  if (deliveryChangeForm.value.deliveryType === 'domov') {
+    if (!deliveryChangeForm.value.deliveryCity) {
+      deliveryChangeError.value = 'Vyberte mesto/obec pre doručenie domov'
+      return
+    }
+    if (!deliveryChangeForm.value.deliveryAddress || deliveryChangeForm.value.deliveryAddress.trim().length < 5) {
+      deliveryChangeError.value = 'Zadajte adresu doručenia (min. 5 znakov)'
+      return
+    }
+  }
+
+  savingDeliveryChange.value = true
+  deliveryChangeError.value = null
+
+  try {
+    await requestDeliveryChange({
+      deliveryType: deliveryChangeForm.value.deliveryType,
+      deliveryCity: deliveryChangeForm.value.deliveryType === 'domov' ? deliveryChangeForm.value.deliveryCity : undefined,
+      deliveryAddress: deliveryChangeForm.value.deliveryType === 'domov' ? deliveryChangeForm.value.deliveryAddress : undefined,
+    })
+
+    deliveryChangeModalOpen.value = false
+
+    // Refresh client data to get the pending change
+    await refreshClientData()
+  } catch (err: any) {
+    console.error('Error requesting delivery change:', err)
+    deliveryChangeError.value = err.data?.message || 'Nepodarilo sa odoslať požiadavku na zmenu doručenia'
+  } finally {
+    savingDeliveryChange.value = false
+  }
+}
+
+// Get delivery type label
+const currentDeliveryTypeLabel = computed(() => {
+  if (!activeOrder.value?.deliveryType) return '-'
+  return activeOrder.value.deliveryType === 'prevádzka' ? 'Prevádzka (osobný odber)' : 'Domov'
+})
+
+// Check if there's a pending delivery change
+const hasPendingDeliveryChange = computed(() => !!activeOrder.value?.pendingDeliveryChange)
+
+// Format pending change effective date
+const pendingChangeEffectiveDate = computed(() => {
+  if (!activeOrder.value?.pendingDeliveryChange?.effectiveDate) return ''
+  return formatDateSlovak(activeOrder.value.pendingDeliveryChange.effectiveDate)
+})
+
 // Get date status for calendar display
 const getDateStatus = (date: string | null): 'published' | 'selected' | 'cancelled' | null => {
   if (!date || !calendarData.value) return null
@@ -346,6 +431,50 @@ onMounted(async () => {
 
     <!-- Main content - side by side layout -->
     <main class="mx-auto max-w-6xl px-4 py-6">
+      <!-- Delivery Info Card -->
+      <div class="mb-6 rounded-2xl bg-white p-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div class="flex-1">
+            <h3 class="text-sm font-medium text-[var(--color-dark-green)]/60">Doručenie</h3>
+            <p class="mt-1 font-semibold text-[var(--color-dark-green)]">
+              {{ currentDeliveryTypeLabel }}
+              <template v-if="activeOrder?.deliveryType === 'domov' && activeOrder?.deliveryCity">
+                · {{ activeOrder.deliveryCity }}
+              </template>
+            </p>
+            <p v-if="activeOrder?.deliveryType === 'domov' && activeOrder?.deliveryAddress" class="text-sm text-[var(--color-dark-green)]/70">
+              {{ activeOrder.deliveryAddress }}
+            </p>
+          </div>
+          <button
+            v-if="!hasPendingDeliveryChange"
+            type="button"
+            class="rounded-lg bg-[var(--color-orange)]/10 px-4 py-2 text-sm font-medium text-[var(--color-orange)] hover:bg-[var(--color-orange)]/20"
+            @click="openDeliveryChangeModal"
+          >
+            Zmeniť
+          </button>
+        </div>
+
+        <!-- Pending change notice -->
+        <div v-if="hasPendingDeliveryChange" class="mt-3 rounded-lg bg-amber-50 p-3">
+          <div class="flex items-start gap-2">
+            <UIcon name="i-heroicons-clock" class="mt-0.5 size-4 text-amber-600" />
+            <div class="flex-1">
+              <p class="text-sm font-medium text-amber-800">
+                Naplánovaná zmena od {{ pendingChangeEffectiveDate }}
+              </p>
+              <p class="mt-1 text-sm text-amber-700">
+                {{ activeOrder?.pendingDeliveryChange?.deliveryType === 'prevádzka' ? 'Prevádzka (osobný odber)' : 'Domov' }}
+                <template v-if="activeOrder?.pendingDeliveryChange?.deliveryType === 'domov' && activeOrder?.pendingDeliveryChange?.deliveryCity">
+                  · {{ activeOrder.pendingDeliveryChange.deliveryCity }}
+                </template>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="grid items-start gap-6 lg:grid-cols-2">
         <!-- Left side: Calendar -->
         <div class="space-y-4">
@@ -585,5 +714,86 @@ onMounted(async () => {
       :loading="skippingDelivery"
       @confirm="handleSkipConfirm"
     />
+
+    <!-- Delivery change modal -->
+    <UModal v-model:open="deliveryChangeModalOpen">
+      <template #content>
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-[var(--color-dark-green)]">Zmeniť doručenie</h3>
+          <p class="mt-2 text-sm text-[var(--color-dark-green)]/70">
+            Zmena nadobudne účinnosť po 4 dňoch od odoslania požiadavky.
+          </p>
+
+          <div class="mt-6 space-y-4">
+            <!-- Delivery Type -->
+            <div>
+              <label class="mb-1 block text-sm font-medium text-[var(--color-dark-green)]">
+                Typ doručenia
+              </label>
+              <USelect
+                v-model="deliveryChangeForm.deliveryType"
+                :items="deliveryTypeOptions"
+                size="lg"
+                class="w-full"
+              />
+            </div>
+
+            <!-- Delivery City (only for home delivery) -->
+            <div v-if="deliveryChangeForm.deliveryType === 'domov'">
+              <label class="mb-1 block text-sm font-medium text-[var(--color-dark-green)]">
+                Mesto/obec *
+              </label>
+              <USelect
+                v-model="deliveryChangeForm.deliveryCity"
+                :items="deliveryCityOptions"
+                placeholder="Vyberte mesto/obec"
+                size="lg"
+                class="w-full"
+              />
+            </div>
+
+            <!-- Delivery Address (only for home delivery) -->
+            <div v-if="deliveryChangeForm.deliveryType === 'domov'">
+              <label class="mb-1 block text-sm font-medium text-[var(--color-dark-green)]">
+                Adresa doručenia *
+              </label>
+              <UInput
+                v-model="deliveryChangeForm.deliveryAddress"
+                placeholder="Ulica, číslo, PSČ"
+                size="lg"
+                class="w-full"
+              />
+            </div>
+
+            <!-- Info for prevádzka -->
+            <div v-if="deliveryChangeForm.deliveryType === 'prevádzka'" class="rounded-lg bg-[var(--color-beige)] p-3 text-sm text-[var(--color-dark-green)]/70">
+              Pri odbere na prevádzke nie je potrebná adresa doručenia.
+            </div>
+
+            <!-- Error message -->
+            <p v-if="deliveryChangeError" class="text-sm text-red-600">
+              {{ deliveryChangeError }}
+            </p>
+          </div>
+
+          <div class="mt-6 flex justify-end gap-3">
+            <UButton
+              color="neutral"
+              variant="outline"
+              @click="deliveryChangeModalOpen = false"
+            >
+              Zrušiť
+            </UButton>
+            <UButton
+              class="bg-[var(--color-orange)] text-white hover:bg-[var(--color-orange)]/90"
+              :loading="savingDeliveryChange"
+              @click="handleDeliveryChangeSubmit"
+            >
+              Odoslať požiadavku
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

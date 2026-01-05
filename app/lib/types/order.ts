@@ -33,6 +33,19 @@ export type PaymentMethod = 'card' | 'cash'
 export type OrderStatus = 'pending' | 'approved' | 'cancelled'
 
 /**
+ * Pending Delivery Change
+ * Stores a delivery change request that will be applied after the effective date
+ */
+export interface PendingDeliveryChange {
+  deliveryType: DeliveryType
+  deliveryCity?: DeliveryCity
+  deliveryAddress?: string
+  effectiveDate: string  // ISO date string (YYYY-MM-DD) when the change takes effect
+  requestedAt: string    // ISO timestamp when the change was requested
+  requestedBy: 'client' | 'admin'
+}
+
+/**
  * Payment Method Labels for display
  */
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -140,6 +153,9 @@ export interface Order {
   couponCode?: string            // The applied coupon code
   discountPercentage?: number    // Discount percentage applied (1-100)
   originalPrice?: number         // Original price before discount (in cents)
+
+  // Pending delivery change (applied after effectiveDate)
+  pendingDeliveryChange?: PendingDeliveryChange
 
   // Timestamps
   createdAt: Timestamp

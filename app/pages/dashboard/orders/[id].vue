@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore'
-import { formatPrice, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '~~/app/lib/types/order'
-import type { OrderWithClient, Order, Client, OrderStatus, PaymentMethod } from '~~/app/lib/types/order'
+import { formatPrice, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_CITIES } from '~~/app/lib/types/order'
+import type { OrderWithClient, Order, Client, OrderStatus, PaymentMethod, DeliveryType, DeliveryCity } from '~~/app/lib/types/order'
 
 definePageMeta({
   layout: 'dashboard',
@@ -32,6 +32,25 @@ const showEditStartDateModal = ref(false)
 const newStartDate = ref('')
 const updatingStartDate = ref(false)
 const startDateError = ref('')
+
+// Edit delivery info feature
+const showEditDeliveryModal = ref(false)
+const updatingDelivery = ref(false)
+const deliveryError = ref('')
+const editDeliveryForm = ref({
+  deliveryType: 'prevádzka' as DeliveryType,
+  deliveryCity: undefined as DeliveryCity | undefined,
+  deliveryAddress: '',
+})
+
+// Delivery type options for select
+const deliveryTypeOptions = [
+  { label: 'Prevádzka', value: 'prevádzka' },
+  { label: 'Domov', value: 'domov' },
+]
+
+// Delivery city options for select
+const deliveryCityOptions = DELIVERY_CITIES.map(city => ({ label: city, value: city }))
 
 // Load order and client data
 const loadOrder = async () => {
@@ -198,6 +217,17 @@ const deliveryTypeLabel = computed(() => {
   return '-'
 })
 
+// Format pending change date (YYYY-MM-DD to Slovak format)
+function formatPendingChangeDate(dateStr: string): string {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('sk-SK', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
 // Download invoice PDF
 async function downloadInvoice() {
   if (!order.value) return
@@ -358,6 +388,70 @@ function openEditStartDateModal() {
   newStartDate.value = order.value.deliveryStartDate
   startDateError.value = ''
   showEditStartDateModal.value = true
+}
+
+// Open edit delivery modal
+function openEditDeliveryModal() {
+  if (!order.value) return
+  editDeliveryForm.value = {
+    deliveryType: order.value.deliveryType,
+    deliveryCity: order.value.deliveryCity,
+    deliveryAddress: order.value.deliveryAddress || '',
+  }
+  deliveryError.value = ''
+  showEditDeliveryModal.value = true
+}
+
+// Update delivery info
+async function updateDeliveryInfo() {
+  if (!order.value) return
+
+  // Client-side validation for home delivery
+  if (editDeliveryForm.value.deliveryType === 'domov') {
+    if (!editDeliveryForm.value.deliveryCity) {
+      deliveryError.value = 'Mesto/obec je povinné pre doručenie domov'
+      return
+    }
+    if (!editDeliveryForm.value.deliveryAddress || editDeliveryForm.value.deliveryAddress.trim().length < 5) {
+      deliveryError.value = 'Adresa doručenia je povinná (minimálne 5 znakov)'
+      return
+    }
+  }
+
+  updatingDelivery.value = true
+  deliveryError.value = ''
+
+  try {
+    await $fetch(`/api/orders/${orderId}/update-delivery`, {
+      method: 'POST',
+      body: {
+        deliveryType: editDeliveryForm.value.deliveryType,
+        deliveryCity: editDeliveryForm.value.deliveryType === 'domov' ? editDeliveryForm.value.deliveryCity : undefined,
+        deliveryAddress: editDeliveryForm.value.deliveryType === 'domov' ? editDeliveryForm.value.deliveryAddress : '',
+      },
+    })
+
+    useToast().add({
+      title: 'Úspech',
+      description: 'Informácie o doručení boli aktualizované',
+      color: 'success',
+    })
+
+    showEditDeliveryModal.value = false
+
+    // Reload order to get updated data
+    await loadOrder()
+  } catch (error: any) {
+    console.error('Error updating delivery info:', error)
+    deliveryError.value = error.data?.message || 'Nepodarilo sa aktualizovať informácie o doručení'
+    useToast().add({
+      title: 'Chyba',
+      description: error.data?.message || 'Nepodarilo sa aktualizovať informácie o doručení',
+      color: 'error',
+    })
+  } finally {
+    updatingDelivery.value = false
+  }
 }
 
 // Validate delivery day on client side
@@ -530,7 +624,19 @@ onMounted(() => {
         <!-- Client Information -->
         <UCard>
           <template #header>
-            <h3 class="text-xl font-bold text-slate-900">Informácie o zákazníkovi</h3>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-bold text-slate-900">Informácie o zákazníkovi</h3>
+              <UButton
+                icon="i-heroicons-pencil-square"
+                size="sm"
+                color="neutral"
+                variant="soft"
+                class="cursor-pointer"
+                @click="openEditDeliveryModal"
+              >
+                Zmeniť doručenie
+              </UButton>
+            </div>
           </template>
 
           <div class="space-y-4">
@@ -562,6 +668,38 @@ onMounted(() => {
             <div v-if="order.deliveryType === 'domov' && order.deliveryAddress">
               <p class="text-sm text-slate-600">Dodacia adresa</p>
               <p class="text-base font-medium text-slate-900">{{ order.deliveryAddress }}</p>
+            </div>
+
+            <!-- Pending Delivery Change Notice -->
+            <div v-if="order.pendingDeliveryChange" class="rounded-lg bg-amber-50 p-3 border border-amber-200">
+              <div class="flex items-start gap-2">
+                <UIcon name="i-heroicons-clock" class="mt-0.5 w-4 h-4 text-amber-600 flex-shrink-0" />
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-amber-800">
+                    Naplánovaná zmena doručenia
+                  </p>
+                  <p class="text-xs text-amber-700 mt-1">
+                    Od: {{ formatPendingChangeDate(order.pendingDeliveryChange.effectiveDate) }}
+                  </p>
+                  <div class="mt-2 text-sm text-amber-900">
+                    <p>
+                      <span class="font-medium">Typ:</span>
+                      {{ order.pendingDeliveryChange.deliveryType === 'prevádzka' ? 'Prevádzka' : 'Domov' }}
+                    </p>
+                    <p v-if="order.pendingDeliveryChange.deliveryCity">
+                      <span class="font-medium">Mesto:</span>
+                      {{ order.pendingDeliveryChange.deliveryCity }}
+                    </p>
+                    <p v-if="order.pendingDeliveryChange.deliveryAddress">
+                      <span class="font-medium">Adresa:</span>
+                      {{ order.pendingDeliveryChange.deliveryAddress }}
+                    </p>
+                  </div>
+                  <p class="text-xs text-amber-600 mt-2">
+                    Požiadané: {{ order.pendingDeliveryChange.requestedBy === 'client' ? 'zákazníkom' : 'administrátorom' }}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div v-if="order.client">
@@ -983,6 +1121,84 @@ onMounted(() => {
               :loading="updatingStartDate"
               :disabled="!newStartDate"
               @click="updateDeliveryStartDate"
+            >
+              Uložiť
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Edit Delivery Info Modal -->
+    <UModal v-model:open="showEditDeliveryModal">
+      <template #content>
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-slate-900 mb-4">Zmeniť doručenie</h3>
+          <p class="text-sm text-slate-600 mb-4">
+            Zmeňte typ doručenia a adresu pre túto objednávku.
+          </p>
+
+          <div class="space-y-4">
+            <!-- Delivery Type -->
+            <div>
+              <label class="text-sm text-slate-600 block mb-1">Typ doručenia</label>
+              <USelect
+                v-model="editDeliveryForm.deliveryType"
+                :items="deliveryTypeOptions"
+                size="lg"
+                class="w-full"
+              />
+            </div>
+
+            <!-- Delivery City (only for home delivery) -->
+            <div v-if="editDeliveryForm.deliveryType === 'domov'">
+              <label class="text-sm text-slate-600 block mb-1">Mesto/obec *</label>
+              <USelect
+                v-model="editDeliveryForm.deliveryCity"
+                :items="deliveryCityOptions"
+                placeholder="Vyberte mesto/obec"
+                size="lg"
+                class="w-full"
+              />
+            </div>
+
+            <!-- Delivery Address (only for home delivery) -->
+            <div v-if="editDeliveryForm.deliveryType === 'domov'">
+              <label class="text-sm text-slate-600 block mb-1">Dodacia adresa *</label>
+              <UInput
+                v-model="editDeliveryForm.deliveryAddress"
+                type="text"
+                placeholder="Ulica, číslo, PSČ, Mesto"
+                size="lg"
+                class="w-full"
+              />
+            </div>
+
+            <!-- Info for prevádzka -->
+            <div v-if="editDeliveryForm.deliveryType === 'prevádzka'" class="bg-slate-50 rounded-lg p-3 text-sm">
+              <p class="text-slate-600">
+                Pri odbere na prevádzke nie je potrebná adresa doručenia.
+              </p>
+            </div>
+
+            <!-- Error message -->
+            <p v-if="deliveryError" class="text-sm text-red-600">
+              {{ deliveryError }}
+            </p>
+          </div>
+
+          <div class="flex justify-end gap-3 mt-6">
+            <UButton
+              color="neutral"
+              variant="outline"
+              @click="showEditDeliveryModal = false"
+            >
+              Zrušiť
+            </UButton>
+            <UButton
+              class="bg-orange text-white"
+              :loading="updatingDelivery"
+              @click="updateDeliveryInfo"
             >
               Uložiť
             </UButton>

@@ -10,6 +10,8 @@ import type {
   SaveSelectionRequest,
   SaveSelectionResponse,
   SkipDeliveryResponse,
+  DeliveryChangeRequest,
+  DeliveryChangeResponse,
 } from '~/lib/types/client-portal'
 
 export const useClientApi = () => {
@@ -87,7 +89,20 @@ export const useClientApi = () => {
     return await $fetch<SkipDeliveryResponse>('/api/mobile/cancelled-deliveries', {
       method: 'POST',
       headers,
-      body: { date },
+      body: { dates: [date] },
+    })
+  }
+
+  /**
+   * Request a delivery address change
+   * Change takes effect after a 4-day period
+   */
+  const requestDeliveryChange = async (data: DeliveryChangeRequest): Promise<DeliveryChangeResponse> => {
+    const headers = await getAuthHeaders()
+    return await $fetch<DeliveryChangeResponse>('/api/mobile/delivery-change', {
+      method: 'POST',
+      headers,
+      body: data,
     })
   }
 
@@ -97,5 +112,6 @@ export const useClientApi = () => {
     getMealSelection,
     saveMealSelection,
     skipDelivery,
+    requestDeliveryChange,
   }
 }
