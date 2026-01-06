@@ -589,8 +589,8 @@ function generateClientOrderConfirmationEmail(props: ClientOrderConfirmationEmai
                 Toto číslo bude zároveň vašim identifikačným údajom v aplikácií LevFood.
               </p>
 
-              <p style="font-family: 'Sofia Sans Condensed', Arial, sans-serif; color: #F28E7A; font-size: 16px; font-weight: 400; line-height: 160%; margin: 0 0 24px 0;">
-                Aplikácia bude už čoskoro dostupná. Hneď, ako bude pripravená, pošleme vám e-mail.
+              <p style="font-family: 'Sofia Sans Condensed', Arial, sans-serif; color: #0E2825; font-size: 16px; font-weight: 400; line-height: 160%; margin: 0 0 24px 0;">
+                Aplikácia je dostupná na App Store a Google Play pod názvom Levfood.
               </p>
 
               <p style="font-family: 'Sofia Sans Condensed', Arial, sans-serif; color: #0E2825; font-size: 16px; font-weight: 400; line-height: 160%; margin: 0 0 24px 0;">
@@ -625,7 +625,7 @@ Dobrý deň ${props.clientName},
 
 Toto číslo bude zároveň vašim identifikačným údajom v aplikácií LevFood.
 
-Aplikácia bude už čoskoro dostupná. Hneď, ako bude pripravená, pošleme vám e-mail.
+Aplikácia je dostupná na App Store a Google Play pod názvom Levfood.
 
 Nájdete v nej všetky aktuálne informácie o vašom predplatnom, možnosť vybrať si z alternatívnych jedál a mnoho ďalších funkcií.
 
