@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import * as Sentry from '@sentry/nuxt'
 
 /**
  * Require authentication for API endpoints
@@ -19,9 +20,19 @@ export function requireAuth(event: H3Event) {
 
 /**
  * Standard error handler for API endpoints
+ * Captures errors in Sentry for production monitoring
  */
 export function handleApiError(error: any, defaultMessage: string) {
   console.error(defaultMessage, error)
+
+  // Capture error in Sentry with additional context
+  Sentry.captureException(error, {
+    extra: {
+      defaultMessage,
+      originalMessage: error.message,
+      statusCode: error.statusCode
+    }
+  })
 
   if (error.statusCode) {
     throw error

@@ -5,14 +5,18 @@ import svgLoader from "vite-svg-loader";
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
+
   modules: [
     "@nuxt/eslint",
     "@nuxt/ui",
     "@nuxt/icon",
     "@unlok-co/nuxt-stripe",
     "@nuxt/scripts",
+    "@sentry/nuxt/module",
   ],
+
   css: ["~/assets/css/main.css"],
+
   ui: {
     colorMode: false,
   },
@@ -62,6 +66,7 @@ export default defineNuxtConfig({
       key: process.env.STRIPE_PUBLIC_KEY,
     },
   },
+
   vite: {
     plugins: [
       tailwindcss(),
@@ -70,6 +75,7 @@ export default defineNuxtConfig({
       }),
     ],
   },
+
   runtimeConfig: {
     public: {
       firebaseApiKey: process.env.FIREBASE_API_KEY,
@@ -102,5 +108,14 @@ export default defineNuxtConfig({
           email.trim(),
         )
       : ["info@levfood.sk"],
+  },
+
+  sentry: {
+    org: "martin-kocisek",
+    project: "levfood",
+  },
+
+  sourcemap: {
+    client: "hidden",
   },
 });
