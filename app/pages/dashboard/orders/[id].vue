@@ -311,13 +311,9 @@ async function resendConfirmationEmail() {
   }
 }
 
-// Delete order (demo or cash)
+// Delete order (any order type)
 async function deleteOrder() {
   if (!order.value) return
-
-  // Only allow deletion of demo orders or cash payment orders
-  const isCashOrder = getPaymentMethod(order.value) === 'cash'
-  if (!order.value.isDemo && !isCashOrder) return
 
   deleting.value = true
 
@@ -552,9 +548,9 @@ onMounted(() => {
 
         <!-- Status and Actions -->
         <div class="flex items-center gap-4">
-          <!-- Delete button for cash orders -->
+          <!-- Delete button for all orders (non-demo have separate button) -->
           <UButton
-            v-if="!order.isDemo && getPaymentMethod(order) === 'cash'"
+            v-if="!order.isDemo"
             icon="i-heroicons-trash"
             color="error"
             variant="soft"
@@ -1010,13 +1006,33 @@ onMounted(() => {
             <h3 class="text-lg font-semibold text-slate-900">Vymazať objednávku?</h3>
           </div>
 
-          <p class="text-slate-600 mb-6">
-            Naozaj chcete vymazať túto objednávku? Táto akcia je nevratná.
+          <!-- Order summary for confirmation -->
+          <div v-if="order" class="mb-4 p-3 bg-slate-50 rounded-lg text-sm space-y-1">
+            <p><span class="font-medium">Objednávka:</span> #{{ order.orderId }}</p>
+            <p><span class="font-medium">Zákazník:</span> {{ order.client?.fullName || '-' }}</p>
+            <p><span class="font-medium">Suma:</span> {{ formatPrice(order.totalPrice) }}</p>
+            <p>
+              <span class="font-medium">Platba:</span>
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ml-1"
+                :class="getPaymentMethod(order) === 'card' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'"
+              >
+                {{ PAYMENT_METHOD_LABELS[getPaymentMethod(order)] }}
+              </span>
+            </p>
+          </div>
+
+          <p class="text-slate-600 mb-2">
+            Naozaj chcete vymazať túto objednávku?
+          </p>
+
+          <p class="text-slate-500 text-sm mb-4">
             <template v-if="order?.isDemo">
               Ak zákazník nemá žiadne iné objednávky, bude vymazaný aj jeho profil.
             </template>
             <template v-else>
               Štatistiky zákazníka budú aktualizované (počet objednávok a celková útrata).
+              Dáta objednávky budú zalogované pre prípad potreby obnovenia.
             </template>
           </p>
 
@@ -1033,7 +1049,7 @@ onMounted(() => {
               :loading="deleting"
               @click="deleteOrder"
             >
-              Vymazať
+              Vymazať objednávku
             </UButton>
           </div>
         </div>

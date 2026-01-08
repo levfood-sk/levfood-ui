@@ -17,6 +17,9 @@ const tabs = [{
 }, {
   label: 'Email',
   icon: 'i-lucide-mail',
+}, {
+  label: 'Migrácia',
+  icon: 'i-lucide-database',
 }]
 
 // Stripe test state
@@ -51,6 +54,12 @@ const fullIntegrationEmail = ref('')
 const fullIntegrationClientSecret = ref<string | null>(null)
 const fullIntegrationElements = ref<any>(null)
 const fullIntegrationPaymentElement = ref<any>(null)
+
+// Migration state
+const migrationLoading = ref(false)
+const migrationResult = ref<any>(null)
+const migrationError = ref<string | null>(null)
+const migrationDryRun = ref(true)
 
 // Initialize Stripe payment element when client secret is available (Stripe tab)
 watch([stripe, stripeClientSecret], async () => {
@@ -346,6 +355,28 @@ async function completeFullIntegration() {
     fullIntegrationError.value = e.data?.message || e.message || 'Integračný test zlyhal'
   } finally {
     fullIntegrationLoading.value = false
+  }
+}
+
+// Run account status migration
+async function runMigration() {
+  migrationLoading.value = true
+  migrationError.value = null
+  migrationResult.value = null
+
+  try {
+    const response = await $fetch('/api/test/migrate-account-status', {
+      method: 'POST',
+      body: {
+        dryRun: migrationDryRun.value,
+      },
+    })
+
+    migrationResult.value = response
+  } catch (e: any) {
+    migrationError.value = e.data?.message || e.message || 'Migrácia zlyhala'
+  } finally {
+    migrationLoading.value = false
   }
 }
 </script>
@@ -829,6 +860,124 @@ async function completeFullIntegration() {
                     <div><strong>Číslo objednávky:</strong> {{ clientEmailResult.orderId }}</div>
                     <div v-if="clientEmailResult.messageId"><strong>ID správy:</strong> {{ clientEmailResult.messageId }}</div>
                     <div><strong>S faktúrou:</strong> {{ clientEmailResult.hasInvoice ? 'Áno ✅' : 'Nie ❌' }}</div>
+                  </div>
+                </UCard>
+              </div>
+            </div>
+          </UCard>
+        </div>
+
+        <!-- Migrácia Tab -->
+        <div v-else-if="item.label === 'Migrácia'" class="pt-4 space-y-4">
+          <UCard>
+            <template #header>
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold">Migrácia accountStatus</h3>
+                <UBadge :color="migrationDryRun ? 'warning' : 'error'" variant="soft">
+                  {{ migrationDryRun ? 'Dry Run' : 'Ostrá migrácia' }}
+                </UBadge>
+              </div>
+            </template>
+
+            <div class="space-y-4">
+              <p class="text-sm text-gray-600">
+                Nájde všetkých klientov s firebaseUid (prepojení cez mobilnú appku), ktorí majú accountStatus iný ako 'aktívny', a nastaví im status na 'aktívny'.
+              </p>
+
+              <UAlert
+                icon="i-lucide-info"
+                color="info"
+                variant="soft"
+                title="Prečo je to potrebné?"
+                description="Predtým endpoint link-account nenastavoval accountStatus na 'aktívny'. Táto migrácia opraví existujúcich klientov."
+              />
+
+              <UFormField>
+                <UCheckbox
+                  v-model="migrationDryRun"
+                  label="Dry Run (iba náhľad, žiadne zmeny)"
+                />
+              </UFormField>
+
+              <UButton
+                @click="runMigration"
+                :loading="migrationLoading"
+                size="lg"
+                :color="migrationDryRun ? 'primary' : 'error'"
+                block
+              >
+                {{ migrationDryRun ? 'Spustiť náhľad' : 'Spustiť migráciu' }}
+              </UButton>
+
+              <!-- Error -->
+              <UAlert
+                v-if="migrationError"
+                icon="i-lucide-x-circle"
+                color="error"
+                variant="soft"
+                :title="migrationError"
+              />
+
+              <!-- Results -->
+              <div v-if="migrationResult" class="space-y-4">
+                <UAlert
+                  v-if="migrationResult.success && migrationResult.clientsNeedingUpdate === 0"
+                  icon="i-lucide-check-circle"
+                  color="success"
+                  variant="soft"
+                  title="Všetci klienti sú už aktívni!"
+                  description="Žiadni klienti nepotrebujú aktualizáciu."
+                />
+                <UAlert
+                  v-else-if="migrationResult.success && migrationResult.dryRun"
+                  icon="i-lucide-alert-circle"
+                  color="warning"
+                  variant="soft"
+                  :title="`Nájdených ${migrationResult.clientsNeedingUpdate} klientov na aktualizáciu`"
+                  description="Toto bol iba náhľad. Odškrtnite 'Dry Run' a spustite znova pre aplikovanie zmien."
+                />
+                <UAlert
+                  v-else-if="migrationResult.success"
+                  icon="i-lucide-check-circle"
+                  color="success"
+                  variant="soft"
+                  :title="`Úspešne aktualizovaných ${migrationResult.clientsUpdated} klientov`"
+                />
+
+                <UCard>
+                  <template #header>
+                    <h4 class="font-semibold">Výsledky migrácie</h4>
+                  </template>
+                  <div class="space-y-2 text-sm">
+                    <div><strong>Dry Run:</strong> {{ migrationResult.dryRun ? 'Áno' : 'Nie' }}</div>
+                    <div><strong>Celkovo skontrolovaných:</strong> {{ migrationResult.totalClientsChecked }}</div>
+                    <div><strong>Potrebujúcich aktualizáciu:</strong> {{ migrationResult.clientsNeedingUpdate }}</div>
+                    <div><strong>Aktualizovaných:</strong> {{ migrationResult.clientsUpdated }}</div>
+                    <div><strong>Trvanie:</strong> {{ migrationResult.duration }}ms</div>
+                  </div>
+                </UCard>
+
+                <!-- List of clients to update -->
+                <UCard v-if="migrationResult.updatedClients?.length > 0">
+                  <template #header>
+                    <h4 class="font-semibold">Klienti {{ migrationResult.dryRun ? 'na aktualizáciu' : 'aktualizovaní' }}</h4>
+                  </template>
+                  <div class="space-y-1 font-mono text-xs max-h-64 overflow-y-auto">
+                    <div v-for="client in migrationResult.updatedClients" :key="client.clientId" class="text-gray-700">
+                      {{ client.email }} ({{ client.previousStatus }} → aktívny)
+                    </div>
+                  </div>
+                </UCard>
+
+                <!-- Errors -->
+                <UCard v-if="migrationResult.errors?.length > 0">
+                  <template #header>
+                    <h4 class="font-semibold text-red-600">Chyby</h4>
+                  </template>
+                  <div class="space-y-1 font-mono text-xs max-h-64 overflow-y-auto text-red-600">
+                    <div v-for="err in migrationResult.errors" :key="err.clientId">
+                      {{ err.clientId }}: {{ err.error }}
+                    </div>
                   </div>
                 </UCard>
               </div>

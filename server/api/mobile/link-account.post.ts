@@ -133,9 +133,10 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Link the account
+    // Link the account and activate it
     await clientRef.update({
       firebaseUid,
+      accountStatus: 'aktívny',
       updatedAt: Timestamp.now(),
     })
 
@@ -157,7 +158,7 @@ export default defineEventHandler(async (event) => {
         email: client.email,
         phone: client.phone,
         currentPlan: client.currentPlan,
-        accountStatus: client.accountStatus,
+        accountStatus: 'aktívny', // We just activated this account
         subscriptionEndDate: client.subscriptionEndDate,
       },
       order: {

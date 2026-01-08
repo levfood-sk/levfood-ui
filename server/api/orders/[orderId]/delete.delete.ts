@@ -3,9 +3,10 @@
  *
  * DELETE /api/orders/:orderId/delete
  *
- * Deletes an order. Supports:
- * - Demo orders (isDemo: true) - deletes client if no other orders
- * - Cash orders (paymentMethod: 'cash') - decrements client stats
+ * Deletes any order type (demo, cash, or card payments).
+ * Before deletion, logs the complete order data for potential recovery.
+ * - Demo orders: deletes client if no other orders
+ * - Regular orders: decrements client stats
  */
 
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
@@ -16,6 +17,7 @@ const log = {
   info: (msg: string, data?: object) => console.log(`[DELETE-ORDER] ${msg}`, data ? JSON.stringify(data) : ''),
   success: (msg: string, data?: object) => console.log(`[DELETE-ORDER] ✅ ${msg}`, data ? JSON.stringify(data) : ''),
   error: (msg: string, data?: object) => console.error(`[DELETE-ORDER] ❌ ${msg}`, data ? JSON.stringify(data) : ''),
+  backup: (msg: string, data: object) => console.log(`[DELETE-ORDER] 📦 BACKUP - ${msg}`, JSON.stringify(data, null, 2)),
 }
 
 export default defineEventHandler(async (event) => {
@@ -55,24 +57,32 @@ export default defineEventHandler(async (event) => {
 
     const orderDoc = orderQuery.docs[0]
     const order = orderDoc.data()
+    const firestoreId = orderDoc.id
 
-    // Check if deletion is allowed (demo order OR cash payment)
-    const isCashOrder = order.paymentMethod === 'cash' ||
-      order.stripePaymentIntentId?.startsWith('cash_payment_')
-
-    if (!order.isDemo && !isCashOrder) {
-      throw createError({
-        statusCode: 403,
-        message: 'Len demo alebo hotovostné objednávky môžu byť vymazané',
-      })
-    }
+    // Determine payment method for logging
+    const paymentMethod = order.paymentMethod ||
+      (order.stripePaymentIntentId?.startsWith('cash_payment_') ? 'cash' : 'card')
 
     const clientId = order.clientId
-    log.info('Order verified for deletion:', { orderId, clientId, isDemo: order.isDemo, isCash: isCashOrder })
+    log.info('Order verified for deletion:', {
+      orderId,
+      firestoreId,
+      clientId,
+      isDemo: order.isDemo,
+      paymentMethod,
+      totalPrice: order.totalPrice,
+    })
+
+    // CRITICAL: Log complete order data before deletion for potential recovery
+    log.backup('ORDER DATA BEFORE DELETION', {
+      firestoreId,
+      deletedAt: new Date().toISOString(),
+      orderData: order,
+    })
 
     // Delete the order
     await orderDoc.ref.delete()
-    log.success('Order deleted:', { orderId })
+    log.success('Order deleted:', { orderId, firestoreId })
 
     let clientDeleted = false
     let clientUpdated = false
@@ -126,7 +136,7 @@ export default defineEventHandler(async (event) => {
           log.info('Client has non-demo orders, keeping client:', { clientId })
         }
       } else {
-        // Cash order: decrement client stats
+        // Regular order (cash or card): decrement client stats
         const clientRef = db.collection('clients').doc(clientId)
         const clientDoc = await clientRef.get()
 
