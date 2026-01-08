@@ -6,6 +6,8 @@
 
 import { getFirebaseAdmin } from '~~/server/utils/firebase-admin'
 import { requireAuth, handleApiError } from '~~/server/utils/auth'
+import { parseDDMMYYYY, getOrCalculateDeliveryEndDate, isValidDeliveryDay } from '~~/server/utils/delivery-dates'
+import type { DurationType } from '~~/app/lib/types/order'
 
 interface ClientSelection {
   clientId: string
@@ -28,6 +30,17 @@ interface ClientSelection {
 interface SkippedClient {
   clientId: string
   clientName: string
+  orderId: string
+  packageTier: string
+  deliveryType: 'prevádzka' | 'domov'
+  deliveryAddress: string
+  phone: string
+}
+
+interface PendingSelectionClient {
+  clientId: string
+  clientName: string
+  email: string
   orderId: string
   packageTier: string
   deliveryType: 'prevádzka' | 'domov'
@@ -61,6 +74,7 @@ interface MealOrderSummary {
     vecera: string
   }
   skippedClients: SkippedClient[]
+  pendingSelectionClients: PendingSelectionClient[]
 }
 
 export default defineEventHandler(async (event) => {
@@ -112,6 +126,7 @@ export default defineEventHandler(async (event) => {
           vecera: mealsData?.meals?.vecera || ''
         },
         skippedClients: [],
+        pendingSelectionClients: [],
         message: 'Žiadne objednávky'
       }
     }
@@ -122,31 +137,7 @@ export default defineEventHandler(async (event) => {
       .where('date', '==', date)
       .get()
 
-    if (selectionsQuery.empty) {
-      return {
-        date,
-        totalOrders: 0,
-        byPackage: {},
-        ranajkyCounts: {
-          optionA: { name: mealsData.ranajkyOptions?.optionA || 'Variant A', count: 0 },
-          optionB: { name: mealsData.ranajkyOptions?.optionB || 'Variant B', count: 0 }
-        },
-        obedCounts: {
-          optionA: { name: mealsData.obedOptions?.optionA || 'Variant A', count: 0 },
-          optionB: { name: mealsData.obedOptions?.optionB || 'Variant B', count: 0 },
-          optionC: { name: mealsData.obedOptions?.optionC || 'Variant C', count: 0 }
-        },
-        fixedMeals: {
-          desiata: mealsData.meals?.desiata || '',
-          polievka: mealsData.meals?.polievka || '',
-          olovrant: mealsData.meals?.olovrant || '',
-          vecera: mealsData.meals?.vecera || ''
-        },
-        skippedClients: []
-      }
-    }
-
-    // Get client IDs from selections
+    // Get client IDs from selections (may be empty)
     const clientIds = [...new Set(selectionsQuery.docs.map(doc => doc.data().clientId))]
 
     // Batch fetch client data (including phone)
@@ -192,22 +183,158 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Check for cancelled deliveries
+    // Check for cancelled deliveries for clients who made selections
     const cancelledIds = clientIds.map(id => `${id}_${date}`)
     const cancelledSet = new Set<string>()
-    
+
     // Check in batches of 10
     for (let i = 0; i < cancelledIds.length; i += 10) {
       const batch = cancelledIds.slice(i, i + 10)
       const cancelledQuery = await firestore.collection('cancelledDeliveries')
         .where('__name__', 'in', batch)
         .get()
-      
+
       cancelledQuery.docs.forEach(doc => {
         const clientId = doc.data().clientId
         cancelledSet.add(clientId)
       })
     }
+
+    // ============================================================
+    // Find clients with active orders who haven't made selections
+    // ============================================================
+
+    // Parse the target date for comparison
+    const [year, month, day] = date.split('-').map(Number)
+    const targetDate = new Date(year, month - 1, day)
+    targetDate.setHours(0, 0, 0, 0)
+
+    // Get all approved orders
+    const approvedOrdersQuery = await firestore.collection('orders')
+      .where('orderStatus', '==', 'approved')
+      .get()
+
+    // Create set of client IDs who already made selections for quick lookup
+    const clientsWithSelections = new Set(clientIds)
+
+    // Filter orders to find those with active delivery on the target date
+    const pendingSelectionClients: PendingSelectionClient[] = []
+    const pendingClientIds: string[] = []
+
+    for (const orderDoc of approvedOrdersQuery.docs) {
+      const order = orderDoc.data()
+      const orderClientId = order.clientId
+
+      // Skip if client already made a selection
+      if (clientsWithSelections.has(orderClientId)) {
+        continue
+      }
+
+      // Parse delivery start date (DD.MM.YYYY format)
+      const startDate = parseDDMMYYYY(order.deliveryStartDate)
+      startDate.setHours(0, 0, 0, 0)
+
+      // Skip if target date is before start date
+      if (targetDate < startDate) {
+        continue
+      }
+
+      // Calculate or get delivery end date
+      const endDate = getOrCalculateDeliveryEndDate({
+        deliveryStartDate: order.deliveryStartDate,
+        duration: order.duration as DurationType,
+        daysCount: order.daysCount || (order.duration === '5' ? 20 : 24),
+        deliveryEndDate: order.deliveryEndDate,
+        creditDays: order.creditDays
+      })
+      endDate.setHours(0, 0, 0, 0)
+
+      // Skip if target date is after end date
+      if (targetDate > endDate) {
+        continue
+      }
+
+      // Check if target date is a valid delivery day for this package duration
+      const duration = (order.duration || '5') as DurationType
+      if (!isValidDeliveryDay(targetDate, duration)) {
+        continue
+      }
+
+      // This client has an active order for the target date but hasn't made a selection
+      pendingClientIds.push(orderClientId)
+    }
+
+    // Check for cancelled deliveries among pending clients
+    const pendingCancelledSet = new Set<string>()
+    if (pendingClientIds.length > 0) {
+      const pendingCancelledIds = pendingClientIds.map(id => `${id}_${date}`)
+      for (let i = 0; i < pendingCancelledIds.length; i += 10) {
+        const batch = pendingCancelledIds.slice(i, i + 10)
+        const cancelledQuery = await firestore.collection('cancelledDeliveries')
+          .where('__name__', 'in', batch)
+          .get()
+
+        cancelledQuery.docs.forEach(doc => {
+          const clientId = doc.data().clientId
+          pendingCancelledSet.add(clientId)
+        })
+      }
+    }
+
+    // Filter out cancelled deliveries from pending clients
+    const filteredPendingClientIds = pendingClientIds.filter(id => !pendingCancelledSet.has(id))
+
+    // Fetch client data for pending clients
+    const pendingClientsMap = new Map<string, { fullName: string; email: string; phone: string }>()
+    if (filteredPendingClientIds.length > 0) {
+      const pendingClientChunks = []
+      for (let i = 0; i < filteredPendingClientIds.length; i += 10) {
+        pendingClientChunks.push(filteredPendingClientIds.slice(i, i + 10))
+      }
+
+      for (const chunk of pendingClientChunks) {
+        const clientsQuery = await firestore.collection('clients')
+          .where('__name__', 'in', chunk)
+          .get()
+
+        clientsQuery.docs.forEach(doc => {
+          const data = doc.data()
+          pendingClientsMap.set(doc.id, {
+            fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Neznámy',
+            email: data.email || '',
+            phone: data.phone || ''
+          })
+        })
+      }
+    }
+
+    // Build pending selection clients list with order data
+    for (const orderDoc of approvedOrdersQuery.docs) {
+      const order = orderDoc.data()
+      const orderClientId = order.clientId
+
+      // Only process clients in our filtered list
+      if (!filteredPendingClientIds.includes(orderClientId)) {
+        continue
+      }
+
+      const clientInfo = pendingClientsMap.get(orderClientId)
+      if (clientInfo) {
+        pendingSelectionClients.push({
+          clientId: orderClientId,
+          clientName: clientInfo.fullName,
+          email: clientInfo.email,
+          orderId: order.orderId,
+          packageTier: order.package || 'UNKNOWN',
+          deliveryType: order.deliveryType || 'prevádzka',
+          deliveryAddress: order.deliveryAddress || '',
+          phone: clientInfo.phone
+        })
+      }
+    }
+
+    // Sort pending clients by name
+    pendingSelectionClients.sort((a, b) => a.clientName.localeCompare(b.clientName, 'sk'))
 
     // Aggregate data
     const byPackage: Record<string, PackageGroup> = {}
@@ -307,7 +434,8 @@ export default defineEventHandler(async (event) => {
         olovrant: mealsData.meals?.olovrant || '',
         vecera: mealsData.meals?.vecera || ''
       },
-      skippedClients
+      skippedClients,
+      pendingSelectionClients
     }
 
     return summary

@@ -47,7 +47,7 @@
           <div class="flex gap-2">
             <button
               class="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-beige)] text-[var(--color-dark-green)] font-semibold hover:bg-[var(--color-orange)] transition-colors disabled:opacity-50"
-              :disabled="isExporting || !mealOrders || mealOrders.totalOrders === 0"
+              :disabled="isExporting || !mealOrders || (mealOrders.totalOrders === 0 && (!mealOrders.pendingSelectionClients || mealOrders.pendingSelectionClients.length === 0))"
               @click="handleExportCsv"
             >
               <UIcon
@@ -183,14 +183,23 @@
                   v-for="tab in packageTabs"
                   :key="tab.value"
                   class="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-                  :class="activePackageTab === tab.value
-                    ? 'bg-white text-[var(--color-dark-green)]'
-                    : 'bg-white/20 text-white hover:bg-white/30'"
+                  :class="[
+                    activePackageTab === tab.value
+                      ? (tab.isPending ? 'bg-[var(--color-orange)] text-[var(--color-dark-green)]' : 'bg-white text-[var(--color-dark-green)]')
+                      : (tab.isPending ? 'bg-[var(--color-orange)]/40 text-white hover:bg-[var(--color-orange)]/60' : 'bg-white/20 text-white hover:bg-white/30')
+                  ]"
                   @click="activePackageTab = tab.value"
                 >
                   {{ tab.label }}
-                  <span class="ml-2 px-2 py-0.5 rounded-full text-xs" :class="activePackageTab === tab.value ? 'bg-[var(--color-dark-green)]/10' : 'bg-white/20'">
-                    {{ mealOrders?.byPackage[tab.value]?.count || 0 }}
+                  <span
+                    class="ml-2 px-2 py-0.5 rounded-full text-xs"
+                    :class="[
+                      activePackageTab === tab.value
+                        ? (tab.isPending ? 'bg-[var(--color-dark-green)]/20' : 'bg-[var(--color-dark-green)]/10')
+                        : (tab.isPending ? 'bg-[var(--color-dark-green)]/30' : 'bg-white/20')
+                    ]"
+                  >
+                    {{ tab.isPending ? (mealOrders?.pendingSelectionClients?.length || 0) : (mealOrders?.byPackage[tab.value]?.count || 0) }}
                   </span>
                 </button>
               </div>
@@ -217,13 +226,82 @@
               </div>
             </div>
 
-            <!-- Table Content -->
-            <div v-if="activePackageTab && mealOrders?.byPackage[activePackageTab]" class="overflow-x-auto">
+            <!-- Table Content for Pending Clients -->
+            <div v-if="activePackageTab === PENDING_TAB_VALUE && mealOrders?.pendingSelectionClients" class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-[var(--color-dark-green)]/10 bg-[var(--color-orange)]/10">
+                    <th class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Klient</th>
+                    <th class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Objednávka</th>
+                    <th class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Email</th>
+                    <th class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Telefón</th>
+                    <th class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Typ doručenia</th>
+                    <th class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Adresa</th>
+                    <th class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Balíček</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(client, idx) in mealOrders.pendingSelectionClients"
+                    :key="client.clientId"
+                    class="border-b border-[var(--color-dark-green)]/5 hover:bg-[var(--color-orange)]/10 transition-colors"
+                    :class="{ 'bg-[var(--color-orange)]/5': idx % 2 === 1 }"
+                  >
+                    <td class="px-6 py-4">
+                      <span class="font-medium text-[var(--color-dark-green)]">{{ client.clientName }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="text-[var(--color-dark-green)]/60 font-mono text-sm">#{{ client.orderId }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <a
+                        v-if="client.email"
+                        :href="`mailto:${client.email}`"
+                        class="text-sm text-[var(--color-dark-green)] hover:text-[var(--color-orange)] underline"
+                      >
+                        {{ client.email }}
+                      </a>
+                      <span v-else class="text-sm text-[var(--color-dark-green)]/70">-</span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <a
+                        v-if="client.phone"
+                        :href="`tel:${client.phone}`"
+                        class="text-sm text-[var(--color-dark-green)] hover:text-[var(--color-orange)] underline"
+                      >
+                        {{ client.phone }}
+                      </a>
+                      <span v-else class="text-sm text-[var(--color-dark-green)]/70">-</span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span
+                        class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium"
+                        :class="client.deliveryType === 'domov' ? 'bg-[var(--color-orange)]/20 text-[var(--color-dark-green)]' : 'bg-[var(--color-beige)] text-[var(--color-dark-green)]'"
+                      >
+                        {{ client.deliveryType === 'domov' ? 'Domov' : 'Prevádzka' }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="text-sm text-[var(--color-dark-green)]/70 truncate max-w-48">{{ client.deliveryAddress || '-' }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-[var(--color-dark-green)] text-white">
+                        {{ client.packageTier }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Table Content for Package Clients -->
+            <div v-else-if="activePackageTab && mealOrders?.byPackage[activePackageTab]" class="overflow-x-auto">
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-[var(--color-dark-green)]/10 bg-[var(--color-beige)]/30">
                     <th v-if="isColumnVisible('clientName')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Klient</th>
                     <th v-if="isColumnVisible('orderId')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Objednávka</th>
+                    <th v-if="isColumnVisible('email')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Email</th>
                     <th v-if="isColumnVisible('ranajky')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Raňajky</th>
                     <th v-if="isColumnVisible('desiata')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Desiata</th>
                     <th v-if="isColumnVisible('polievka')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Polievka</th>
@@ -247,6 +325,9 @@
                     </td>
                     <td v-if="isColumnVisible('orderId')" class="px-6 py-4">
                       <span class="text-[var(--color-dark-green)]/60 font-mono text-sm">#{{ client.orderId }}</span>
+                    </td>
+                    <td v-if="isColumnVisible('email')" class="px-6 py-4">
+                      <span class="text-sm text-[var(--color-dark-green)]/70">-</span>
                     </td>
                     <td v-if="isColumnVisible('ranajky')" class="px-6 py-4">
                       <div class="flex items-center gap-2">
@@ -415,6 +496,17 @@ interface SkippedClient {
   phone: string
 }
 
+interface PendingSelectionClient {
+  clientId: string
+  clientName: string
+  email: string
+  orderId: string
+  packageTier: string
+  deliveryType: 'prevádzka' | 'domov'
+  deliveryAddress: string
+  phone: string
+}
+
 interface PackageGroup {
   count: number
   clients: ClientSelection[]
@@ -441,6 +533,7 @@ interface MealOrderSummary {
     vecera: string
   }
   skippedClients: SkippedClient[]
+  pendingSelectionClients: PendingSelectionClient[]
 }
 
 interface ColumnConfig {
@@ -460,13 +553,30 @@ const mealOrders = ref<MealOrderSummary | null>(null)
 // Tab navigation
 const activePackageTab = ref<string>('')
 
-// Computed: available package tabs from data
+// Computed: available package tabs from data (with "Bez výberu" tab first)
 const packageTabs = computed(() => {
-  if (!mealOrders.value?.byPackage) return []
-  return Object.keys(mealOrders.value.byPackage).map(packageName => ({
-    label: packageName,
-    value: packageName
-  }))
+  const tabs: { label: string; value: string; isPending?: boolean }[] = []
+
+  // Add "Bez výberu" tab first if there are pending clients
+  if (mealOrders.value?.pendingSelectionClients && mealOrders.value.pendingSelectionClients.length > 0) {
+    tabs.push({
+      label: 'Bez výberu',
+      value: PENDING_TAB_VALUE,
+      isPending: true
+    })
+  }
+
+  // Add package tabs
+  if (mealOrders.value?.byPackage) {
+    Object.keys(mealOrders.value.byPackage).forEach(packageName => {
+      tabs.push({
+        label: packageName,
+        value: packageName
+      })
+    })
+  }
+
+  return tabs
 })
 
 // Column visibility configuration
@@ -475,6 +585,7 @@ const STORAGE_KEY = 'mealOrdersColumnPrefs'
 const allColumns: ColumnConfig[] = [
   { key: 'clientName', label: 'Klient', default: true },
   { key: 'orderId', label: 'Objednávka', default: true },
+  { key: 'email', label: 'Email', default: false },
   { key: 'ranajky', label: 'Raňajky', default: true },
   { key: 'desiata', label: 'Desiata', default: false },
   { key: 'polievka', label: 'Polievka', default: false },
@@ -485,6 +596,9 @@ const allColumns: ColumnConfig[] = [
   { key: 'deliveryAddress', label: 'Adresa', default: false },
   { key: 'phone', label: 'Telefón', default: false }
 ]
+
+// Special tab identifier for pending selection clients
+const PENDING_TAB_VALUE = '__PENDING__'
 
 // Load column preferences from localStorage
 const loadColumnPrefs = (): ColumnConfig[] => {
@@ -571,6 +685,63 @@ const handleExportCsv = () => {
 
   isExporting.value = true
   try {
+    // Handle pending selection clients export
+    if (activePackageTab.value === PENDING_TAB_VALUE) {
+      const pendingClients = mealOrders.value.pendingSelectionClients
+      if (!pendingClients || pendingClients.length === 0) {
+        toast.add({
+          title: 'Upozornenie',
+          description: 'Žiadni klienti bez výberu',
+          color: 'warning'
+        })
+        return
+      }
+
+      // Columns for pending clients
+      const columns = [
+        { header: 'Klient', dataKey: 'clientName' },
+        { header: 'Objednávka', dataKey: 'orderId' },
+        { header: 'Email', dataKey: 'email' },
+        { header: 'Telefón', dataKey: 'phone' },
+        { header: 'Typ doručenia', dataKey: 'deliveryType' },
+        { header: 'Adresa', dataKey: 'deliveryAddress' },
+        { header: 'Balíček', dataKey: 'packageTier' }
+      ]
+
+      // Build rows for pending clients
+      const rows = pendingClients.map(client => ({
+        clientName: client.clientName,
+        orderId: `#${client.orderId}`,
+        email: client.email || '-',
+        phone: client.phone ? `+${client.phone.replace(/^\+/, '')}` : '-',
+        deliveryType: client.deliveryType === 'domov' ? 'Domov' : 'Prevádzka',
+        deliveryAddress: client.deliveryAddress || '-',
+        packageTier: client.packageTier
+      }))
+
+      // Header info for pending clients export
+      const headerInfo = [
+        { label: 'Dátum', value: formattedDate.value },
+        { label: 'Typ', value: 'Klienti bez výberu jedál' },
+        { label: 'Počet klientov', value: pendingClients.length.toString() }
+      ]
+
+      exportToCsv({
+        columns,
+        rows,
+        filename: `bez-vyberu-${selectedDate.value}.csv`,
+        headerInfo
+      })
+
+      toast.add({
+        title: 'Úspech',
+        description: 'CSV súbor bol úspešne vygenerovaný',
+        color: 'success'
+      })
+      return
+    }
+
+    // Handle package clients export (existing logic)
     const packageData = mealOrders.value.byPackage[activePackageTab.value]
     if (!packageData) {
       toast.add({
@@ -591,6 +762,7 @@ const handleExportCsv = () => {
     const rows = packageData.clients.map(client => ({
       clientName: client.clientName,
       orderId: `#${client.orderId}`,
+      email: '-',
       ranajky: `${client.selectedRanajky}: ${client.ranajkyName}`,
       desiata: client.desiata || '-',
       polievka: client.polievka || '-',
