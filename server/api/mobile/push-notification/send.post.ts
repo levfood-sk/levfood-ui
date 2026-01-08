@@ -3,8 +3,9 @@
  *
  * POST /api/mobile/push-notification/send
  *
- * Sends push notifications to all mobile app users with Expo push tokens.
- * Creates notification documents in Firestore and sends via Expo Push API.
+ * Creates notification documents for ALL linked clients (those with firebaseUid),
+ * so all users see the notification in the app modal. Actual push notifications
+ * are only sent to users with Expo push tokens and notifications enabled.
  */
 
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
@@ -42,7 +43,8 @@ const log = {
 };
 
 const EXPO_PUSH_API = "https://exp.host/--/api/v2/push/send";
-const BATCH_SIZE = 100; // Expo allows up to 100 messages per request
+const EXPO_BATCH_SIZE = 100; // Expo allows up to 100 messages per request
+const FIRESTORE_BATCH_LIMIT = 500; // Firestore batch write limit
 
 /**
  * Send push notifications to Expo Push API
@@ -95,54 +97,68 @@ export default defineEventHandler(async (event) => {
     const { app } = getFirebaseAdmin();
     const db = getFirestore(app);
 
-    // Query all clients with Expo push tokens
+    // Query all LINKED clients (those with firebaseUid - users who can access the mobile app)
     const clientsRef = db.collection("clients");
-    const clientsWithTokens = await clientsRef
-      .where("expoPushToken", "!=", null)
-      .where("notificationsEnabled", "==", true)
+    const linkedClientsQuery = await clientsRef
+      .where("firebaseUid", "!=", null)
       .get();
 
-    if (clientsWithTokens.empty) {
+    if (linkedClientsQuery.empty) {
       return {
         success: true,
-        message: "Žiadni používatelia s povolenými notifikáciami",
+        message: "Žiadni prepojení používatelia",
         totalClients: 0,
+        totalPushClients: 0,
         successCount: 0,
         failureCount: 0,
       };
     }
 
-    const clients = clientsWithTokens.docs.map((doc) => ({
+    const linkedClients = linkedClientsQuery.docs.map((doc) => ({
       id: doc.id,
-      expoPushToken: doc.data().expoPushToken as string,
+      expoPushToken: doc.data().expoPushToken as string | null,
+      notificationsEnabled: doc.data().notificationsEnabled as boolean | undefined,
     }));
 
-    log.info(`Found ${clients.length} clients with push tokens`);
+    log.info(`Found ${linkedClients.length} linked clients`);
 
-    // Create notification documents in Firestore (batch write)
+    // Create notification documents in Firestore for ALL linked clients
+    // Handle batching (max 500 per Firestore batch)
     const notificationsRef = db.collection("notifications");
-    const batch = db.batch();
     const now = FieldValue.serverTimestamp();
 
-    for (const client of clients) {
-      const notificationDoc = notificationsRef.doc();
-      batch.set(notificationDoc, {
-        clientId: client.id,
-        type: "custom",
-        title: body.title.trim(),
-        body: body.body.trim(),
-        createdAt: now,
-        readAt: null,
-        data: { sentBy: "admin" },
-      });
+    for (let i = 0; i < linkedClients.length; i += FIRESTORE_BATCH_LIMIT) {
+      const batchClients = linkedClients.slice(i, i + FIRESTORE_BATCH_LIMIT);
+      const batch = db.batch();
+
+      for (const client of batchClients) {
+        const notificationDoc = notificationsRef.doc();
+        batch.set(notificationDoc, {
+          clientId: client.id,
+          type: "custom",
+          title: body.title.trim(),
+          body: body.body.trim(),
+          createdAt: now,
+          readAt: null,
+          data: { sentBy: "admin" },
+        });
+      }
+
+      await batch.commit();
     }
 
-    await batch.commit();
-    log.success(`Created ${clients.length} notification documents`);
+    log.success(`Created ${linkedClients.length} notification documents`);
 
-    // Prepare Expo push messages
-    const pushMessages: ExpoPushMessage[] = clients.map((client) => ({
-      to: client.expoPushToken,
+    // Filter clients with valid push tokens for actual push delivery
+    const clientsWithPush = linkedClients.filter(
+      (c) => c.expoPushToken && c.notificationsEnabled === true
+    );
+
+    log.info(`${clientsWithPush.length} clients have push notifications enabled`);
+
+    // Prepare Expo push messages only for clients with push enabled
+    const pushMessages: ExpoPushMessage[] = clientsWithPush.map((client) => ({
+      to: client.expoPushToken!,
       title: body.title.trim(),
       body: body.body.trim(),
       sound: "default",
@@ -153,11 +169,11 @@ export default defineEventHandler(async (event) => {
     let successCount = 0;
     let failureCount = 0;
 
-    for (let i = 0; i < pushMessages.length; i += BATCH_SIZE) {
-      const batch = pushMessages.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < pushMessages.length; i += EXPO_BATCH_SIZE) {
+      const expoBatch = pushMessages.slice(i, i + EXPO_BATCH_SIZE);
 
       try {
-        const response = await sendToExpoPushAPI(batch);
+        const response = await sendToExpoPushAPI(expoBatch);
 
         for (const result of response.data) {
           if (result.status === "ok") {
@@ -169,21 +185,23 @@ export default defineEventHandler(async (event) => {
         }
       } catch (error: any) {
         log.error("Batch send failed", { error: error.message, batchStart: i });
-        failureCount += batch.length;
+        failureCount += expoBatch.length;
       }
     }
 
     const duration = Date.now() - startTime;
     log.success(`Push notifications sent (${duration}ms)`, {
-      totalClients: clients.length,
+      totalClients: linkedClients.length,
+      totalPushClients: clientsWithPush.length,
       successCount,
       failureCount,
     });
 
     return {
       success: true,
-      message: `Notifikácia odoslaná ${successCount} používateľom`,
-      totalClients: clients.length,
+      message: `Notifikácia vytvorená pre ${linkedClients.length} používateľov, push odoslaný ${successCount} zariadeniam`,
+      totalClients: linkedClients.length,
+      totalPushClients: clientsWithPush.length,
       successCount,
       failureCount,
     };

@@ -45,6 +45,7 @@ interface PushNotificationResult {
   success: boolean
   message: string
   totalClients: number
+  totalPushClients: number
   successCount: number
   failureCount: number
 }
@@ -457,9 +458,12 @@ onMounted(() => {
                 {{ pushResult.message }}
               </p>
               <div v-if="pushResult.totalClients > 0" class="text-xs mt-1" :class="pushResult.success ? 'text-green-700' : 'text-red-700'">
-                Úspešne: {{ pushResult.successCount }} / {{ pushResult.totalClients }}
+                V aplikácii: {{ pushResult.totalClients }} používateľov
+                <span v-if="pushResult.totalPushClients > 0" class="ml-2">
+                  | Push: {{ pushResult.successCount }}/{{ pushResult.totalPushClients }}
+                </span>
                 <span v-if="pushResult.failureCount > 0" class="text-red-600 ml-2">
-                  Neúspešne: {{ pushResult.failureCount }}
+                  ({{ pushResult.failureCount }} neúspešných)
                 </span>
               </div>
             </div>
