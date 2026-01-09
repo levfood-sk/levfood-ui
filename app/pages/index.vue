@@ -314,18 +314,20 @@ onMounted(() => {
             <!-- <div class="flex flex-col items-center justify-center">
               <h3 class="mt-[100px] text-orange text-[1.75rem] md:text-[2rem] text-center tracking-tight font-condensed">Stiahnite si aplikáciu LevFood</h3>
             </div> -->
-            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 w-full sm:px-0">
               <a
                 href="https://apps.apple.com/sk/app/levfood/id6756886093"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="group bg-orange cursor-pointer hover:bg-beige transition-colors duration-300 rounded-xl px-6 py-3 flex items-center gap-3 min-w-[200px] shadow-lg"
+                class="group bg-orange cursor-pointer hover:bg-beige transition-colors duration-300 rounded-xl px-6 py-3 flex items-center justify-center gap-3 w-full sm:w-auto sm:min-w-[200px] shadow-lg"
               >
-                <UIcon
-                  name="i-lucide-apple"
-                  class="w-8 h-8 text-dark-green group-hover:text-dark-green transition-colors duration-300"
-                />
-                <div class="flex flex-col items-start">
+                <div class="w-8 flex-shrink-0 flex justify-center">
+                  <UIcon
+                    name="i-lucide-apple"
+                    class="w-8 h-8 text-dark-green group-hover:text-dark-green transition-colors duration-300"
+                  />
+                </div>
+                <div class="flex flex-col items-start w-[100px]">
                   <span class="text-xs text-dark-green group-hover:text-dark-green transition-colors duration-300">Stiahnuť z</span>
                   <span class="text-base font-bold text-dark-green group-hover:text-dark-green transition-colors duration-300">App Store</span>
                 </div>
@@ -334,13 +336,15 @@ onMounted(() => {
                 href="https://play.google.com/store/apps/details?id=com.krabickovo.levfood&hl=sk"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="group bg-orange cursor-pointer hover:bg-beige transition-colors duration-300 rounded-xl px-6 py-3 flex items-center gap-3 min-w-[200px] shadow-lg"
+                class="group bg-orange cursor-pointer hover:bg-beige transition-colors duration-300 rounded-xl px-6 py-3 flex items-center justify-center gap-3 w-full sm:w-auto sm:min-w-[200px] shadow-lg"
               >
-                <UIcon
-                  name="i-lucide-smartphone"
-                  class="w-8 h-8 text-dark-green group-hover:text-dark-green transition-colors duration-300"
-                />
-                <div class="flex flex-col items-start">
+                <div class="w-8 flex-shrink-0 flex justify-center">
+                  <UIcon
+                    name="i-lucide-smartphone"
+                    class="w-8 h-8 text-dark-green group-hover:text-dark-green transition-colors duration-300"
+                  />
+                </div>
+                <div class="flex flex-col items-start w-[100px]">
                   <span class="text-xs text-dark-green group-hover:text-dark-green transition-colors duration-300">Získajte na</span>
                   <span class="text-base font-bold text-dark-green group-hover:text-dark-green transition-colors duration-300">Google Play</span>
                 </div>
