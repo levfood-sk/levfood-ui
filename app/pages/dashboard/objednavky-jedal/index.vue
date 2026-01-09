@@ -618,20 +618,31 @@ const PENDING_TAB_VALUE = '__PENDING__'
 
 // Normalize package name for lookup (handle Slovak characters and case)
 const normalizePackageName = (name: string): string => {
-  return name.toLowerCase()
-    .replace('š', 's')
-    .replace('ť', 't')
-    .replace('č', 'c')
-    .replace('ž', 'z')
-    .replace('ý', 'y')
-    .replace('á', 'a')
-    .replace('í', 'i')
-    .replace('é', 'e')
-    .replace('ú', 'u')
-    .replace('ô', 'o')
-    .replace('ľ', 'l')
-    .replace('ň', 'n')
-    .replace('ď', 'd')
+  const normalized = name.toLowerCase()
+    .replace(/š/g, 's')
+    .replace(/ť/g, 't')
+    .replace(/č/g, 'c')
+    .replace(/ž/g, 'z')
+    .replace(/ý/g, 'y')
+    .replace(/á/g, 'a')
+    .replace(/í/g, 'i')
+    .replace(/é/g, 'e')
+    .replace(/ú/g, 'u')
+    .replace(/ô/g, 'o')
+    .replace(/ľ/g, 'l')
+    .replace(/ň/g, 'n')
+    .replace(/ď/g, 'd')
+
+  // Map Slovak package names to English keys
+  const packageMap: Record<string, string> = {
+    'ekonomy': 'economy',
+    'standard': 'standard',
+    'standart': 'standard',
+    'premium': 'premium',
+    'office': 'office'
+  }
+
+  return packageMap[normalized] || normalized
 }
 
 // Load column preferences from localStorage
@@ -795,6 +806,7 @@ const handleExportCsv = () => {
     const pkgNormalized = normalizePackageName(activePackageTab.value)
 
     const csvColumnsByPackage: Record<string, { header: string; dataKey: string }[]> = {
+      // Economy: raňajky + obed s polievkou + večera (no dietary requirements)
       economy: [
         { header: 'Klient', dataKey: 'clientName' },
         { header: 'Objednávka', dataKey: 'orderId' },
@@ -802,11 +814,11 @@ const handleExportCsv = () => {
         { header: 'Polievka', dataKey: 'polievka' },
         { header: 'Obed', dataKey: 'obed' },
         { header: 'Večera', dataKey: 'vecera' },
-        { header: 'Diétne požiadavky', dataKey: 'dietaryRequirements' },
         { header: 'Typ doručenia', dataKey: 'deliveryType' },
         { header: 'Adresa', dataKey: 'deliveryAddress' },
         { header: 'Telefón', dataKey: 'phone' }
       ],
+      // Standard: raňajky + obed s polievkou + olovrant + večera
       standard: [
         { header: 'Klient', dataKey: 'clientName' },
         { header: 'Objednávka', dataKey: 'orderId' },
@@ -820,6 +832,7 @@ const handleExportCsv = () => {
         { header: 'Adresa', dataKey: 'deliveryAddress' },
         { header: 'Telefón', dataKey: 'phone' }
       ],
+      // Premium: raňajky + desiata + obed s polievkou + olovrant + večera
       premium: [
         { header: 'Klient', dataKey: 'clientName' },
         { header: 'Objednávka', dataKey: 'orderId' },
@@ -834,6 +847,7 @@ const handleExportCsv = () => {
         { header: 'Adresa', dataKey: 'deliveryAddress' },
         { header: 'Telefón', dataKey: 'phone' }
       ],
+      // Office: raňajky + desiata + obed s polievkou (no dietary requirements)
       office: [
         { header: 'Klient', dataKey: 'clientName' },
         { header: 'Objednávka', dataKey: 'orderId' },
@@ -841,7 +855,6 @@ const handleExportCsv = () => {
         { header: 'Desiata', dataKey: 'desiata' },
         { header: 'Polievka', dataKey: 'polievka' },
         { header: 'Obed', dataKey: 'obed' },
-        { header: 'Diétne požiadavky', dataKey: 'dietaryRequirements' },
         { header: 'Typ doručenia', dataKey: 'deliveryType' },
         { header: 'Adresa', dataKey: 'deliveryAddress' },
         { header: 'Telefón', dataKey: 'phone' }
