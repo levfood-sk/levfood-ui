@@ -68,12 +68,12 @@ interface MealOrderSummary {
     optionB: { name: string; count: number }
     optionC: { name: string; count: number }
   }
-  // Non-option meals (same for everyone, just the name)
+  // Non-option meals with counts based on package types
   fixedMeals: {
-    desiata: string
-    polievka: string
-    olovrant: string
-    vecera: string
+    desiata: { name: string; count: number }   // premium, office
+    polievka: { name: string; count: number }  // all packages
+    olovrant: { name: string; count: number }  // standard, premium
+    vecera: { name: string; count: number }    // economy, standard, premium
   }
   skippedClients: SkippedClient[]
   pendingSelectionClients: PendingSelectionClient[]
@@ -122,10 +122,10 @@ export default defineEventHandler(async (event) => {
           optionC: { name: mealsData?.obedOptions?.optionC || 'Variant C', count: 0 }
         },
         fixedMeals: {
-          desiata: mealsData?.meals?.desiata || '',
-          polievka: mealsData?.meals?.polievka || '',
-          olovrant: mealsData?.meals?.olovrant || '',
-          vecera: mealsData?.meals?.vecera || ''
+          desiata: { name: mealsData?.meals?.desiata || '', count: 0 },
+          polievka: { name: mealsData?.meals?.polievka || '', count: 0 },
+          olovrant: { name: mealsData?.meals?.olovrant || '', count: 0 },
+          vecera: { name: mealsData?.meals?.vecera || '', count: 0 }
         },
         skippedClients: [],
         pendingSelectionClients: [],
@@ -345,6 +345,12 @@ export default defineEventHandler(async (event) => {
     let totalOrders = 0
     const ranajkyCounts = { A: 0, B: 0 }
     const obedCounts = { A: 0, B: 0, C: 0 }
+    // Fixed meal counts based on package types
+    // Desiata: premium, office
+    // Polievka: all packages (economy, standard, premium, office)
+    // Olovrant: standard, premium
+    // Vecera: economy, standard, premium
+    const fixedMealCounts = { desiata: 0, polievka: 0, olovrant: 0, vecera: 0 }
 
     for (const doc of selectionsQuery.docs) {
       const selection = doc.data()
@@ -383,6 +389,23 @@ export default defineEventHandler(async (event) => {
         obedCounts.B++
       } else if (selection.selectedObed === 'C') {
         obedCounts.C++
+      }
+
+      // Count fixed meals based on package type
+      const pkgLower = packageTier.toLowerCase()
+      // Polievka: all packages
+      fixedMealCounts.polievka++
+      // Desiata: premium, office
+      if (pkgLower === 'premium' || pkgLower === 'office') {
+        fixedMealCounts.desiata++
+      }
+      // Olovrant: standard, premium
+      if (pkgLower === 'standard' || pkgLower === 'premium') {
+        fixedMealCounts.olovrant++
+      }
+      // Vecera: economy, standard, premium
+      if (pkgLower === 'economy' || pkgLower === 'standard' || pkgLower === 'premium') {
+        fixedMealCounts.vecera++
       }
 
       // Group by package
@@ -434,10 +457,10 @@ export default defineEventHandler(async (event) => {
         optionC: { name: mealsData.obedOptions?.optionC || 'Variant C', count: obedCounts.C }
       },
       fixedMeals: {
-        desiata: mealsData.meals?.desiata || '',
-        polievka: mealsData.meals?.polievka || '',
-        olovrant: mealsData.meals?.olovrant || '',
-        vecera: mealsData.meals?.vecera || ''
+        desiata: { name: mealsData.meals?.desiata || '', count: fixedMealCounts.desiata },
+        polievka: { name: mealsData.meals?.polievka || '', count: fixedMealCounts.polievka },
+        olovrant: { name: mealsData.meals?.olovrant || '', count: fixedMealCounts.olovrant },
+        vecera: { name: mealsData.meals?.vecera || '', count: fixedMealCounts.vecera }
       },
       skippedClients,
       pendingSelectionClients

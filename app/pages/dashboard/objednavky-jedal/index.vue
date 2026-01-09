@@ -542,10 +542,10 @@ interface MealOrderSummary {
     optionC: { name: string; count: number }
   }
   fixedMeals: {
-    desiata: string
-    polievka: string
-    olovrant: string
-    vecera: string
+    desiata: { name: string; count: number }
+    polievka: { name: string; count: number }
+    olovrant: { name: string; count: number }
+    vecera: { name: string; count: number }
   }
   skippedClients: SkippedClient[]
   pendingSelectionClients: PendingSelectionClient[]
@@ -616,6 +616,24 @@ const allColumns: ColumnConfig[] = [
 // Special tab identifier for pending selection clients
 const PENDING_TAB_VALUE = '__PENDING__'
 
+// Normalize package name for lookup (handle Slovak characters and case)
+const normalizePackageName = (name: string): string => {
+  return name.toLowerCase()
+    .replace('š', 's')
+    .replace('ť', 't')
+    .replace('č', 'c')
+    .replace('ž', 'z')
+    .replace('ý', 'y')
+    .replace('á', 'a')
+    .replace('í', 'i')
+    .replace('é', 'e')
+    .replace('ú', 'u')
+    .replace('ô', 'o')
+    .replace('ľ', 'l')
+    .replace('ň', 'n')
+    .replace('ď', 'd')
+}
+
 // Load column preferences from localStorage
 const loadColumnPrefs = (): ColumnConfig[] => {
   if (import.meta.server) return allColumns.filter(c => c.default)
@@ -640,6 +658,7 @@ watch(selectedColumns, (cols) => {
   }
 }, { deep: true })
 
+// Check if a column is visible in UI table (based on user selection)
 const isColumnVisible = (key: string) => selectedColumns.value.some(col => col.key === key)
 
 // Default to tomorrow + 2 days (typical production lead time)
@@ -768,17 +787,74 @@ const handleExportCsv = () => {
       return
     }
 
-    // Build columns based on visible columns
-    const columns = selectedColumns.value.map(col => ({
-      header: col.label,
-      dataKey: col.key
-    }))
+    // Define CSV columns per package type (independent of UI table selection)
+    // Economy: raňajky + obed s polievkou + večera
+    // Standard: raňajky + obed s polievkou + olovrant + večera
+    // Premium: raňajky + desiata + obed s polievkou + olovrant + večera
+    // Office: raňajky + desiata + obed s polievkou
+    const pkgNormalized = normalizePackageName(activePackageTab.value)
+
+    const csvColumnsByPackage: Record<string, { header: string; dataKey: string }[]> = {
+      economy: [
+        { header: 'Klient', dataKey: 'clientName' },
+        { header: 'Objednávka', dataKey: 'orderId' },
+        { header: 'Raňajky', dataKey: 'ranajky' },
+        { header: 'Polievka', dataKey: 'polievka' },
+        { header: 'Obed', dataKey: 'obed' },
+        { header: 'Večera', dataKey: 'vecera' },
+        { header: 'Diétne požiadavky', dataKey: 'dietaryRequirements' },
+        { header: 'Typ doručenia', dataKey: 'deliveryType' },
+        { header: 'Adresa', dataKey: 'deliveryAddress' },
+        { header: 'Telefón', dataKey: 'phone' }
+      ],
+      standard: [
+        { header: 'Klient', dataKey: 'clientName' },
+        { header: 'Objednávka', dataKey: 'orderId' },
+        { header: 'Raňajky', dataKey: 'ranajky' },
+        { header: 'Polievka', dataKey: 'polievka' },
+        { header: 'Obed', dataKey: 'obed' },
+        { header: 'Olovrant', dataKey: 'olovrant' },
+        { header: 'Večera', dataKey: 'vecera' },
+        { header: 'Diétne požiadavky', dataKey: 'dietaryRequirements' },
+        { header: 'Typ doručenia', dataKey: 'deliveryType' },
+        { header: 'Adresa', dataKey: 'deliveryAddress' },
+        { header: 'Telefón', dataKey: 'phone' }
+      ],
+      premium: [
+        { header: 'Klient', dataKey: 'clientName' },
+        { header: 'Objednávka', dataKey: 'orderId' },
+        { header: 'Raňajky', dataKey: 'ranajky' },
+        { header: 'Desiata', dataKey: 'desiata' },
+        { header: 'Polievka', dataKey: 'polievka' },
+        { header: 'Obed', dataKey: 'obed' },
+        { header: 'Olovrant', dataKey: 'olovrant' },
+        { header: 'Večera', dataKey: 'vecera' },
+        { header: 'Diétne požiadavky', dataKey: 'dietaryRequirements' },
+        { header: 'Typ doručenia', dataKey: 'deliveryType' },
+        { header: 'Adresa', dataKey: 'deliveryAddress' },
+        { header: 'Telefón', dataKey: 'phone' }
+      ],
+      office: [
+        { header: 'Klient', dataKey: 'clientName' },
+        { header: 'Objednávka', dataKey: 'orderId' },
+        { header: 'Raňajky', dataKey: 'ranajky' },
+        { header: 'Desiata', dataKey: 'desiata' },
+        { header: 'Polievka', dataKey: 'polievka' },
+        { header: 'Obed', dataKey: 'obed' },
+        { header: 'Diétne požiadavky', dataKey: 'dietaryRequirements' },
+        { header: 'Typ doručenia', dataKey: 'deliveryType' },
+        { header: 'Adresa', dataKey: 'deliveryAddress' },
+        { header: 'Telefón', dataKey: 'phone' }
+      ]
+    }
+
+    // Get columns for current package (fallback to premium which has all columns)
+    const columns = csvColumnsByPackage[pkgNormalized] || csvColumnsByPackage.premium
 
     // Build rows with mapped data
     const rows = packageData.clients.map(client => ({
       clientName: client.clientName,
       orderId: `#${client.orderId}`,
-      email: '-',
       ranajky: `${client.selectedRanajky}: ${client.ranajkyName}`,
       desiata: client.desiata || '-',
       polievka: client.polievka || '-',
@@ -805,13 +881,31 @@ const handleExportCsv = () => {
       { label: `Obed C (${mealOrders.value.obedCounts.optionC.name})`, value: `${mealOrders.value.obedCounts.optionC.count}×` }
     ]
 
-    // Add fixed meals if available
+    // Add fixed meals based on selected package type
+    // Desiata: premium, office
+    // Polievka: all packages
+    // Olovrant: standard, premium
+    // Vecera: economy, standard, premium
     if (mealOrders.value.fixedMeals) {
       const fixedMeals = mealOrders.value.fixedMeals
-      if (fixedMeals.desiata) headerInfo.push({ label: 'Desiata', value: `${fixedMeals.desiata} (${mealOrders.value.totalOrders}×)` })
-      if (fixedMeals.polievka) headerInfo.push({ label: 'Polievka', value: `${fixedMeals.polievka} (${mealOrders.value.totalOrders}×)` })
-      if (fixedMeals.olovrant) headerInfo.push({ label: 'Olovrant', value: `${fixedMeals.olovrant} (${mealOrders.value.totalOrders}×)` })
-      if (fixedMeals.vecera) headerInfo.push({ label: 'Večera', value: `${fixedMeals.vecera} (${mealOrders.value.totalOrders}×)` })
+      const pkgNormalized = normalizePackageName(activePackageTab.value)
+
+      // Desiata: only for premium and office
+      if (fixedMeals.desiata.name && (pkgNormalized === 'premium' || pkgNormalized === 'office')) {
+        headerInfo.push({ label: 'Desiata', value: `${fixedMeals.desiata.name} (${fixedMeals.desiata.count}×)` })
+      }
+      // Polievka: all packages
+      if (fixedMeals.polievka.name) {
+        headerInfo.push({ label: 'Polievka', value: `${fixedMeals.polievka.name} (${fixedMeals.polievka.count}×)` })
+      }
+      // Olovrant: only for standard and premium
+      if (fixedMeals.olovrant.name && (pkgNormalized === 'standard' || pkgNormalized === 'premium')) {
+        headerInfo.push({ label: 'Olovrant', value: `${fixedMeals.olovrant.name} (${fixedMeals.olovrant.count}×)` })
+      }
+      // Vecera: only for economy, standard, premium (not office)
+      if (fixedMeals.vecera.name && (pkgNormalized === 'economy' || pkgNormalized === 'standard' || pkgNormalized === 'premium')) {
+        headerInfo.push({ label: 'Večera', value: `${fixedMeals.vecera.name} (${fixedMeals.vecera.count}×)` })
+      }
     }
 
     exportToCsv({
