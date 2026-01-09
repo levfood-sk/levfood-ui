@@ -12,6 +12,7 @@ useSeoMeta({
 import { z } from 'zod'
 import logoLongIcon from '~/assets/icons/logo-long-orange.svg'
 import type { CreateOrderInput } from '~~/app/lib/types/order'
+import { getFirstModifiableDate, formatDateISO, isValidDeliveryDay } from '~/utils/delivery-cutoff'
 
 const currentStep = ref(1)
 const totalSteps = 4
@@ -63,13 +64,11 @@ const formData = ref({
     courierNotes: ''
   },
   step4: {
-    deliveryStartDate: '',
+    deliveryStartDate: '',  // YYYY-MM-DD format for native date input
     termsAccepted: false
   }
 })
 
-// Date auto-correction flag
-const dateWasAutoCorrected = ref(false)
 
 // Validation errors
 const errors = ref({
@@ -258,6 +257,32 @@ const daysCount = computed(() => {
   return formData.value.step1.duration === '5' ? 20 : 24
 })
 
+// Calculate minimum delivery date based on cutoff logic
+// Returns YYYY-MM-DD string for native date input min attribute
+const minDeliveryDate = computed(() => {
+  const firstModifiable = getFirstModifiableDate()
+  const duration = formData.value.step1.duration as '5' | '6' || '5'
+  const deliveryDays = duration === '6' ? 6 : 5
+
+  // Order form uses 1 day earlier than the skip/modify cutoff
+  // (Skip cutoff is for existing customers who already have the app)
+  firstModifiable.setDate(firstModifiable.getDate() - 1)
+
+  // Ensure it's a valid delivery day for the selected package
+  // (Sunday is never valid, Saturday only valid for 6-day)
+  while (!isValidDeliveryDay(formatDateISO(firstModifiable), deliveryDays)) {
+    firstModifiable.setDate(firstModifiable.getDate() - 1)
+  }
+
+  return formatDateISO(firstModifiable)
+})
+
+// Format YYYY-MM-DD to DD.MM.YYYY for API submission
+function formatISOToDDMMYYYY(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-')
+  return `${day}.${month}.${year}`
+}
+
 const summaryData = computed(() => {
   return {
     package: formData.value.step1.package,
@@ -294,7 +319,6 @@ function validateField(field: 'fullName' | 'phone' | 'email' | 'address') {
 
 // Debounced validation for input events
 let validationTimer: NodeJS.Timeout | null = null
-let deliveryDateTimer: NodeJS.Timeout | null = null
 
 function validateFieldOnInput(field: 'fullName' | 'phone' | 'email' | 'address') {
   // Only validate if field has been touched
@@ -465,47 +489,6 @@ watch(() => formData.value.step2.birthDate, (newValue) => {
   }
 })
 
-// Calculate suggested delivery start date based on current day
-function calculateDeliveryStartDate() {
-  const today = new Date()
-  const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, etc.
-
-  let daysToAdd = 0
-
-  switch (dayOfWeek) {
-    case 2: // Tuesday
-      daysToAdd = 3 // Saturday
-      break
-    case 3: // Wednesday
-      daysToAdd = 5 // Monday
-      break
-    case 4: // Thursday
-      daysToAdd = 5 // Tuesday
-      break
-    case 5: // Friday
-      daysToAdd = 5 // Wednesday
-      break
-    case 6: // Saturday
-      daysToAdd = 5 // Thursday
-      break
-    case 0: // Sunday
-      daysToAdd = 4 // Thursday
-      break
-    case 1: // Monday
-      daysToAdd = 4 // Friday
-      break
-  }
-
-  const deliveryDate = new Date(today)
-  deliveryDate.setDate(today.getDate() + daysToAdd)
-
-  return deliveryDate.toISOString().split('T')[0]
-}
-
-const suggestedDeliveryDate = computed(() => {
-  return calculateDeliveryStartDate()
-})
-
 // Read query parameters and pre-fill form
 const route = useRoute()
 
@@ -541,9 +524,9 @@ onMounted(() => {
     currentStep.value = 1
   }
 
-  // Initialize delivery date with default date
+  // Initialize delivery date with first available date
   if (!formData.value.step4.deliveryStartDate) {
-    formData.value.step4.deliveryStartDate = '13.01.2026'
+    formData.value.step4.deliveryStartDate = minDeliveryDate.value
   }
 
   // Set delivery type to 'prevádzka' if EKONOMY is pre-selected
@@ -577,41 +560,12 @@ watch(() => formData.value.step3.deliveryType, (newType) => {
   }
 })
 
-// Watch for delivery start date changes to enforce minimum date (debounced 5 seconds)
-watch(() => formData.value.step4.deliveryStartDate, (newDate) => {
-  // Clear the auto-correction message only if user is manually changing the date (not when it's auto-corrected to 13.01.2026)
-  if (newDate !== '13.01.2026' || !dateWasAutoCorrected.value) {
-    dateWasAutoCorrected.value = false
+// Watch for duration changes to update delivery date if it's no longer valid
+watch(() => formData.value.step1.duration, () => {
+  const currentDate = formData.value.step4.deliveryStartDate
+  if (currentDate && currentDate < minDeliveryDate.value) {
+    formData.value.step4.deliveryStartDate = minDeliveryDate.value
   }
-
-  // Clear previous timer
-  if (deliveryDateTimer) {
-    clearTimeout(deliveryDateTimer)
-  }
-
-  // Wait 5 seconds before validating
-  deliveryDateTimer = setTimeout(() => {
-    // Parse the date in DD.MM.RRRR format
-    if (newDate && newDate !== '13.01.2026') {
-      const parts = newDate.split('.')
-      if (parts.length === 3) {
-        const day = parseInt(parts[0] || '')
-        const month = parseInt(parts[1] || '')
-        const year = parseInt(parts[2] || '')
-
-        // Check if date is valid and before 13.01.2026
-        if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-          const enteredDate = new Date(year, month - 1, day)
-          const minDate = new Date(2026, 0, 13) // January 13, 2026
-
-          if (enteredDate < minDate) {
-            formData.value.step4.deliveryStartDate = '13.01.2026'
-            dateWasAutoCorrected.value = true
-          }
-        }
-      }
-    }
-  }, 5000) // 5 second delay
 })
 
 function nextStep() {
@@ -844,7 +798,7 @@ async function saveOrder(stripePaymentIntentId: string) {
       courierNotes: formData.value.step3.deliveryType === 'domov' ? formData.value.step3.courierNotes || '' : '',
 
       // Step 4
-      deliveryStartDate: formData.value.step4.deliveryStartDate,
+      deliveryStartDate: formatISOToDDMMYYYY(formData.value.step4.deliveryStartDate),
       termsAccepted: formData.value.step4.termsAccepted,
       stripePaymentIntentId,
 
@@ -1364,19 +1318,12 @@ watch(() => currentStep.value, (newStep) => {
                 <div class="flex flex-col items-start gap-2">
                   <UInput
                     v-model="formData.step4.deliveryStartDate"
-                    type="text"
-                    inputmode="numeric"
+                    type="date"
+                    :min="minDeliveryDate"
                     size="lg"
-                    placeholder="DD.MM.RRRR"
-                    class="flex-1"
-                    :ui="{ base: 'rounded-md bg-transparent placeholder:text-[var(--color-dark-green)]/50 ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
+                    class="w-full"
+                    :ui="{ base: 'rounded-md bg-transparent ring-1 ring-[var(--color-dark-green)] focus:border-[var(--color-orange)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-orange)]' }"
                   />
-                  <div v-if="dateWasAutoCorrected" class="flex items-start gap-2 p-3 bg-orange/20 border border-[var(--color-orange)] rounded-lg">
-                    <UIcon name="i-lucide-info" class="w-5 h-5 text-[var(--color-orange)] flex-shrink-0 mt-0.5" />
-                    <p class="text-sm text-[var(--color-dark-green)]">
-                      Dátum bol automaticky upravený na 13.01.2026, pred týmto dátumom neodosielame.
-                    </p>
-                  </div>
                   <p class="text-sm text-[var(--color-dark-green)] mt-3">
                     Ak si jedlo neprevezmete pri rozvoze, svoj balík budete mať na výdajnom mieste.
                   </p>
