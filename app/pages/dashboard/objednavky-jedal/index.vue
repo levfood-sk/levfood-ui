@@ -308,6 +308,7 @@
                     <th v-if="isColumnVisible('obed')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Obed</th>
                     <th v-if="isColumnVisible('olovrant')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Olovrant</th>
                     <th v-if="isColumnVisible('vecera')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Večera</th>
+                    <th v-if="isColumnVisible('dietaryRequirements')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Diétne požiadavky</th>
                     <th v-if="isColumnVisible('deliveryType')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Typ doručenia</th>
                     <th v-if="isColumnVisible('deliveryAddress')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Adresa</th>
                     <th v-if="isColumnVisible('phone')" class="text-left px-6 py-3 text-sm font-semibold text-[var(--color-dark-green)]">Telefón</th>
@@ -366,6 +367,18 @@
                     </td>
                     <td v-if="isColumnVisible('vecera')" class="px-6 py-4">
                       <span class="text-sm text-[var(--color-dark-green)]/70 truncate max-w-40">{{ client.vecera || '-' }}</span>
+                    </td>
+                    <td v-if="isColumnVisible('dietaryRequirements')" class="px-6 py-4">
+                      <div v-if="client.dietaryRequirements && client.dietaryRequirements.length > 0" class="flex flex-wrap gap-1">
+                        <span
+                          v-for="req in client.dietaryRequirements"
+                          :key="req"
+                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-orange)]/20 text-[var(--color-dark-green)]"
+                        >
+                          {{ req }}
+                        </span>
+                      </div>
+                      <span v-else class="text-sm text-[var(--color-dark-green)]/70">-</span>
                     </td>
                     <td v-if="isColumnVisible('deliveryType')" class="px-6 py-4">
                       <span
@@ -484,6 +497,8 @@ interface ClientSelection {
   polievka: string
   olovrant: string
   vecera: string
+  // Dietary requirements (only for standard and premium packages)
+  dietaryRequirements: string[]
 }
 
 interface SkippedClient {
@@ -592,6 +607,7 @@ const allColumns: ColumnConfig[] = [
   { key: 'obed', label: 'Obed', default: true },
   { key: 'olovrant', label: 'Olovrant', default: false },
   { key: 'vecera', label: 'Večera', default: false },
+  { key: 'dietaryRequirements', label: 'Diétne požiadavky', default: true },
   { key: 'deliveryType', label: 'Typ doručenia', default: false },
   { key: 'deliveryAddress', label: 'Adresa', default: false },
   { key: 'phone', label: 'Telefón', default: false }
@@ -769,6 +785,7 @@ const handleExportCsv = () => {
       obed: `${client.selectedObed}: ${client.obedName}`,
       olovrant: client.olovrant || '-',
       vecera: client.vecera || '-',
+      dietaryRequirements: client.dietaryRequirements?.length > 0 ? client.dietaryRequirements.join(', ') : '-',
       deliveryType: client.deliveryType === 'domov' ? 'Domov' : 'Prevádzka',
       deliveryAddress: client.deliveryAddress || '-',
       phone: client.phone ? `+${client.phone.replace(/^\+/, '')}` : '-'

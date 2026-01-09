@@ -25,6 +25,8 @@ interface ClientSelection {
   polievka: string
   olovrant: string
   vecera: string
+  // Dietary requirements (only for standard and premium packages)
+  dietaryRequirements: string[]
 }
 
 interface SkippedClient {
@@ -163,7 +165,7 @@ export default defineEventHandler(async (event) => {
 
     // Batch fetch order data (for delivery info)
     const orderIds = [...new Set(selectionsQuery.docs.map(doc => doc.data().orderId))]
-    const ordersMap = new Map<string, { deliveryType: 'prevádzka' | 'domov'; deliveryAddress: string }>()
+    const ordersMap = new Map<string, { deliveryType: 'prevádzka' | 'domov'; deliveryAddress: string; dietaryRequirements: string[] }>()
     const orderChunks = []
     for (let i = 0; i < orderIds.length; i += 10) {
       orderChunks.push(orderIds.slice(i, i + 10))
@@ -178,7 +180,8 @@ export default defineEventHandler(async (event) => {
         const data = doc.data()
         ordersMap.set(data.orderId, {
           deliveryType: data.deliveryType || 'prevádzka',
-          deliveryAddress: data.deliveryAddress || ''
+          deliveryAddress: data.deliveryAddress || '',
+          dietaryRequirements: data.dietaryRequirements || []
         })
       })
     }
@@ -403,7 +406,9 @@ export default defineEventHandler(async (event) => {
         desiata: mealsData.meals?.desiata || '',
         polievka: mealsData.meals?.polievka || '',
         olovrant: mealsData.meals?.olovrant || '',
-        vecera: mealsData.meals?.vecera || ''
+        vecera: mealsData.meals?.vecera || '',
+        // Dietary requirements (only applicable for standard and premium packages)
+        dietaryRequirements: orderInfo?.dietaryRequirements || []
       })
     }
 
