@@ -53,6 +53,7 @@ export interface MealSelection {
   selectedRanajky: RanajkyChoice
   selectedObed: ObedChoice
   packageTier: string
+  autoFilled?: boolean // true if auto-filled by system, undefined/false if user-selected
   createdAt: Date
   updatedAt: Date
 }

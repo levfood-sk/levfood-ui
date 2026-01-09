@@ -6,8 +6,8 @@ definePageMeta({
 const activeTab = ref(0)
 
 const tabs = [{
-  label: 'Kompletný test',
-  icon: 'i-lucide-workflow',
+  label: 'Auto-výber jedál',
+  icon: 'i-lucide-utensils',
 }, {
   label: 'Stripe',
   icon: 'i-lucide-credit-card',
@@ -46,14 +46,43 @@ const includeAttachment = ref(false)
 const clientEmailName = ref('')
 const clientEmailOrderId = ref('')
 
-// Full integration test state
-const fullIntegrationLoading = ref(false)
-const fullIntegrationResult = ref<any>(null)
-const fullIntegrationError = ref<string | null>(null)
-const fullIntegrationEmail = ref('')
-const fullIntegrationClientSecret = ref<string | null>(null)
-const fullIntegrationElements = ref<any>(null)
-const fullIntegrationPaymentElement = ref<any>(null)
+// Auto-fill meal selections state
+interface AutoFillClient {
+  clientId: string
+  clientName: string
+  email: string
+  orderId: string
+  packageTier: string
+}
+
+interface DateResult {
+  date: string
+  clientsToFill: number
+  clientsFilled: number
+  clients: AutoFillClient[]
+}
+
+interface AutoFillResult {
+  success: boolean
+  dateFrom: string
+  dateTo: string
+  dryRun: boolean
+  totalClientsToFill: number
+  totalClientsFilled: number
+  byDate: DateResult[]
+  errors?: Array<{
+    clientId: string
+    date: string
+    error: string
+  }>
+}
+
+const autoFillLoading = ref(false)
+const autoFillResult = ref<AutoFillResult | null>(null)
+const autoFillError = ref<string | null>(null)
+const autoFillDateFrom = ref('')
+const autoFillDateTo = ref('')
+const autoFillDryRun = ref(true)
 
 // Migration state
 const migrationLoading = ref(false)
@@ -100,44 +129,63 @@ watch([stripe, stripeClientSecret], async () => {
   }
 })
 
-// Initialize Stripe payment element for Full Integration tab
-watch([stripe, fullIntegrationClientSecret], async () => {
-  if (stripe.value && fullIntegrationClientSecret.value && !fullIntegrationPaymentElement.value) {
-    try {
-      await nextTick()
+// Auto-fill meal selections function
+async function runAutoFill() {
+  autoFillLoading.value = true
+  autoFillError.value = null
+  autoFillResult.value = null
 
-      const container = document.getElementById('full-integration-payment-element')
-      if (!container) {
-        console.error('Full integration payment element container not found')
-        return
-      }
+  try {
+    const response = await useAuthFetch<AutoFillResult>('/api/admin/auto-fill-meals', {
+      method: 'POST',
+      body: {
+        dateFrom: autoFillDateFrom.value || undefined,
+        dateTo: autoFillDateTo.value || undefined,
+        dryRun: autoFillDryRun.value,
+      },
+    })
 
-      fullIntegrationElements.value = stripe.value.elements({
-        clientSecret: fullIntegrationClientSecret.value,
-        appearance: {
-          theme: 'stripe',
-          variables: {
-            colorPrimary: '#f97316',
-            borderRadius: '8px',
-          },
-        },
-      })
-
-      fullIntegrationPaymentElement.value = fullIntegrationElements.value.create('payment', {
-        layout: 'tabs',
-        wallets: {
-          applePay: 'auto',
-          googlePay: 'auto',
-        },
-      })
-
-      fullIntegrationPaymentElement.value.mount('#full-integration-payment-element')
-    } catch (e: any) {
-      console.error('Full integration Stripe Elements error:', e)
-      fullIntegrationError.value = 'Nepodarilo sa načítať platobný formulár'
-    }
+    autoFillResult.value = response
+  } catch (e: any) {
+    autoFillError.value = e.data?.message || e.message || 'Nepodarilo sa načítať klientov'
+  } finally {
+    autoFillLoading.value = false
   }
-})
+}
+
+// Helper to format date as YYYY-MM-DD
+function formatDateYYYYMMDD(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Set default date range (3 days before cutoff to cutoff)
+function setDefaultDateRange() {
+  // Calculate first modifiable date (4-5 days ahead based on current day)
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const daysToAdd: Record<number, number> = {
+    0: 4, // Sunday -> Thursday
+    1: 4, // Monday -> Friday
+    2: 4, // Tuesday -> Saturday
+    3: 5, // Wednesday -> Monday
+    4: 5, // Thursday -> Tuesday
+    5: 5, // Friday -> Wednesday
+    6: 5, // Saturday -> Thursday
+  }
+
+  const cutoffDate = new Date(now)
+  cutoffDate.setDate(cutoffDate.getDate() + (daysToAdd[dayOfWeek] || 4))
+
+  // Set range: 3 days before cutoff to cutoff
+  const fromDate = new Date(cutoffDate)
+  fromDate.setDate(fromDate.getDate() - 3)
+
+  autoFillDateFrom.value = formatDateYYYYMMDD(fromDate)
+  autoFillDateTo.value = formatDateYYYYMMDD(cutoffDate)
+}
 
 // Test Stripe payment
 async function testStripe() {
@@ -296,68 +344,6 @@ async function testEmail() {
   }
 }
 
-// Initialize Full Integration (create payment intent)
-async function initializeFullIntegration() {
-  if (!fullIntegrationEmail.value) {
-    fullIntegrationError.value = 'Prosím zadajte emailovú adresu'
-    return
-  }
-
-  fullIntegrationLoading.value = true
-  fullIntegrationError.value = null
-  fullIntegrationResult.value = null
-
-  try {
-    // Create Stripe payment intent first
-    const response = await $fetch('/api/test/stripe-production', {
-      method: 'POST',
-    })
-
-    fullIntegrationClientSecret.value = response.clientSecret
-  } catch (e: any) {
-    fullIntegrationError.value = e.data?.message || e.message || 'Nepodarilo sa inicializovať platbu'
-  } finally {
-    fullIntegrationLoading.value = false
-  }
-}
-
-// Complete Full Integration Test (after payment)
-async function completeFullIntegration() {
-  if (!fullIntegrationElements.value || !fullIntegrationEmail.value) {
-    fullIntegrationError.value = 'Prosím zadajte emailovú adresu a dokončite platbu'
-    return
-  }
-
-  fullIntegrationLoading.value = true
-  fullIntegrationError.value = null
-
-  try {
-    // Confirm payment
-    const { error: stripeError } = await stripe.value!.confirmPayment({
-      elements: fullIntegrationElements.value,
-      redirect: 'if_required',
-    })
-
-    if (stripeError) {
-      throw new Error(stripeError.message || 'Platba zlyhala')
-    }
-
-    // Run full integration test
-    const response = await $fetch('/api/test/full-integration', {
-      method: 'POST',
-      body: {
-        email: fullIntegrationEmail.value,
-      },
-    })
-
-    fullIntegrationResult.value = response
-  } catch (e: any) {
-    fullIntegrationError.value = e.data?.message || e.message || 'Integračný test zlyhal'
-  } finally {
-    fullIntegrationLoading.value = false
-  }
-}
-
 // Run account status migration
 async function runMigration() {
   migrationLoading.value = true
@@ -393,140 +379,152 @@ async function runMigration() {
 
     <!-- Tabs -->
     <UTabs v-model="activeTab" :items="tabs" class="w-full">
-      <!-- Full Integration Tab -->
+      <!-- Auto-fill Meal Selections Tab -->
       <template #content="{ item }">
-        <div v-if="item.label === 'Kompletný test'" class="pt-4 space-y-4">
+        <div v-if="item.label === 'Auto-výber jedál'" class="pt-4 space-y-4">
           <UCard>
             <template #header>
               <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold">Kompletný integračný test</h3>
-                <UBadge color="primary" variant="soft">Celý workflow</UBadge>
+                <h3 class="text-lg font-semibold">Auto-výber jedál pre klientov</h3>
+                <UBadge :color="autoFillDryRun ? 'warning' : 'primary'" variant="soft">
+                  {{ autoFillDryRun ? 'Náhľad' : 'Ostrý režim' }}
+                </UBadge>
               </div>
             </template>
 
             <div class="space-y-4">
               <p class="text-sm text-gray-600">
-                Testuje kompletný produkčný workflow: Stripe platba (€0.50) → Superfaktura faktúra → Email s PDF prílohou
+                Automaticky vyplní výber A pre raňajky aj obed pre klientov, ktorí si ešte nevybrali.
+                Táto funkcia bude v budúcnosti spúšťaná automaticky cez cron job.
               </p>
 
-              <UFormField label="Email príjemcu" required>
-                <UInput
-                  v-model="fullIntegrationEmail"
-                  type="email"
-                  placeholder="vas-email@example.com"
-                  size="lg"
-                />
-              </UFormField>
-
-              <!-- Step 1: Initialize Payment -->
-              <UButton
-                v-if="!fullIntegrationClientSecret"
-                @click="initializeFullIntegration"
-                :loading="fullIntegrationLoading"
-                :disabled="!fullIntegrationEmail"
-                size="lg"
-                color="primary"
-                block
-              >
-                Inicializovať test
-              </UButton>
-
-              <!-- Step 2: Show payment form and complete button -->
-              <div v-if="fullIntegrationClientSecret && !fullIntegrationResult" class="space-y-4">
-                <div id="full-integration-payment-element" class="p-4 border border-gray-200 rounded-lg"></div>
-
+              <div class="flex gap-4 items-end flex-wrap">
+                <UFormField label="Od" class="flex-1 min-w-[140px]">
+                  <UInput
+                    v-model="autoFillDateFrom"
+                    type="date"
+                    size="lg"
+                  />
+                </UFormField>
+                <UFormField label="Do" class="flex-1 min-w-[140px]">
+                  <UInput
+                    v-model="autoFillDateTo"
+                    type="date"
+                    size="lg"
+                  />
+                </UFormField>
                 <UButton
-                  @click="completeFullIntegration"
-                  :loading="fullIntegrationLoading"
+                  @click="setDefaultDateRange"
+                  variant="outline"
                   size="lg"
-                  color="primary"
-                  block
                 >
-                  Dokončiť platbu a spustiť test
+                  Predvolený rozsah
                 </UButton>
               </div>
 
+              <UFormField>
+                <UCheckbox
+                  v-model="autoFillDryRun"
+                  label="Dry Run (iba náhľad, žiadne zmeny)"
+                />
+              </UFormField>
+
+              <UButton
+                @click="runAutoFill"
+                :loading="autoFillLoading"
+                size="lg"
+                :color="autoFillDryRun ? 'primary' : 'warning'"
+                block
+              >
+                {{ autoFillDryRun ? 'Načítať klientov bez výberu' : 'Vyplniť výber A pre všetkých' }}
+              </UButton>
+
               <!-- Error -->
               <UAlert
-                v-if="fullIntegrationError"
+                v-if="autoFillError"
                 icon="i-lucide-x-circle"
                 color="error"
                 variant="soft"
-                :title="fullIntegrationError"
+                :title="autoFillError"
               />
 
               <!-- Results -->
-              <div v-if="fullIntegrationResult" class="space-y-4">
+              <div v-if="autoFillResult" class="space-y-4">
                 <UAlert
-                  v-if="fullIntegrationResult.success"
+                  v-if="autoFillResult.dryRun && autoFillResult.totalClientsToFill === 0"
                   icon="i-lucide-check-circle"
                   color="success"
                   variant="soft"
-                  title="Všetky testy úspešné!"
-                  description="Kompletný integračný test bol úspešne dokončený"
+                  title="Všetci klienti už majú výber!"
+                  :description="`Pre rozsah ${autoFillResult.dateFrom} - ${autoFillResult.dateTo} nie sú žiadni klienti bez výberu.`"
+                />
+                <UAlert
+                  v-else-if="autoFillResult.dryRun"
+                  icon="i-lucide-alert-circle"
+                  color="warning"
+                  variant="soft"
+                  :title="`Nájdených ${autoFillResult.totalClientsToFill} klientov bez výberu`"
+                  :description="`Toto bol iba náhľad. Odškrtnite 'Dry Run' a spustite znova pre aplikovanie zmien.`"
+                />
+                <UAlert
+                  v-else-if="autoFillResult.success"
+                  icon="i-lucide-check-circle"
+                  color="success"
+                  variant="soft"
+                  :title="`Úspešne vyplnených ${autoFillResult.totalClientsFilled} klientov`"
+                  :description="`Výber A bol nastavený pre raňajky aj obed.`"
                 />
                 <UAlert
                   v-else
                   icon="i-lucide-x-circle"
                   color="error"
                   variant="soft"
-                  title="Test zlyhal"
-                  :description="fullIntegrationResult.error"
+                  title="Vyplnenie zlyhalo"
+                  :description="`Vyplnených: ${autoFillResult.totalClientsFilled}/${autoFillResult.totalClientsToFill}`"
                 />
 
-                <!-- Logs -->
-                <UCard>
-                  <template #header>
-                    <h4 class="font-semibold">Logy testovania</h4>
-                  </template>
-                  <div class="space-y-1 font-mono text-xs max-h-96 overflow-y-auto">
-                    <div v-for="(log, index) in fullIntegrationResult.logs" :key="index" class="text-gray-700">
-                      {{ log }}
-                    </div>
-                  </div>
-                </UCard>
-
-                <!-- Results Details -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <UCard>
+                <!-- Results by date -->
+                <div v-for="dateResult in autoFillResult.byDate" :key="dateResult.date" class="space-y-2">
+                  <UCard v-if="dateResult.clients.length > 0">
                     <template #header>
-                      <div class="flex items-center gap-2">
-                        <UIcon name="i-lucide-credit-card" class="w-4 h-4" />
-                        <span class="font-semibold">Stripe</span>
-                      </div>
+                      <h4 class="font-semibold">
+                        {{ dateResult.date }} - {{ dateResult.clients.length }} {{ autoFillResult.dryRun ? 'na vyplnenie' : 'vyplnených' }}
+                      </h4>
                     </template>
-                    <div v-if="fullIntegrationResult.results?.stripe" class="text-sm space-y-1">
-                      <div><strong>ID:</strong> <span class="text-xs">{{ fullIntegrationResult.results.stripe.paymentIntentId }}</span></div>
-                      <div><strong>Status:</strong> {{ fullIntegrationResult.results.stripe.status }}</div>
-                    </div>
-                  </UCard>
-
-                  <UCard>
-                    <template #header>
-                      <div class="flex items-center gap-2">
-                        <UIcon name="i-lucide-file-text" class="w-4 h-4" />
-                        <span class="font-semibold">Superfaktura</span>
-                      </div>
-                    </template>
-                    <div v-if="fullIntegrationResult.results?.superfaktura" class="text-sm space-y-1">
-                      <div><strong>Number:</strong> {{ fullIntegrationResult.results.superfaktura.invoiceNumber }}</div>
-                      <div><strong>PDF:</strong> {{ Math.round(fullIntegrationResult.results.superfaktura.pdfSize / 1024) }}KB</div>
-                    </div>
-                  </UCard>
-
-                  <UCard>
-                    <template #header>
-                      <div class="flex items-center gap-2">
-                        <UIcon name="i-lucide-mail" class="w-4 h-4" />
-                        <span class="font-semibold">Email</span>
-                      </div>
-                    </template>
-                    <div v-if="fullIntegrationResult.results?.email" class="text-sm space-y-1">
-                      <div><strong>To:</strong> {{ fullIntegrationResult.results.email.to }}</div>
-                      <div v-if="fullIntegrationResult.results.email.messageId"><strong>ID:</strong> <span class="text-xs">{{ fullIntegrationResult.results.email.messageId.substring(0, 20) }}...</span></div>
+                    <div class="overflow-x-auto">
+                      <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Klient</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Balíček</th>
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                          <tr v-for="client in dateResult.clients" :key="client.clientId">
+                            <td class="px-4 py-2 text-sm">{{ client.clientName }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-600">{{ client.email }}</td>
+                            <td class="px-4 py-2 text-sm">
+                              <UBadge variant="soft" color="neutral">{{ client.packageTier }}</UBadge>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </UCard>
                 </div>
+
+                <!-- Errors list -->
+                <UCard v-if="autoFillResult.errors && autoFillResult.errors.length > 0">
+                  <template #header>
+                    <h4 class="font-semibold text-red-600">Chyby ({{ autoFillResult.errors.length }})</h4>
+                  </template>
+                  <div class="space-y-1 font-mono text-xs max-h-64 overflow-y-auto text-red-600">
+                    <div v-for="(err, idx) in autoFillResult.errors" :key="idx">
+                      {{ err.date }} - {{ err.clientId }}: {{ err.error }}
+                    </div>
+                  </div>
+                </UCard>
               </div>
             </div>
           </UCard>
@@ -762,104 +760,6 @@ async function runMigration() {
                     <div><strong>Komu:</strong> {{ emailResult.to }}</div>
                     <div v-if="emailResult.messageId"><strong>ID správy:</strong> {{ emailResult.messageId }}</div>
                     <div><strong>S prílohou:</strong> {{ emailResult.hasAttachment ? 'Áno ✅' : 'Nie ❌' }}</div>
-                  </div>
-                </UCard>
-              </div>
-            </div>
-          </UCard>
-        </div>
-
-        <!-- Client Email Tab -->
-        <div v-else-if="item.label === 'Email (Klient)'" class="pt-4 space-y-4">
-          <UCard>
-            <template #header>
-              <h3 class="text-lg font-semibold">Test emailu pre klienta</h3>
-            </template>
-
-            <div class="space-y-4">
-              <p class="text-sm text-gray-600">
-                Odošlite testovací email s potvrdením objednávky (ten istý email, ktorý dostáva klient po objednávke)
-              </p>
-
-              <UFormField label="Email príjemcu" required>
-                <UInput
-                  v-model="clientEmailRecipient"
-                  type="email"
-                  placeholder="vas-email@example.com"
-                  size="lg"
-                />
-              </UFormField>
-
-              <UFormField label="Meno klienta" required>
-                <UInput
-                  v-model="clientEmailName"
-                  type="text"
-                  placeholder="Ján Novák"
-                  size="lg"
-                />
-              </UFormField>
-
-              <UFormField label="Číslo objednávky" required>
-                <UInput
-                  v-model="clientEmailOrderId"
-                  type="text"
-                  placeholder="123456"
-                  size="lg"
-                />
-              </UFormField>
-
-              <UFormField>
-                <UCheckbox
-                  v-model="clientEmailIncludeInvoice"
-                  label="Priložiť faktúru PDF (vyžaduje najprv Superfaktura test)"
-                  :disabled="!superfakturaResult?.invoicePdf"
-                />
-              </UFormField>
-
-              <UButton
-                @click="testClientEmail"
-                :loading="clientEmailLoading"
-                :disabled="!clientEmailRecipient || !clientEmailName || !clientEmailOrderId"
-                size="lg"
-                color="primary"
-                block
-              >
-                Odoslať email klientovi
-              </UButton>
-
-              <!-- Error -->
-              <UAlert
-                v-if="clientEmailError"
-                icon="i-lucide-x-circle"
-                color="error"
-                variant="soft"
-                :title="clientEmailError"
-              />
-
-              <!-- Results -->
-              <div v-if="clientEmailResult" class="space-y-4">
-                <UAlert
-                  v-if="clientEmailResult.success"
-                  icon="i-lucide-check-circle"
-                  color="success"
-                  variant="soft"
-                  title="Email úspešne odoslaný klientovi!"
-                />
-                <UAlert
-                  v-else
-                  icon="i-lucide-x-circle"
-                  color="error"
-                  variant="soft"
-                  title="Email zlyhal"
-                  :description="clientEmailResult.error"
-                />
-
-                <UCard v-if="clientEmailResult.success">
-                  <div class="space-y-2 text-sm">
-                    <div><strong>Komu:</strong> {{ clientEmailResult.to }}</div>
-                    <div><strong>Číslo objednávky:</strong> {{ clientEmailResult.orderId }}</div>
-                    <div v-if="clientEmailResult.messageId"><strong>ID správy:</strong> {{ clientEmailResult.messageId }}</div>
-                    <div><strong>S faktúrou:</strong> {{ clientEmailResult.hasInvoice ? 'Áno ✅' : 'Nie ❌' }}</div>
                   </div>
                 </UCard>
               </div>
