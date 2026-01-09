@@ -264,14 +264,13 @@ const minDeliveryDate = computed(() => {
   const duration = formData.value.step1.duration as '5' | '6' || '5'
   const deliveryDays = duration === '6' ? 6 : 5
 
-  // Order form uses 1 day earlier than the skip/modify cutoff
-  // (Skip cutoff is for existing customers who already have the app)
-  firstModifiable.setDate(firstModifiable.getDate() - 1)
+  // Order form adds +1 day buffer for new customers to set up app
+  firstModifiable.setDate(firstModifiable.getDate() + 1)
 
   // Ensure it's a valid delivery day for the selected package
   // (Sunday is never valid, Saturday only valid for 6-day)
   while (!isValidDeliveryDay(formatDateISO(firstModifiable), deliveryDays)) {
-    firstModifiable.setDate(firstModifiable.getDate() - 1)
+    firstModifiable.setDate(firstModifiable.getDate() + 1)
   }
 
   return formatDateISO(firstModifiable)
