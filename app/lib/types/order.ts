@@ -205,6 +205,42 @@ export interface CreateOrderInput {
 }
 
 /**
+ * Calculate minimum delivery date for new orders
+ * Uses same cutoff logic as client-side, with +1 day buffer
+ */
+function getMinDeliveryDate(): Date {
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+
+  // Cutoff days based on production schedule
+  const CUTOFF_DAYS: Record<number, number> = {
+    0: 4, // Sunday -> Thursday
+    1: 4, // Monday -> Friday
+    2: 4, // Tuesday -> Saturday
+    3: 5, // Wednesday -> Monday
+    4: 5, // Thursday -> Tuesday
+    5: 5, // Friday -> Wednesday
+    6: 5, // Saturday -> Thursday
+  }
+
+  const daysToAdd = CUTOFF_DAYS[dayOfWeek] ?? 5
+
+  const minDate = new Date(now)
+  minDate.setDate(minDate.getDate() + daysToAdd)
+
+  // Add +1 day buffer for new customers (same as client-side)
+  minDate.setDate(minDate.getDate() + 1)
+
+  // Advance to next valid delivery day (skip Sunday)
+  while (minDate.getDay() === 0) {
+    minDate.setDate(minDate.getDate() + 1)
+  }
+
+  minDate.setHours(0, 0, 0, 0)
+  return minDate
+}
+
+/**
  * Zod Schema for Order Validation
  */
 export const createOrderSchema = z.object({
@@ -269,7 +305,33 @@ export const createOrderSchema = z.object({
 
   // Payment
   deliveryStartDate: z.string()
-    .min(1, 'Dátum doručenia je povinný'),
+    .min(1, 'Dátum doručenia je povinný')
+    .refine((dateStr) => {
+      // Parse DD.MM.YYYY format
+      const parts = dateStr.split('.')
+      if (parts.length !== 3) return false
+
+      const dayStr = parts[0]
+      const monthStr = parts[1]
+      const yearStr = parts[2]
+      if (!dayStr || !monthStr || !yearStr) return false
+
+      const day = parseInt(dayStr, 10)
+      const month = parseInt(monthStr, 10) - 1
+      const year = parseInt(yearStr, 10)
+
+      if (isNaN(day) || isNaN(month) || isNaN(year)) return false
+
+      const selectedDate = new Date(year, month, day)
+      selectedDate.setHours(0, 0, 0, 0)
+
+      // Calculate minimum delivery date using same logic as client
+      const minDate = getMinDeliveryDate()
+
+      return selectedDate >= minDate
+    }, {
+      message: 'Dátum doručenia je príliš skoro. Vyberte neskorší dátum.',
+    }),
   termsAccepted: z.boolean()
     .refine((val) => val === true, 'Musíte súhlasiť s podmienkami'),
   stripePaymentIntentId: z.string()

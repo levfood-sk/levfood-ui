@@ -732,6 +732,14 @@ async function handleSubmit() {
     return
   }
 
+  // Validate delivery date is not before minimum
+  const selectedDate = new Date(formData.value.step4.deliveryStartDate)
+  const minDate = new Date(minDeliveryDate.value)
+  if (selectedDate < minDate) {
+    alert('Vyberte platný dátum doručenia')
+    return
+  }
+
   if (!stripe.value || !elements.value) {
     stripeError.value = 'Platobný systém nie je pripravený'
     return
